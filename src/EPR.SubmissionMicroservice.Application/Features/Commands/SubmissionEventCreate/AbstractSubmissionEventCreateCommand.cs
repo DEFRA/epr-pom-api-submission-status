@@ -10,7 +10,7 @@ public abstract class AbstractSubmissionEventCreateCommand : IRequest<ErrorOr<Su
 
     public virtual EventType Type { get; set; }
 
-    public List<string> Errors { get; set; }
+    public List<string>? Errors { get; set; }
 
     public Guid? UserId { get; set; }
 

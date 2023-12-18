@@ -24,6 +24,8 @@ public class EventConverter : CustomCreationConverter<AbstractSubmissionEventCre
             EventType.CheckSplitter => new CheckSplitterValidationEventCreateCommand(),
             EventType.ProducerValidation => new ProducerValidationEventCreateCommand(),
             EventType.Registration => new RegistrationValidationEventCreateCommand(),
+            EventType.BrandValidation => new BrandValidationEventCreateCommand(),
+            EventType.PartnerValidation => new PartnerValidationEventCreateCommand(),
             EventType.AntivirusCheck => new AntivirusCheckEventCreateCommand(),
             EventType.AntivirusResult => new AntivirusResultEventCreateCommand(),
             EventType.RegulatorPoMDecision => new RegulatorPoMDecisionEventCreateCommand(),

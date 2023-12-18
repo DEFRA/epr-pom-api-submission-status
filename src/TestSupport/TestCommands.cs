@@ -117,6 +117,28 @@ public static class TestCommands
             };
         }
 
+        public static BrandValidationEventCreateCommand ValidBrandValidationEventCreateCommand()
+        {
+            return new BrandValidationEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                BlobName = "the-file.csv",
+                BlobContainerName = "my-container",
+            };
+        }
+
+        public static PartnerValidationEventCreateCommand ValidPartnerValidationEventCreateCommand()
+        {
+            return new PartnerValidationEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                BlobName = "the-file.csv",
+                BlobContainerName = "my-container",
+            };
+        }
+
         public static RegulatorPoMDecisionEventCreateCommand ValidRegulatorPoMDecisionEventCreateCommand()
         {
             return new RegulatorPoMDecisionEventCreateCommand()
@@ -192,6 +214,32 @@ public static class TestCommands
                     }
                 };
             }
+        }
+
+        public static BrandValidationEventCreateCommand InvalidBrandValidationEventCreateCommand(params string[] errorCodes)
+        {
+            return new BrandValidationEventCreateCommand
+            {
+                SubmissionId = Guid.Empty,
+                Type = EventType.BrandValidation,
+                Errors = errorCodes.ToList(),
+                UserId = null,
+                BlobName = null,
+                BlobContainerName = null,
+            };
+        }
+
+        public static PartnerValidationEventCreateCommand InvalidPartnerValidationEventCreateCommand(params string[] errorCodes)
+        {
+            return new PartnerValidationEventCreateCommand
+            {
+                SubmissionId = Guid.Empty,
+                Type = EventType.PartnerValidation,
+                Errors = errorCodes.ToList(),
+                UserId = null,
+                BlobName = null,
+                BlobContainerName = null,
+            };
         }
     }
 }

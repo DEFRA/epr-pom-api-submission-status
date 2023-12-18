@@ -283,7 +283,93 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"type\": 4,\n\t\"errors\":[],\n    \"validationErrors\": [],\n    \"hasBrandsFile\": true,\n    \"hasPartnershipsFile\": true\n}"
+					"raw": "{\n  \"type\": 4,\n  \"errors\": [\n    \"99\"\n  ],\n  \"validationErrors\": [\n    {\n      \"rowNumber\": 1,\n      \"organisationId\": \"28\",\n      \"subsidiaryId\": \"1\",\n      \"columnErrors\": [\n        {\n          \"errorCode\": \"801\",\n          \"columnIndex\": 0,\n          \"columnName\": \"organisation_id\"\n        }\n      ]\n    }\n  ],\n  \"requiresBrandsFile\": true,\n  \"requiresPartnershipsFile\": true,\n  \"isValid\": true,\n  \"blobName\": \"organisation-registrations.csv\",\n  \"blobContainerName\": \"registration-upload-container\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (BrandValidation)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"type\": 8,\n  \"errors\": [ \"802\" ],\n  \"isValid\": false,\n  \"blobName\": \"BrandRegistrationsWithFieldsTooLong.csv\",\n  \"blobContainerName\": \"registration-upload-container\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (PartnerValidation)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"type\": 9,\n  \"errors\": [ \"802\" ],\n  \"isValid\": false,\n  \"blobName\": \"PartnerRegistrationsWithFieldsTooLong.csv\",\n  \"blobContainerName\": \"registration-upload-container\"\n}"
 				},
 				"url": {
 					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",

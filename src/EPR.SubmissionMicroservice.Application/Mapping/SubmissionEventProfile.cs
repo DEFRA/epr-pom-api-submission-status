@@ -24,6 +24,10 @@ public class SubmissionEventProfile : Profile
             .IncludeAllDerived();
         CreateMap<CheckSplitterValidationEventCreateCommand, CheckSplitterValidationEvent>();
         CreateMap<ProducerValidationEventCreateCommand, ProducerValidationEvent>();
+        CreateMap<AntivirusCheckEventCreateCommand, AntivirusCheckEvent>();
+        CreateMap<AntivirusResultEventCreateCommand, AntivirusResultEvent>();
+        CreateMap<RegulatorPoMDecisionEventCreateCommand, RegulatorPoMDecisionEvent>();
+
         CreateMap<RegistrationValidationEventCreateCommand, RegistrationValidationEvent>()
             .AfterMap((command, e) =>
             {
@@ -32,9 +36,14 @@ public class SubmissionEventProfile : Profile
                     validationError.BlobName = command.BlobName;
                 }
             });
-        CreateMap<AntivirusCheckEventCreateCommand, AntivirusCheckEvent>();
-        CreateMap<AntivirusResultEventCreateCommand, AntivirusResultEvent>();
-        CreateMap<RegulatorPoMDecisionEventCreateCommand, RegulatorPoMDecisionEvent>();
+        CreateMap<BrandValidationEventCreateCommand, BrandValidationEvent>()
+            .ForMember(
+                d => d.IsValid,
+                opt => opt.MapFrom(x => x.Errors == null || !x.Errors.Any()));
+        CreateMap<PartnerValidationEventCreateCommand, PartnerValidationEvent>()
+            .ForMember(
+                d => d.IsValid,
+                opt => opt.MapFrom(x => x.Errors == null || !x.Errors.Any()));
 
         CreateMap<AbstractValidationEventCreateCommand.AbstractValidationError, AbstractValidationError>()
             .ForMember(o => o.Created, m => m.Ignore())

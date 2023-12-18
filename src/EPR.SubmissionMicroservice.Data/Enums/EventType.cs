@@ -8,5 +8,7 @@ public enum EventType
     Registration = 4,
     AntivirusResult = 5,
     Submitted = 6,
-    RegulatorPoMDecision = 7
+    RegulatorPoMDecision = 7,
+    BrandValidation = 8,
+    PartnerValidation = 9,
 }

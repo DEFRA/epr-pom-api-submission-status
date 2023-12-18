@@ -84,6 +84,12 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<RegistrationValidationEvent>()
             .HasPartitionKey(x => x.Id);
 
+        modelBuilder.Entity<BrandValidationEvent>()
+            .HasPartitionKey(x => x.Id);
+
+        modelBuilder.Entity<PartnerValidationEvent>()
+            .HasPartitionKey(x => x.Id);
+
         modelBuilder.Entity<CheckSplitterValidationError>()
             .HasPartitionKey(x => x.Id);
 
@@ -114,6 +120,8 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<CheckSplitterValidationEvent>(EventType.CheckSplitter)
                 .HasValue<ProducerValidationEvent>(EventType.ProducerValidation)
                 .HasValue<RegistrationValidationEvent>(EventType.Registration)
+                .HasValue<BrandValidationEvent>(EventType.BrandValidation)
+                .HasValue<PartnerValidationEvent>(EventType.PartnerValidation)
                 .HasValue<AntivirusCheckEvent>(EventType.AntivirusCheck)
                 .HasValue<AntivirusResultEvent>(EventType.AntivirusResult)
                 .HasValue<RegulatorPoMDecisionEvent>(EventType.RegulatorPoMDecision)

@@ -85,6 +85,30 @@ public static class TestRequests
             });
         }
 
+        public static JObject ValidBrandValidationEventCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.BrandValidation,
+                errors = new JArray { "802" },
+                isValid = false,
+                blobName = "brand-registrations.csv",
+                blobContainerName = "registration-upload-container",
+            });
+        }
+
+        public static JObject ValidPartnerValidationEventCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.PartnerValidation,
+                errors = new JArray { "802" },
+                isValid = false,
+                blobName = "brand-registrations.csv",
+                blobContainerName = "registration-upload-container",
+            });
+        }
+
         public static JObject ValidRegulatorDecisionEventCreateRequest()
         {
             return JObject.FromObject(new

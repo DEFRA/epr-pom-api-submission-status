@@ -83,6 +83,32 @@ public class EventConverterTests
     }
 
     [TestMethod]
+    public async Task BrandValidationEventConverter()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidBrandValidationEventCreateRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<BrandValidationEventCreateCommand>();
+    }
+
+    [TestMethod]
+    public async Task PartnerValidationEventConverter()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidPartnerValidationEventCreateRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<PartnerValidationEventCreateCommand>();
+    }
+
+    [TestMethod]
     public async Task EventConverter_UndefinedEvent()
     {
         // Arrange

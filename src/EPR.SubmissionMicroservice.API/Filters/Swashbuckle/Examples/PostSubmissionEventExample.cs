@@ -133,5 +133,27 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
                 ["blobName"] = "organisation-registrations.csv",
                 ["blobContainerName"] = "registration-upload-container"
             });
+
+        yield return SwaggerExample.Create(
+            "Validation - Brands",
+            new JObject
+            {
+                ["type"] = (int)EventType.BrandValidation,
+                ["errors"] = new JArray { "802" },
+                ["isValid"] = false,
+                ["blobName"] = "brand-registrations.csv",
+                ["blobContainerName"] = "registration-upload-container"
+            });
+
+        yield return SwaggerExample.Create(
+            "Validation - Partners",
+            new JObject
+            {
+                ["type"] = (int)EventType.PartnerValidation,
+                ["errors"] = new JArray { "802" },
+                ["isValid"] = false,
+                ["blobName"] = "partner-registrations.csv",
+                ["blobContainerName"] = "registration-upload-container"
+            });
     }
 }
