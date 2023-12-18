@@ -1,0 +1,11 @@
+﻿global using System.Linq.Expressions;
+global using AutoMapper;
+global using ErrorOr;
+global using FluentAssertions;
+global using FluentValidation.TestHelper;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.VisualStudio.TestTools.UnitTesting;
+global using MockQueryable.Moq;
+global using Moq;
+global using TestSupport;
+global using TestSupport.Helpers;

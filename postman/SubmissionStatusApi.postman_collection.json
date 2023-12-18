@@ -1,0 +1,546 @@
+{
+	"info": {
+		"_postman_id": "81becde8-d387-4bbc-9166-c2f2ed906082",
+		"name": "SubmissionStatusApi",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "15688392"
+	},
+	"item": [
+		{
+			"name": "CreateSubmission",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"{{SubmissionId}}\",\n    \"submissionType\": 1,\n    \"dataSourceType\": 1,\n    \"submissionPeriod\": \"2023\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (Regulator PoM Decision) - Reject",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": 7,\n    \"decision\": 2,\n    \"comments\": \"invalid data\",\n    \"isResubmissionRequired\" : true,\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685b\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (AntivirusCheck)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 1,\n\t\"errors\": [\"99\"],\n    \"fileName\": \"pomTestV1.csv\",\n    \"fileType\": 1,\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685a\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (RegulatorPoMDecision) - Accept",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					},
+					{
+						"key": "OrganisationId",
+						"value": "{{OrganisationId}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 7,\n    \"decision\": 1,\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685b\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (CheckSplitterValidation)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 2,\n\t\"errors\":[],\n    \"validationErrors\": [],\n    \"DataCount\": 2\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (ProducerValidation)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 3,\n    \"producerId\": \"3fa85f65-5717-4562-b3fc-2c973f66afa7\",\n\t\"errors\":[],\n    \"validationErrors\": [\n        {\n            \"rowNumber\": 12,\n            \"producerType\": \"BO\",\n            \"ErrorCodes\" : [\"22\"]\n        },\n        {\n            \"rowNumber\": 22,\n            \"producerType\": \"BO\",\n            \"ErrorCodes\" : [\"26\"]\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (RegistrationValidation)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 4,\n\t\"errors\":[],\n    \"validationErrors\": [],\n    \"hasBrandsFile\": true,\n    \"hasPartnershipsFile\": true\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (AntivirusResult)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 5,\n\t\"errors\":[],\n    \"antivirusScanResult\": 2,\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685a\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetSubmissions",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions?pagesize=6&pagenumber=1",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions"
+					],
+					"query": [
+						{
+							"key": "pagesize",
+							"value": "6"
+						},
+						{
+							"key": "pagenumber",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetDecisionPoMSubmissionEvents",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/events/get-regulator-pom-decision?LastSyncTime=2022-06-18",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						"events",
+						"get-regulator-pom-decision"
+					],
+					"query": [
+						{
+							"key": "Type",
+							"value": "7",
+							"disabled": true
+						},
+						{
+							"key": "LastSyncTime",
+							"value": "2022-06-18"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetSubmission",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionid",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionid"
+					],
+					"variable": [
+						{
+							"key": "submissionid",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetSubmissionFile",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/files/:fileId",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						"files",
+						":fileId"
+					],
+					"variable": [
+						{
+							"key": "fileId",
+							"value": "{{FileId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetValidationEventError",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submisison/producer-validations",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submisison",
+						"producer-validations"
+					],
+					"variable": [
+						{
+							"key": "submisison",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -1,0 +1,6 @@
+variables:
+  azureSubscription: 'AZD-RWD-DEV9'
+  docker.imageName: 'submissionstatus'
+  acr.azureContainerRegistryName: 'devrwdinfac1401'
+  acr.repositoryName: 'submissionstatusrepository'
+  serviceName: 'devrwdwebwa9408'

@@ -1,0 +1,6 @@
+variables:
+  azureSubscription: 'AZR-RWD-PRD1'
+  docker.imageName: 'submissionstatus'
+  acr.azureContainerRegistryName: 'prdrwdinfac1401'
+  acr.repositoryName: 'submissionstatusrepository'
+  serviceName: 'prdrwdwebwa1408'
