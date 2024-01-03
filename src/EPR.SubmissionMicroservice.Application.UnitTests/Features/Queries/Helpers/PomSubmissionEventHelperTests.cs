@@ -1,15 +1,12 @@
-﻿namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.Helpers;
+﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
+using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
+using EPR.SubmissionMicroservice.Data.Enums;
+using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 
-using System.Linq.Expressions;
-using Application.Features.Queries.Common;
-using Application.Features.Queries.Helpers;
-using Data.Entities.AntivirusEvents;
-using Data.Entities.SubmissionEvent;
-using Data.Enums;
-using Data.Repositories.Queries.Interfaces;
-using FluentAssertions;
-using MockQueryable.Moq;
-using Moq;
+namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.Helpers;
 
 [TestClass]
 public class PomSubmissionEventHelperTests
@@ -27,6 +24,7 @@ public class PomSubmissionEventHelperTests
     private readonly DateTime _fileTwoCreatedDateTime = DateTime.Now.AddMinutes(1);
     private readonly Guid _submissionId = Guid.NewGuid();
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventsRepositoryMock;
+    private Mock<IQueryRepository<AbstractValidationWarning>> _validationWarningRepositoryMock;
     private PomSubmissionGetResponse? _pomSubmissionGetResponse;
     private PomSubmissionEventHelper _systemUnderTest;
 
@@ -35,7 +33,10 @@ public class PomSubmissionEventHelperTests
     {
         _submissionEventsRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
         _pomSubmissionGetResponse = new PomSubmissionGetResponse { Id = _submissionId };
-        _systemUnderTest = new PomSubmissionEventHelper(_submissionEventsRepositoryMock.Object);
+        _validationWarningRepositoryMock = new Mock<IQueryRepository<AbstractValidationWarning>>();
+        _systemUnderTest = new PomSubmissionEventHelper(
+            _submissionEventsRepositoryMock.Object,
+            _validationWarningRepositoryMock.Object);
     }
 
     [TestMethod]
@@ -58,7 +59,8 @@ public class PomSubmissionEventHelperTests
             LastUploadedValidFile = null,
             LastSubmittedFile = null,
             PomDataComplete = false,
-            ValidationPass = false
+            ValidationPass = false,
+            HasWarnings = false
         });
     }
 
@@ -110,6 +112,11 @@ public class PomSubmissionEventHelperTests
             }
         };
 
+        _validationWarningRepositoryMock
+            .Setup(x => x.AnyAsync(
+                It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>(),
+                default))
+            .ReturnsAsync(true);
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
@@ -138,7 +145,8 @@ public class PomSubmissionEventHelperTests
                 SubmittedDateTime = _fileOneSubmittedDateTime
             },
             PomDataComplete = true,
-            ValidationPass = true
+            ValidationPass = true,
+            HasWarnings = true
         });
     }
 
@@ -357,7 +365,8 @@ public class PomSubmissionEventHelperTests
                 SubmittedDateTime = _fileOneSubmittedDateTime
             },
             PomDataComplete = true,
-            ValidationPass = true
+            ValidationPass = true,
+            HasWarnings = false
         });
     }
 
@@ -392,6 +401,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             PomDataComplete = false,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null
         });
@@ -434,6 +444,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             PomDataComplete = false,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null
         });
@@ -483,6 +494,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             PomDataComplete = false,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null
         });
@@ -565,6 +577,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileTwoCreatedDateTime,
             PomDataComplete = true,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = new UploadedPomFileInformation
             {
                 FileName = FileOneName,
@@ -615,6 +628,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             PomDataComplete = false,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null,
             Errors = errors
@@ -667,6 +681,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             PomDataComplete = false,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null,
             Errors = errors
@@ -725,6 +740,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             PomDataComplete = true,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null,
             Errors = errors
@@ -805,6 +821,7 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileTwoCreatedDateTime,
             PomDataComplete = false,
             ValidationPass = false,
+            HasWarnings = false,
             LastUploadedValidFile = null,
             LastSubmittedFile = null
         });

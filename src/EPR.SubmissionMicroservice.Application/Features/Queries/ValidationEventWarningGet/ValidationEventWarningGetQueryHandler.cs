@@ -1,16 +1,19 @@
 ﻿using AutoMapper;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
+using EPR.SubmissionMicroservice.Application.Options;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.ValidationEventWarningGet;
 
 public class ValidationEventWarningGetQueryHandler : IRequestHandler<ValidationEventWarningGetQuery, ErrorOr<List<AbstractValidationIssueGetResponse>>>
 {
+    private readonly ValidationOptions _validationOptions;
     private readonly IQueryRepository<AbstractValidationWarning> _validationEventWarningQueryRepository;
     private readonly IValidationEventHelper _validationEventHelper;
     private readonly IMapper _mapper;
@@ -18,11 +21,13 @@ public class ValidationEventWarningGetQueryHandler : IRequestHandler<ValidationE
     public ValidationEventWarningGetQueryHandler(
         IQueryRepository<AbstractValidationWarning> validationEventWarningQueryRepository,
         IValidationEventHelper validationEventHelper,
-        IMapper mapper)
+        IMapper mapper,
+        IOptions<ValidationOptions> validationOptions)
     {
         _validationEventWarningQueryRepository = validationEventWarningQueryRepository;
         _validationEventHelper = validationEventHelper;
         _mapper = mapper;
+        _validationOptions = validationOptions.Value;
     }
 
     public async Task<ErrorOr<List<AbstractValidationIssueGetResponse>>> Handle(ValidationEventWarningGetQuery request, CancellationToken cancellationToken)
@@ -35,6 +40,7 @@ public class ValidationEventWarningGetQueryHandler : IRequestHandler<ValidationE
             var validationErrors = await _validationEventWarningQueryRepository
                 .GetAll(x => x.BlobName == latestAntivirusResultEvent.BlobName)
                 .OrderBy(x => x.RowNumber)
+                .Take(_validationOptions.MaxIssuesToProcess)
                 .ToListAsync(cancellationToken);
 
             errors.AddRange(validationErrors);

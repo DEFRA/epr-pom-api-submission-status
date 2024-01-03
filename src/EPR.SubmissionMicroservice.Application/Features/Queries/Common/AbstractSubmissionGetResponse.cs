@@ -22,6 +22,8 @@ public abstract class AbstractSubmissionGetResponse
 
     public bool ValidationPass { get; set; }
 
+    public bool HasWarnings { get; set; }
+
     public List<string> Errors { get; set; } = new();
 
     public bool IsSubmitted { get; set; }

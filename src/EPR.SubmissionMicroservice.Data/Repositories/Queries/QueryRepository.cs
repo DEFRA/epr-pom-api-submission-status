@@ -1,11 +1,10 @@
-﻿namespace EPR.SubmissionMicroservice.Data.Repositories.Queries;
-
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using Entities;
-using Interfaces;
+using EPR.SubmissionMicroservice.Data.Entities;
+using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
+
+namespace EPR.SubmissionMicroservice.Data.Repositories.Queries;
 
 [ExcludeFromCodeCoverage]
 public class QueryRepository<TEntity> : IQueryRepository<TEntity>
@@ -16,6 +15,11 @@ public class QueryRepository<TEntity> : IQueryRepository<TEntity>
     public QueryRepository(SubmissionContext context)
     {
         _context = context;
+    }
+
+    public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> expression, CancellationToken cancellationToken = default)
+    {
+        return await GetAll(expression).CountAsync(cancellationToken) > 0;
     }
 
     public IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> expression)

@@ -3,7 +3,7 @@
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.ValidationEventErrorGet;
 
 [TestClass]
-public class ProducerValidationGetQueryValidatorTests
+public class ProducerValidationEventErrorGetQueryValidatorTests
 {
     private readonly ValidationEventErrorGetQueryValidator _systemUnderTest = new();
 

@@ -9,7 +9,7 @@ using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.ValidationEventErrorGet;
 
 [TestClass]
-public class ProducerValidationGetQueryHandlerTests
+public class ProducerValidationEventErrorGetQueryHandlerTests
 {
     private ValidationEventErrorGetQueryHandler _systemUnderTest;
     private Mock<IQueryRepository<AbstractValidationError>> _validationEventErrorQueryRepositoryMock;

@@ -1,20 +1,25 @@
-﻿namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
-
-using Common;
-using Data.Entities.AntivirusEvents;
-using Data.Entities.SubmissionEvent;
-using Data.Enums;
-using Data.Repositories.Queries.Interfaces;
-using Interfaces;
+﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
+using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
+using EPR.SubmissionMicroservice.Data.Enums;
+using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using Microsoft.EntityFrameworkCore;
+
+namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 
 public class PomSubmissionEventHelper : IPomSubmissionEventHelper
 {
     private readonly IQueryRepository<AbstractSubmissionEvent> _submissionEventQueryRepository;
+    private readonly IQueryRepository<AbstractValidationWarning> _validationWarningQueryRepository;
 
-    public PomSubmissionEventHelper(IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository)
+    public PomSubmissionEventHelper(
+        IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
+        IQueryRepository<AbstractValidationWarning> validationWarningQueryRepository)
     {
         _submissionEventQueryRepository = submissionEventQueryRepository;
+        _validationWarningQueryRepository = validationWarningQueryRepository;
     }
 
     public async Task SetValidationEventsAsync(PomSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken)
@@ -32,6 +37,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         var checkSplitterEvents = await GetCheckSplitterEventsAsync(submissionId, cancellationToken);
         var processingComplete = false;
         var validationPass = false;
+        var hasWarningsInFile = false;
 
         if (latestAntivirusResultEvent is not null && latestAntivirusResultEvent.Errors.Any())
         {
@@ -52,12 +58,17 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
                     latestFileUploadErrors.AddRange(latestUploadCheckSplitterEvent.Errors);
                 }
 
-                var latestProducerValidationCount = await GetProducerValidationEventCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
-                var latestProducerValidationErrors = await GetInvalidProducerValidationEventsByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
-                var latestUploadHasAllExpectedValidationEvents = latestUploadCheckSplitterEvent.DataCount == latestProducerValidationCount;
+                var latestProducerValidationCount =
+                    await GetProducerValidationEventCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+                var latestProducerValidationErrors =
+                    await GetInvalidProducerValidationEventsByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+                var latestUploadHasAllExpectedValidationEvents =
+                    latestUploadCheckSplitterEvent.DataCount == latestProducerValidationCount;
                 latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && !latestProducerValidationErrors.Any() && !latestFileUploadErrors.Any();
                 processingComplete = latestUploadHasAllExpectedValidationEvents;
                 validationPass = processingComplete && latestUploadIsValid;
+                hasWarningsInFile =
+                    await BlobHasWarningsAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
 
                 if (latestProducerValidationErrors.Any())
                 {
@@ -102,6 +113,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         response.PomDataComplete = processingComplete;
         response.ValidationPass = validationPass;
         response.Errors = latestFileUploadErrors;
+        response.HasWarnings = hasWarningsInFile;
     }
 
     public async Task<bool> VerifyFileIdIsForValidFileAsync(Guid submissionId, Guid fileId, CancellationToken cancellationToken)
@@ -227,6 +239,14 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
             .Cast<ProducerValidationEvent>()
             .Where(x => !x.IsValid)
             .ToListAsync(cancellationToken);
+    }
+
+    private async Task<bool> BlobHasWarningsAsync(
+        string blobName,
+        CancellationToken cancellationToken)
+    {
+        return await _validationWarningQueryRepository
+            .AnyAsync(x => x.BlobName == blobName, cancellationToken);
     }
 
     private async Task<int> GetProducerValidationEventCountByBlobNameAsync(string blobName, CancellationToken cancellationToken)
