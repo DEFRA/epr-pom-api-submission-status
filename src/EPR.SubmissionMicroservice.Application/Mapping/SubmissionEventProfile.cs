@@ -44,6 +44,7 @@ public class SubmissionEventProfile : Profile
             .ForMember(
                 d => d.IsValid,
                 opt => opt.MapFrom(x => x.Errors == null || !x.Errors.Any()));
+        CreateMap<RegulatorRegistrationDecisionEventCreateCommand, RegulatorRegistrationDecisionEvent>();
 
         CreateMap<AbstractValidationEventCreateCommand.AbstractValidationError, AbstractValidationError>()
             .ForMember(o => o.Created, m => m.Ignore())

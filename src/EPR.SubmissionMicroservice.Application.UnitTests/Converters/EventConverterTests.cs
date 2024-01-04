@@ -126,12 +126,25 @@ public class EventConverterTests
     public async Task RegulatorPoMDecisionEventConverter()
     {
         // Arrange
-        var submissionEvent = TestRequests.SubmissionEvent.ValidRegulatorDecisionEventCreateRequest();
+        var submissionEvent = TestRequests.SubmissionEvent.ValidRegulatorPoMDecisionEventCreateRequest();
 
         // Act
         var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
 
         // Assert
         result.Should().BeOfType<RegulatorPoMDecisionEventCreateCommand>();
+    }
+
+    [TestMethod]
+    public async Task RegulatorRegistrationDecisionEventConverter()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<RegulatorRegistrationDecisionEventCreateCommand>();
     }
 }

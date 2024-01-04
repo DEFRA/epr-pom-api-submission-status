@@ -151,6 +151,18 @@ public static class TestCommands
             };
         }
 
+        public static RegulatorRegistrationDecisionEventCreateCommand ValidRegulatorRegistrationDecisionEventCreateCommand()
+        {
+            return new RegulatorRegistrationDecisionEventCreateCommand()
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                FileId = Guid.NewGuid(),
+                Decision = RegulatorDecision.Accepted,
+                Comments = string.Empty,
+            };
+        }
+
         public static CheckSplitterValidationEventCreateCommand InvalidCheckSplitterValidationEventCreateCommand()
         {
             return new CheckSplitterValidationEventCreateCommand

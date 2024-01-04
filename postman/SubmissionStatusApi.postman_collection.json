@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "81becde8-d387-4bbc-9166-c2f2ed906082",
+		"_postman_id": "d9f395ef-109e-458d-8dcb-7387677eabd1",
 		"name": "SubmissionStatusApi",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "15688392"
@@ -91,6 +91,50 @@
 			"response": []
 		},
 		{
+			"name": "CreateEvent (Regulator Registration Decision) - Reject",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"type\": 10,\n    \"decision\": 2,\n    \"comments\": \"invalid data\",\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685b\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "CreateEvent (AntivirusCheck)",
 			"request": {
 				"method": "POST",
@@ -155,6 +199,50 @@
 				"body": {
 					"mode": "raw",
 					"raw": "{\n\t\"type\": 7,\n    \"decision\": 1,\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685b\"\n}"
+				},
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"events"
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CreateEvent (RegulatorRegistrationDecision) - Accept",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					},
+					{
+						"key": "OrganisationId",
+						"value": "{{OrganisationId}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"type\": 10,\n    \"decision\": 1,\n    \"fileId\": \"e7a64e78-261a-4bc8-b475-7a9b4357685b\"\n}"
 				},
 				"url": {
 					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/events",

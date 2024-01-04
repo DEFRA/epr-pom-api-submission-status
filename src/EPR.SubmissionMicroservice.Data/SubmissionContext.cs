@@ -69,6 +69,9 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<RegulatorPoMDecisionEvent>()
             .HasPartitionKey(x => x.Id);
 
+        modelBuilder.Entity<RegulatorRegistrationDecisionEvent>()
+            .HasPartitionKey(x => x.Id);
+
         modelBuilder.Entity<AntivirusResultEvent>()
             .HasPartitionKey(x => x.Id);
 
@@ -125,12 +128,18 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<AntivirusCheckEvent>(EventType.AntivirusCheck)
                 .HasValue<AntivirusResultEvent>(EventType.AntivirusResult)
                 .HasValue<RegulatorPoMDecisionEvent>(EventType.RegulatorPoMDecision)
+                .HasValue<RegulatorRegistrationDecisionEvent>(EventType.RegulatorRegistrationDecision)
                 .HasValue<SubmittedEvent>(EventType.Submitted);
             x.Property(e => e.Id).ToJsonProperty("SubmissionEventId");
             x.Property(e => e.Type).HasConversion<string>();
         });
 
         modelBuilder.Entity<RegulatorPoMDecisionEvent>(x =>
+        {
+            x.Property(e => e.Decision).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<RegulatorRegistrationDecisionEvent>(x =>
         {
             x.Property(e => e.Decision).HasConversion<string>();
         });

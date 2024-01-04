@@ -31,7 +31,8 @@ public static class TestRequests
                 EventType.CheckSplitter => ValidCheckSplitterValidationEventCreateRequest(),
                 EventType.ProducerValidation => ValidProducerValidationEventCreateRequest(),
                 EventType.Registration => ValidRegistrationValidationEventCreateRequest(),
-                EventType.RegulatorPoMDecision => ValidRegulatorDecisionEventCreateRequest(),
+                EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateRequest(),
+                EventType.RegulatorRegistrationDecision => ValidRegulatorRegistrationDecisionEventCreateRequest(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -109,11 +110,20 @@ public static class TestRequests
             });
         }
 
-        public static JObject ValidRegulatorDecisionEventCreateRequest()
+        public static JObject ValidRegulatorPoMDecisionEventCreateRequest()
         {
             return JObject.FromObject(new
             {
                 type = EventType.RegulatorPoMDecision,
+                decision = RegulatorDecision.Accepted
+            });
+        }
+
+        public static JObject ValidRegulatorRegistrationDecisionEventCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.RegulatorRegistrationDecision,
                 decision = RegulatorDecision.Accepted
             });
         }

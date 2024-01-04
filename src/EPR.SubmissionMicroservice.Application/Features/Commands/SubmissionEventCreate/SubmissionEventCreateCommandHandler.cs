@@ -18,7 +18,8 @@ public class SubmissionEventCreateCommandHandler :
     IRequestHandler<AntivirusResultEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<RegulatorPoMDecisionEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<BrandValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
-    IRequestHandler<PartnerValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
+    IRequestHandler<PartnerValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
 {
     private readonly ICommandRepository<AbstractSubmissionEvent> _commandRepository;
     private readonly ILoggingService _loggingService;
@@ -43,6 +44,11 @@ public class SubmissionEventCreateCommandHandler :
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegulatorPoMDecisionEventCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegulatorRegistrationDecisionEventCreateCommand command, CancellationToken cancellationToken)
     {
         return await AbstractHandle(command, cancellationToken);
     }

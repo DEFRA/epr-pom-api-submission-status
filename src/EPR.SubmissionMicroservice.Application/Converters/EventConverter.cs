@@ -29,6 +29,7 @@ public class EventConverter : CustomCreationConverter<AbstractSubmissionEventCre
             EventType.AntivirusCheck => new AntivirusCheckEventCreateCommand(),
             EventType.AntivirusResult => new AntivirusResultEventCreateCommand(),
             EventType.RegulatorPoMDecision => new RegulatorPoMDecisionEventCreateCommand(),
+            EventType.RegulatorRegistrationDecision => new RegulatorRegistrationDecisionEventCreateCommand(),
             _ => throw new NotImplementedException()
         };
     }

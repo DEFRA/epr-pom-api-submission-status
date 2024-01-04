@@ -11,4 +11,5 @@ public enum EventType
     RegulatorPoMDecision = 7,
     BrandValidation = 8,
     PartnerValidation = 9,
+    RegulatorRegistrationDecision = 10
 }

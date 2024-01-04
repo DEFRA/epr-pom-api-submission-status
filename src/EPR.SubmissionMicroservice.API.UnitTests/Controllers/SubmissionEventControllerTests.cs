@@ -98,7 +98,7 @@ public class SubmissionEventControllerTests
         // Arrange
         var submissionId = Guid.NewGuid();
 
-        var eventType = 10;
+        var eventType = 100;
         var request = JObject.FromObject(new
         {
             type = eventType,
