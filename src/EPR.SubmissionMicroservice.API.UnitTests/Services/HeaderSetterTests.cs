@@ -1,6 +1,7 @@
 ﻿namespace EPR.SubmissionMicroservice.API.UnitTests.Services;
 
 using API.Services;
+using Application.Features.Commands.SubmissionEventCreate;
 using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.SubmissionsGet;
 using Application.Interfaces;
@@ -88,5 +89,19 @@ public class HeaderSetterTests
         // Assert
         result.SubmissionId.Should().Be(_submissionId);
         result.UserId.Should().Be(_userContextProviderMock.Object.UserId);
+    }
+
+    [TestMethod]
+    public void Set_ReturnsSameCommandOnRegulatorRegistrationDecisionSubmissionEventsGetQueryCommand()
+    {
+        // Arrange
+        _userContextProviderMock.SetupAllProperties();
+        var command = new RegulatorRegistrationDecisionEventCreateCommand() { SubmissionId = _submissionId };
+
+        // Act
+        var result = _systemUnderTest.Set(command);
+
+        // Assert
+        result.SubmissionId.Should().Be(_submissionId);
     }
 }

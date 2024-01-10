@@ -22,4 +22,6 @@ public interface IHeaderSetter
     AbstractSubmissionEventCreateCommand Set(AbstractSubmissionEventCreateCommand command);
 
     RegulatorPoMDecisionSubmissionEventsGetQuery Set(RegulatorPoMDecisionSubmissionEventsGetQuery command);
+
+    RegulatorRegistrationDecisionSubmissionEventsGetQuery Set(RegulatorRegistrationDecisionSubmissionEventsGetQuery command);
 }

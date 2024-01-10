@@ -63,5 +63,6 @@ public class SubmissionEventProfile : Profile
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationWarning, ProducerValidationWarning>();
         CreateMap<RegistrationValidationEventCreateCommand.RegistrationValidationError, RegistrationValidationError>();
         CreateMap<RegulatorPoMDecisionEvent, RegulatorDecisionGetResponse>();
+        CreateMap<RegulatorRegistrationDecisionEvent, RegulatorRegistrationDecisionGetResponse>();
     }
 }

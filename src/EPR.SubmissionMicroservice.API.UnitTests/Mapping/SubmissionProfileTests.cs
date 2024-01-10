@@ -1,10 +1,12 @@
 ﻿namespace EPR.SubmissionMicroservice.API.UnitTests.Mapping;
 
-using API.Contracts.Submissions.Get;
 using API.Mapping;
 using Application.Features.Commands.SubmissionCreate;
+using Application.Features.Queries.SubmissionEventsGet;
 using Application.Features.Queries.SubmissionsGet;
 using AutoMapper;
+using Contracts.SubmissionEvents.Get;
+using Contracts.Submissions.Get;
 using Data.Enums;
 using FluentAssertions;
 using TestSupport;
@@ -52,5 +54,19 @@ public class SubmissionProfileTests
 
         // Assert
         result.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public async Task GetRegulatorRegistrationDecisionRequest_MapsTo_GetRegulatorRegistrationDecisionQuery()
+    {
+        // Arrange
+        var request = new RegulatorRegistrationDecisionSubmissionEventsGetRequest();
+
+        // Act
+        var result = _mapper.Map<RegulatorRegistrationDecisionSubmissionEventsGetQuery>(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeOfType<RegulatorRegistrationDecisionSubmissionEventsGetQuery>();
     }
 }

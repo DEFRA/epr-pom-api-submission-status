@@ -151,7 +151,7 @@ public class SubmissionEventControllerTests
         // Arrange
         var response = new List<AbstractSubmissionEventGetResponse>
         {
-            new RegulatorDecisionGetResponse()
+            new RegulatorDecisionGetResponse
             {
                 FileId = Guid.NewGuid()
             },
@@ -170,6 +170,30 @@ public class SubmissionEventControllerTests
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
+        result.Value.Should().Be(response);
+    }
+
+    [TestMethod]
+    public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsOkObjectResult()
+    {
+        // Arrange
+        var request = new RegulatorRegistrationDecisionSubmissionEventsGetRequest();
+        var query = new RegulatorRegistrationDecisionSubmissionEventsGetQuery();
+        var response = new List<RegulatorRegistrationDecisionGetResponse>();
+
+        _mockHeaderSetter.Setup(x => x.Set(It.IsAny<RegulatorRegistrationDecisionSubmissionEventsGetQuery>()))
+            .Returns(query);
+
+        _mockMediator
+            .Setup(x => x.Send(query, CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetRegulatorRegistrationSubmissionEvents(request) as ObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().Be(response);
     }
 }

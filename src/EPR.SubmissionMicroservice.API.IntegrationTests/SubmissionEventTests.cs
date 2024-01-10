@@ -12,6 +12,8 @@ public class SubmissionEventTests : TestBase
 {
     private const string SubmissionEventsBasePath = "/v1/submissions/{0}/events";
     private const string SubmissionsBasePath = "/v1/submissions";
+    private const string RegulatorRegistrationDecisionBasePath =
+        $"{SubmissionsBasePath}/events/get-regulator-registration-decision";
 
     [TestMethod]
     [DataRow(SubmissionType.Producer, EventType.AntivirusCheck)]
@@ -58,5 +60,31 @@ public class SubmissionEventTests : TestBase
 
         // Assert
         response.Should().HaveStatusCode(HttpStatusCode.BadRequest);
+    }
+
+    [TestMethod]
+    public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsOk_WhenRequestIsValid()
+    {
+        // Arrange
+        var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=2023-08-25";
+
+        // Act
+        var response = await HttpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [TestMethod]
+    public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsBadRequest_WhenLastSyncTimeIsMissing()
+    {
+        // Arrange
+        var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=";
+
+        // Act
+        var response = await HttpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

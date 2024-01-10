@@ -715,6 +715,41 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "GetRegulatorRegistrationDecisionSubmissionEvents",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/events/get-regulator-registration-decision?LastSyncTime=2022-06-18",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						"events",
+						"get-regulator-registration-decision"
+					],
+					"query": [
+						{
+							"key": "LastSyncTime",
+							"value": "2022-06-18"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

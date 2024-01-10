@@ -108,4 +108,19 @@ public class SubmissionEventController : ApiController
             ? Problem(result.Errors)
             : Ok(result.Value);
     }
+
+    [HttpGet("events/get-regulator-registration-decision", Name = nameof(GetRegulatorRegistrationSubmissionEvents))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesDefaultResponseType]
+    public async Task<IActionResult> GetRegulatorRegistrationSubmissionEvents([FromQuery] RegulatorRegistrationDecisionSubmissionEventsGetRequest request)
+    {
+        var query = _headerSetter.Set(_mapper.Map<RegulatorRegistrationDecisionSubmissionEventsGetQuery>(request));
+        var result = await Mediator.Send(query);
+
+        return result.IsError
+            ? Problem(result.Errors)
+            : Ok(result.Value);
+    }
 }
