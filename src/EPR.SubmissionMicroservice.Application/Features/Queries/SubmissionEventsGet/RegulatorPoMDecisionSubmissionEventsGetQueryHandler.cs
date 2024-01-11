@@ -12,13 +12,16 @@ namespace EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEven
 public class RegulatorPoMDecisionSubmissionEventsGetQueryHandler : IRequestHandler<RegulatorPoMDecisionSubmissionEventsGetQuery, ErrorOr<List<AbstractSubmissionEventGetResponse>>>
 {
     private readonly IQueryRepository<RegulatorPoMDecisionEvent> _submissionQueryRepository;
+    private readonly IQueryRepository<AbstractSubmissionEvent> _submissionEventQueryRepository;
     private readonly IMapper _mapper;
 
     public RegulatorPoMDecisionSubmissionEventsGetQueryHandler(
         IQueryRepository<RegulatorPoMDecisionEvent> submissionQueryRepository,
+        IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
         IMapper mapper)
     {
         _submissionQueryRepository = submissionQueryRepository;
+        _submissionEventQueryRepository = submissionEventQueryRepository;
         _mapper = mapper;
     }
 
@@ -26,18 +29,40 @@ public class RegulatorPoMDecisionSubmissionEventsGetQueryHandler : IRequestHandl
         RegulatorPoMDecisionSubmissionEventsGetQuery request,
         CancellationToken cancellationToken)
     {
-        var submissionEvents = await _submissionQueryRepository
-            .GetAll(x => x.Type == EventType.RegulatorPoMDecision)
+        var submissionEvent = await _submissionEventQueryRepository
+            .GetAll(x => x.SubmissionId == request.SubmissionId && x.Type == EventType.Submitted)
             .OrderByDescending(x => x.Created)
             .Where(x => x.Created > request.LastSyncTime)
-            .ToListAsync(cancellationToken);
+            .Cast<SubmittedEvent>()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var decisionEvent = await _submissionQueryRepository
+            .GetAll(x => x.SubmissionId == request.SubmissionId && x.Type == EventType.RegulatorPoMDecision)
+            .OrderByDescending(x => x.Created)
+            .Where(x => x.Created > request.LastSyncTime)
+            .Cast<RegulatorPoMDecisionEvent>()
+            .FirstOrDefaultAsync(cancellationToken);
 
         var submissionsWithEvents = new List<AbstractSubmissionEventGetResponse>();
 
-        foreach (var submission in submissionEvents)
+        if (submissionEvent != null)
         {
-            var pomResponse = _mapper.Map<RegulatorDecisionGetResponse>(submission);
-            submissionsWithEvents.Add(pomResponse);
+            submissionsWithEvents.Add(new RegulatorDecisionGetResponse
+            {
+                FileId = submissionEvent.FileId,
+                Comments = string.Empty,
+                Decision = string.Empty,
+                IsResubmissionRequired = false,
+                Type = SubmissionType.Producer,
+                Created = submissionEvent.Created,
+                SubmissionId = submissionEvent.SubmissionId
+            });
+        }
+
+        if (decisionEvent != null)
+        {
+            var response = _mapper.Map<RegulatorDecisionGetResponse>(decisionEvent);
+            submissionsWithEvents.Add(response);
         }
 
         return submissionsWithEvents;

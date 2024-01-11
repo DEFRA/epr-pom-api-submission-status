@@ -17,4 +17,12 @@ public abstract class AbstractSubmissionEventGetResponse
     public string? BlobName { get; set; }
 
     public string? BlobContainerName { get; set; }
+
+    public DateTime Created { get; set; }
+
+    public string Comments { get; set; }
+
+    public RegulatorDecision Decision { get; set; }
+
+    public bool IsResubmissionRequired { get; set; } = false;
 }

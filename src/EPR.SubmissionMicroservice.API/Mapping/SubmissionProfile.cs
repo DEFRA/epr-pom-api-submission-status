@@ -7,6 +7,7 @@ using Application.Features.Commands.SubmissionCreate;
 using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.SubmissionsGet;
 using AutoMapper;
+using Contracts.Decisions.Get;
 using Contracts.Submission.Create;
 using Contracts.Submission.Submit;
 using Contracts.Submissions.Get;
@@ -27,5 +28,7 @@ public class SubmissionProfile : Profile
         CreateMap<SubmissionsGetRequest, SubmissionsGetQuery>()
             .ForMember(dest => dest.Periods, options =>
                 options.MapFrom<SplitStringCommaResolver, string>(src => src.Periods));
+
+        CreateMap<DecisionGetRequest, RegulatorPoMDecisionSubmissionEventsGetQuery>();
     }
 }
