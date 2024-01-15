@@ -2,6 +2,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Enums;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 
 [ExcludeFromCodeCoverage]
 public class RegistrationValidationEvent : AbstractValidationEvent

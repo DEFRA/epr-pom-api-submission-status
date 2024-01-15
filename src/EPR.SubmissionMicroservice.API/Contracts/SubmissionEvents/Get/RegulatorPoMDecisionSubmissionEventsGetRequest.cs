@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.Contracts.SubmissionEvents.Get;
+﻿using EPR.SubmissionMicroservice.Data.Enums;
+
+namespace EPR.SubmissionMicroservice.API.Contracts.SubmissionEvents.Get;
 
 public class RegulatorPoMDecisionSubmissionEventsGetRequest
 {

@@ -19,7 +19,6 @@ public class RegistrationCommandEventMappingTests
             config => config.AddProfile(typeof(SubmissionEventProfile)));
 
         // Act
-
         // Assert
         mapperConfig.AssertConfigurationIsValid();
     }

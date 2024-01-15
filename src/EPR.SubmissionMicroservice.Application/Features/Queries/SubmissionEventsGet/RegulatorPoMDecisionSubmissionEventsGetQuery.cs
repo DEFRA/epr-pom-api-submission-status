@@ -1,4 +1,5 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Data.Enums;
 using ErrorOr;
 using MediatR;
 
@@ -8,13 +9,11 @@ public class RegulatorPoMDecisionSubmissionEventsGetQuery : IRequest<ErrorOr<Lis
 {
     public Guid FileId { get; set; }
 
-    public string Decision { get; set; }
+    public RegulatorDecision Decision { get; set; }
 
     public string Comments { get; set; }
 
     public bool IsResubmissionRequired { get; set; }
 
     public DateTime LastSyncTime { get; set; }
-
-    public Guid SubmissionId { get; set; }
 }

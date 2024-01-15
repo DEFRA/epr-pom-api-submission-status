@@ -62,8 +62,7 @@ public class SubmissionEventProfile : Profile
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationError, ProducerValidationError>();
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationWarning, ProducerValidationWarning>();
         CreateMap<RegistrationValidationEventCreateCommand.RegistrationValidationError, RegistrationValidationError>();
-        CreateMap<RegulatorRegistrationDecisionEvent, RegulatorRegistrationDecisionGetResponse>()
-            .ForMember(o => o.IsResubmissionRequired, m => m.Ignore());
         CreateMap<RegulatorPoMDecisionEvent, RegulatorDecisionGetResponse>();
+        CreateMap<RegulatorRegistrationDecisionEvent, RegulatorRegistrationDecisionGetResponse>();
     }
 }

@@ -11,8 +11,4 @@ public class RegulatorDecisionGetResponse : AbstractSubmissionEventGetResponse
     public string Decision { get; set; }
 
     public bool IsResubmissionRequired { get; set; }
-
-    public SubmissionType Type { get; set; }
-
-    public DateTime Created { get; set; }
 }

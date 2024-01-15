@@ -2,6 +2,7 @@
 
 using Application;
 using Data.Constants;
+using Data.Enums;
 using ErrorOr;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
