@@ -32,20 +32,20 @@ public class ValidationEventWarningGetQueryHandler : IRequestHandler<ValidationE
 
     public async Task<ErrorOr<List<AbstractValidationIssueGetResponse>>> Handle(ValidationEventWarningGetQuery request, CancellationToken cancellationToken)
     {
-        var errors = new List<AbstractValidationWarning>();
+        var warnings = new List<AbstractValidationWarning>();
         var latestAntivirusResultEvent = await _validationEventHelper.GetLatestAntivirusResult(request.SubmissionId, cancellationToken);
 
         if (latestAntivirusResultEvent != null)
         {
-            var validationErrors = await _validationEventWarningQueryRepository
+            var validationWarnings = await _validationEventWarningQueryRepository
                 .GetAll(x => x.BlobName == latestAntivirusResultEvent.BlobName)
                 .OrderBy(x => x.RowNumber)
                 .Take(_validationOptions.MaxIssuesToProcess)
                 .ToListAsync(cancellationToken);
 
-            errors.AddRange(validationErrors);
+            warnings.AddRange(validationWarnings);
         }
 
-        return _mapper.Map<List<AbstractValidationIssueGetResponse>>(errors);
+        return _mapper.Map<List<AbstractValidationIssueGetResponse>>(warnings);
     }
 }

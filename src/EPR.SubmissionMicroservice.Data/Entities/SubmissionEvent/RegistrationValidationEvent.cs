@@ -1,8 +1,7 @@
-﻿namespace EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
+﻿using System.Diagnostics.CodeAnalysis;
+using EPR.SubmissionMicroservice.Data.Enums;
 
-using System.Diagnostics.CodeAnalysis;
-using Enums;
-using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
+namespace EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 
 [ExcludeFromCodeCoverage]
 public class RegistrationValidationEvent : AbstractValidationEvent
@@ -12,4 +11,8 @@ public class RegistrationValidationEvent : AbstractValidationEvent
     public bool RequiresBrandsFile { get; set; }
 
     public bool RequiresPartnershipsFile { get; set; }
+
+    public bool? HasMaxRowErrors { get; set; }
+
+    public int? RowErrorCount { get; set; } = 0;
 }

@@ -1,14 +1,15 @@
-﻿namespace EPR.SubmissionMicroservice.API.UnitTests.Services;
-
-using API.Services;
-using Application.Features.Commands.SubmissionEventCreate;
-using Application.Features.Commands.SubmissionSubmit;
-using Application.Features.Queries.SubmissionsGet;
-using Application.Interfaces;
-using Data.Enums;
+﻿using EPR.SubmissionMicroservice.API.Services;
+using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
+using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
+using EPR.SubmissionMicroservice.Application.Interfaces;
+using EPR.SubmissionMicroservice.Data.Enums;
 using FluentAssertions;
 using Moq;
 using TestSupport;
+
+namespace EPR.SubmissionMicroservice.API.UnitTests.Services;
 
 [TestClass]
 public class HeaderSetterTests
@@ -103,5 +104,75 @@ public class HeaderSetterTests
 
         // Assert
         result.SubmissionId.Should().Be(_submissionId);
+    }
+
+    [TestMethod]
+    public void Set_RegulatorPoMDecisionSubmissionEventCommand()
+    {
+        // Arrange
+        var command = new RegulatorPoMDecisionSubmissionEventGetQuery();
+
+        _userContextProviderMock.SetupAllProperties();
+
+        // Act
+        var result = _systemUnderTest.Set(command);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsResubmissionRequired.Should().BeFalse();
+        result.FileId.Should().Be(Guid.Empty);
+        result.SubmissionId.Should().Be(Guid.Empty);
+        result.Decision.Should().Be(string.Empty);
+        result.Comments.Should().Be(string.Empty);
+    }
+
+    [TestMethod]
+    public void Set_RegulatorPoMDecisionSubmissionEventsCommand()
+    {
+        // Arrange
+        var fileId = Guid.NewGuid();
+        var decision = RegulatorDecision.Approved;
+        var comments = "Testing";
+        var isResubmissionRequired = true;
+        var lastSyncTime = DateTime.UtcNow;
+
+        var command = new RegulatorPoMDecisionSubmissionEventsGetQuery()
+        {
+            FileId = fileId,
+            Decision = decision,
+            Comments = comments,
+            IsResubmissionRequired = isResubmissionRequired,
+            LastSyncTime = lastSyncTime
+        };
+
+        _userContextProviderMock.SetupAllProperties();
+
+        // Act
+        var result = _systemUnderTest.Set(command);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsResubmissionRequired.Should().BeTrue();
+        result.FileId.Should().Be(fileId);
+        result.Decision.Should().Be(decision);
+        result.Comments.Should().Be(comments);
+        result.LastSyncTime.Should().Be(lastSyncTime);
+    }
+
+    [TestMethod]
+    public void Set_RegulatorRegistrationDecisionSubmissionEventsGetQueryCommand()
+    {
+        // Arrange
+        var dateLastSync = DateTime.UtcNow;
+        var command = new RegulatorRegistrationDecisionSubmissionEventsGetQuery() { LastSyncTime = dateLastSync };
+
+        _userContextProviderMock.SetupAllProperties();
+
+        // Act
+        var result = _systemUnderTest.Set(command);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.LastSyncTime.Should().Be(dateLastSync);
     }
 }

@@ -9,4 +9,6 @@ public class AntivirusResultEventCreateCommand : AbstractSubmissionEventCreateCo
     public Guid FileId { get; set; }
 
     public AntivirusScanResult AntivirusScanResult { get; set; }
+
+    public bool? RequiresRowValidation { get; set; }
 }

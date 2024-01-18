@@ -67,7 +67,7 @@ public class ProducerValidationEventWarningGetQueryHandlerTests
 
         var producerValidationWarningQueryEvents = new List<AbstractValidationWarning>
         {
-            new ProducerValidationWarning()
+            new ProducerValidationWarning
             {
                 ValidationEventId = producerValidationEventId,
                 BlobName = blobName
@@ -81,7 +81,7 @@ public class ProducerValidationEventWarningGetQueryHandlerTests
             .ReturnsAsync(antivirusResult);
 
         _validationEventWarningQueryRepositoryMock
-            .Setup(x => x.GetAll(It.Is<Expression<Func<AbstractValidationWarning, bool>>>(y => y.Compile().Invoke(new ProducerValidationWarning { BlobName = blobName }))))
+            .Setup(x => x.GetAll(It.Is<Expression<Func<AbstractValidationWarning, bool>>>(y => y.Compile().Invoke(new ProducerValidationWarning() { BlobName = blobName }))))
             .Returns(producerValidationWarningQueryEvents.BuildMock);
 
         // Act
@@ -111,12 +111,12 @@ public class ProducerValidationEventWarningGetQueryHandlerTests
 
         var producerValidationErrorQueryEvents = new List<AbstractValidationWarning>
         {
-            new ProducerValidationWarning()
+            new ProducerValidationWarning
             {
                 ValidationEventId = producerValidationEventId,
                 BlobName = blobName
             },
-            new ProducerValidationWarning()
+            new ProducerValidationWarning
             {
                 ValidationEventId = producerValidationEventId,
                 BlobName = blobName
@@ -130,7 +130,7 @@ public class ProducerValidationEventWarningGetQueryHandlerTests
             .ReturnsAsync(antivirusResult);
 
         _validationEventWarningQueryRepositoryMock
-            .Setup(x => x.GetAll(It.Is<Expression<Func<AbstractValidationWarning, bool>>>(y => y.Compile().Invoke(new ProducerValidationWarning() { BlobName = blobName }))))
+            .Setup(x => x.GetAll(It.Is<Expression<Func<AbstractValidationWarning, bool>>>(y => y.Compile().Invoke(new ProducerValidationWarning { BlobName = blobName }))))
             .Returns(producerValidationErrorQueryEvents.BuildMock);
 
         // Act

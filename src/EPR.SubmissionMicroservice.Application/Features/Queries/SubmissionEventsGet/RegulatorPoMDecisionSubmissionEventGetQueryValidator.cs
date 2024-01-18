@@ -2,11 +2,10 @@
 using FluentValidation;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
-
 [ExcludeFromCodeCoverage]
-public class RegulatorPoMDecisionSubmissionEventsGetQueryValidator : AbstractValidator<RegulatorPoMDecisionSubmissionEventsGetQuery>
+public class RegulatorPoMDecisionSubmissionEventGetQueryValidator : AbstractValidator<RegulatorPoMDecisionSubmissionEventGetQuery>
 {
-    public RegulatorPoMDecisionSubmissionEventsGetQueryValidator()
+    public RegulatorPoMDecisionSubmissionEventGetQueryValidator()
     {
         RuleFor(x => x.LastSyncTime).NotEmpty();
     }

@@ -17,6 +17,21 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         _submissionEventQueryRepository = submissionEventQueryRepository;
     }
 
+    public static bool IsEventValid(bool? requiresRowValidation, AbstractValidationEvent? validationEvent)
+    {
+        return requiresRowValidation != true || validationEvent?.IsValid == true;
+    }
+
+    public static bool IsBrandsFileValid(RegistrationSubmissionGetResponse response)
+    {
+        return !response.RequiresBrandsFile || (response.BrandsDataComplete && response.BrandsDataIsValid);
+    }
+
+    public static bool IsPartnersFileValid(RegistrationSubmissionGetResponse response)
+    {
+        return !response.RequiresPartnershipsFile || (response.PartnershipsDataComplete && response.PartnersDataIsValid);
+    }
+
     public async Task SetValidationEvents(RegistrationSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken)
     {
         var submissionId = response.Id;
@@ -52,6 +67,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                 companyDetailsDataComplete = true;
 
                 AddErrorsToListIfPresent(latestFileUploadErrors, latestRegistrationValidationEvent.Errors);
+                response.HasMaxRowErrors = latestRegistrationValidationEvent.HasMaxRowErrors.GetValueOrDefault();
+                response.RowErrorCount = latestRegistrationValidationEvent.RowErrorCount.GetValueOrDefault(0);
+                response.CompanyDetailsFileIsValid = latestRegistrationValidationEvent.IsValid == true;
             }
         }
 
@@ -79,8 +97,17 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
                 if (latestBrandsAntivirusResultEvent is not null)
                 {
-                    AddErrorsToListIfPresent(latestFileUploadErrors, latestBrandsAntivirusCheckEvent.Errors);
+                    AddErrorsToListIfPresent(latestFileUploadErrors, latestBrandsAntivirusResultEvent.Errors);
                     response.BrandsDataComplete = latestBrandsAntivirusResultEvent is { AntivirusScanResult: AntivirusScanResult.Success };
+                    response.BrandsDataIsValid = response.BrandsDataComplete;
+
+                    if (latestBrandsAntivirusResultEvent.RequiresRowValidation == true)
+                    {
+                        var latestBrandValidationEvent = GetLatestBrandValidationEventByBlobName(events, latestBrandsAntivirusResultEvent);
+                        response.BrandsDataComplete = latestBrandValidationEvent != null;
+                        response.BrandsDataIsValid = latestBrandValidationEvent?.IsValid == true;
+                        AddErrorsToListIfPresent(latestFileUploadErrors, latestBrandValidationEvent?.Errors);
+                    }
                 }
             }
         }
@@ -106,6 +133,15 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                 {
                     AddErrorsToListIfPresent(latestFileUploadErrors, latestPartnershipsAntivirusResultEvent.Errors);
                     response.PartnershipsDataComplete = latestPartnershipsAntivirusResultEvent is { AntivirusScanResult: AntivirusScanResult.Success };
+                    response.PartnersDataIsValid = response.PartnershipsDataComplete;
+
+                    if (latestPartnershipsAntivirusResultEvent.RequiresRowValidation == true)
+                    {
+                        var latestPartnerValidationEvent = GetLatestPartnerValidationEventByBlobName(events, latestPartnershipsAntivirusResultEvent);
+                        response.BrandsDataComplete = latestPartnerValidationEvent != null;
+                        response.PartnersDataIsValid = latestPartnerValidationEvent?.IsValid == true;
+                        AddErrorsToListIfPresent(latestFileUploadErrors, latestPartnerValidationEvent?.Errors);
+                    }
                 }
             }
         }
@@ -146,10 +182,11 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         }
 
         response.Errors = latestFileUploadErrors;
-        response.ValidationPass = companyDetailsDataComplete
-                                  && (!requiresBrandsFile || (requiresBrandsFile && response.BrandsDataComplete))
-                                  && (!requiresPartnershipsFile || (requiresPartnershipsFile && response.PartnershipsDataComplete))
-                                  && !latestFileUploadErrors.Any();
+        response.ValidationPass = response.CompanyDetailsDataComplete
+                                  && response.CompanyDetailsFileIsValid
+                                  && IsBrandsFileValid(response)
+                                  && IsPartnersFileValid(response)
+                                  && !response.Errors.Any();
 
         if (response.ValidationPass)
         {
@@ -193,6 +230,10 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
             AntivirusCheckEvent? brandsAntivirusCheckEvent = null;
             AntivirusCheckEvent? partnershipsAntivirusCheckEvent = null;
+            AntivirusResultEvent? brandsAntivirusResultEvent = null;
+            AntivirusResultEvent? partnershipsAntivirusResultEvent = null;
+            BrandValidationEvent? brandValidationEvent = null;
+            PartnerValidationEvent? partnerValidationEvent = null;
 
             if (registrationEvent is { RequiresBrandsFile: true })
             {
@@ -202,11 +243,19 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
                 if (brandsAntivirusCheck is not null)
                 {
-                    var brandsAntivirusResultEvent = GetAntivirusResultEventByFileId(antivirusResultEvents, brandsAntivirusCheck.FileId);
+                    brandsAntivirusResultEvent = GetAntivirusResultEventByFileId(antivirusResultEvents, brandsAntivirusCheck.FileId);
 
                     if (brandsAntivirusResultEvent is { AntivirusScanResult: AntivirusScanResult.Success })
                     {
                         brandsAntivirusCheckEvent = brandsAntivirusCheck;
+                    }
+
+                    if (brandsAntivirusResultEvent?.RequiresRowValidation == true)
+                    {
+                        brandValidationEvent = events
+                            .OfType<BrandValidationEvent>()
+                            .Where(x => x.BlobName == brandsAntivirusResultEvent.BlobName)
+                            .MaxBy(x => x.Created);
                     }
                 }
             }
@@ -219,20 +268,28 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
                 if (partnershipsAntivirusCheck is not null)
                 {
-                    var partnershipsAntivirusResultEvent = GetAntivirusResultEventByFileId(antivirusResultEvents, partnershipsAntivirusCheck.FileId);
+                    partnershipsAntivirusResultEvent = GetAntivirusResultEventByFileId(antivirusResultEvents, partnershipsAntivirusCheck.FileId);
 
                     if (partnershipsAntivirusResultEvent is { AntivirusScanResult: AntivirusScanResult.Success })
                     {
                         partnershipsAntivirusCheckEvent = partnershipsAntivirusCheck;
                     }
+
+                    if (partnershipsAntivirusResultEvent?.RequiresRowValidation == true)
+                    {
+                        partnerValidationEvent = events
+                            .OfType<PartnerValidationEvent>()
+                            .Where(x => x.BlobName == partnershipsAntivirusResultEvent.BlobName)
+                            .MaxBy(x => x.Created);
+                    }
                 }
             }
 
             var brandsIsValid = registrationEvent.RequiresBrandsFile
-                ? brandsAntivirusCheckEvent is not null
+                ? brandsAntivirusCheckEvent is not null && IsEventValid(brandsAntivirusResultEvent.RequiresRowValidation, brandValidationEvent)
                 : brandsAntivirusCheckEvent is null;
             var partnershipsIsValid = registrationEvent.RequiresPartnershipsFile
-                ? partnershipsAntivirusCheckEvent is not null
+                ? partnershipsAntivirusCheckEvent is not null && IsEventValid(partnershipsAntivirusResultEvent.RequiresRowValidation, partnerValidationEvent)
                 : partnershipsAntivirusCheckEvent is null;
 
             if (brandsIsValid && partnershipsIsValid)
@@ -263,9 +320,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
             .FirstOrDefaultAsync(x => x.FileId == fileId, cancellationToken) is not null;
     }
 
-    private static void AddErrorsToListIfPresent(List<string> errors, List<string> eventErrors)
+    private static void AddErrorsToListIfPresent(List<string> errors, List<string>? eventErrors)
     {
-        if (eventErrors.Any())
+        if (eventErrors != null && eventErrors.Any())
         {
             errors.AddRange(eventErrors);
         }
@@ -308,7 +365,29 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         List<RegistrationValidationEvent> events,
         string blobName)
     {
-        return events.Find(x => x.BlobName == blobName);
+        return events
+            .Where(x => x.BlobName == blobName)
+            .MaxBy(x => x.Created);
+    }
+
+    private static PartnerValidationEvent? GetLatestPartnerValidationEventByBlobName(
+        List<AbstractSubmissionEvent> events,
+        AntivirusResultEvent latestPartnershipsAntivirusResultEvent)
+    {
+        return events
+            .OfType<PartnerValidationEvent>()
+            .Where(x => x.BlobName == latestPartnershipsAntivirusResultEvent.BlobName)
+            .MaxBy(x => x.Created);
+    }
+
+    private static BrandValidationEvent? GetLatestBrandValidationEventByBlobName(
+        List<AbstractSubmissionEvent> events,
+        AntivirusResultEvent latestBrandsAntivirusResultEvent)
+    {
+        return events
+            .OfType<BrandValidationEvent>()
+            .Where(x => x.BlobName == latestBrandsAntivirusResultEvent.BlobName)
+            .MaxBy(x => x.Created);
     }
 
     private static AntivirusCheckEvent? GetAntivirusCheckEventByFileTypeAndRegistrationSetId(
@@ -316,7 +395,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         Guid registrationSetId,
         FileType fileType)
     {
-        return events.Find(x => x.FileType == fileType && x.RegistrationSetId == registrationSetId);
+        return events
+            .Where(x => x.FileType == fileType && x.RegistrationSetId == registrationSetId)
+            .MaxBy(x => x.Created);
     }
 
     private async Task<List<AbstractSubmissionEvent>> GetEventsAsync(Guid submissionId, CancellationToken cancellationToken)

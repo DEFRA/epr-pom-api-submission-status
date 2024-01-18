@@ -58,6 +58,17 @@ public static class TestRequests
             });
         }
 
+        public static JObject ValidAntivirusResultEventCreateRequestWithRequiresRowValidation()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.AntivirusResult,
+                antivirusScanResult = AntivirusScanResult.Success,
+                fileId = new Guid("95b3799a-2758-4124-868a-0a8a50ebdea5"),
+                requiresRowValidation = true,
+            });
+        }
+
         public static JObject ValidCheckSplitterValidationEventCreateRequest()
         {
             return JObject.FromObject(new
@@ -83,6 +94,18 @@ public static class TestRequests
                 type = EventType.Registration,
                 requiresBrandsFile = false,
                 requiresPartnershipsFile = false
+            });
+        }
+
+        public static JObject ValidRegistrationValidationEventCreateRequestWithRowErrors()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.Registration,
+                requiresBrandsFile = false,
+                requiresPartnershipsFile = false,
+                HasMaxRowErrors = true,
+                RowErrorCount = 200,
             });
         }
 
@@ -140,6 +163,39 @@ public static class TestRequests
                 ValidationType.Registration => ValidRegistrationValidationEventError(),
                 _ => throw new NotImplementedException()
             };
+        }
+
+        public static JObject ValidValidationEventWarning(ValidationType errorType)
+        {
+            return errorType switch
+            {
+                ValidationType.CheckSplitter => ValidCheckSplitterValidationEventWarning(),
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        public static JObject ValidCheckSplitterValidationEventWarning()
+        {
+            return JObject.FromObject(new
+            {
+                rowNumber = 1,
+                producerType = "PT",
+                producerSize = "PS",
+                wasteType = "WT",
+                datasubmissionPeriod = "2023-P1",
+                subsidiaryId = "jjHF47",
+                packagingCategory = "PC",
+                materialType = "MT",
+                materialSubType = "MST",
+                fromHomeNation = "FHN",
+                toHomeNation = "THN",
+                quantityKg = "QKG",
+                quantityUnits = "QU",
+                ErrorCodes = new List<string>
+                {
+                    "99"
+                }
+            });
         }
 
         public static JObject ValidCheckSplitterValidationEventError()

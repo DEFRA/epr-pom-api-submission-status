@@ -47,6 +47,7 @@ public class SubmissionFileGetQueryHandler
             UserId = antivirusCheckEvent.UserId,
             OrganisationId = submission.OrganisationId,
             SubmissionPeriod = submission.SubmissionPeriod,
+            ComplianceSchemeId = submission.ComplianceSchemeId,
             Errors = antivirusCheckEvent.Errors?.OrderBy(x => x).ToList()
         };
     }

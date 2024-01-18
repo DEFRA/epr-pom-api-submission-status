@@ -66,7 +66,7 @@ public class SubmissionEventTests : TestBase
     public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsOk_WhenRequestIsValid()
     {
         // Arrange
-        var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=2023-08-25";
+        var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=2024-01-10";
 
         // Act
         var response = await HttpClient.GetAsync(path);

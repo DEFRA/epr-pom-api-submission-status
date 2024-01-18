@@ -60,8 +60,11 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
             {
                 ["type"] = (int)EventType.AntivirusResult,
                 ["errors"] = new JArray { "99" },
+                ["requiresRowValidation"] = true,
                 ["antivirusScanResult"] = (int)AntivirusScanResult.Success,
-                ["fileId"] = Guid.NewGuid()
+                ["fileId"] = Guid.NewGuid(),
+                ["blobName"] = "file-name.csv",
+                ["blobContainerName"] = "registration-upload-container"
             });
 
         yield return SwaggerExample.Create(
@@ -129,6 +132,8 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
                 },
                 ["requiresBrandsFile"] = true,
                 ["requiresPartnershipsFile"] = true,
+                ["hasMaxRowErrors"] = true,
+                ["rowErrorCount"] = 200,
                 ["isValid"] = true,
                 ["blobName"] = "organisation-registrations.csv",
                 ["blobContainerName"] = "registration-upload-container"

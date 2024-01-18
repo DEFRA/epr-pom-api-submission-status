@@ -59,10 +59,12 @@ public class SubmissionEventProfile : Profile
             .ForMember(o => o.ValidationEventId, m => m.Ignore())
             .IncludeAllDerived();
         CreateMap<CheckSplitterValidationEventCreateCommand.CheckSplitterValidationError, CheckSplitterValidationError>();
+        CreateMap<CheckSplitterValidationEventCreateCommand.CheckSplitterValidationWarning, CheckSplitterValidationWarning>();
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationError, ProducerValidationError>();
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationWarning, ProducerValidationWarning>();
         CreateMap<RegistrationValidationEventCreateCommand.RegistrationValidationError, RegistrationValidationError>();
         CreateMap<RegulatorPoMDecisionEvent, RegulatorDecisionGetResponse>();
-        CreateMap<RegulatorRegistrationDecisionEvent, RegulatorRegistrationDecisionGetResponse>();
+        CreateMap<RegulatorRegistrationDecisionEvent, RegulatorRegistrationDecisionGetResponse>()
+            .ForMember(o => o.IsResubmissionRequired, m => m.Ignore());
     }
 }

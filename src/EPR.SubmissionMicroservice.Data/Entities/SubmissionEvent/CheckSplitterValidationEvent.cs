@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Enums;
 
 [ExcludeFromCodeCoverage]
-public class CheckSplitterValidationEvent : AbstractSubmissionEvent
+public class CheckSplitterValidationEvent : AbstractValidationEvent
 {
     public override EventType Type => EventType.CheckSplitter;
 

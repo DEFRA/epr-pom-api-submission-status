@@ -78,4 +78,35 @@ public class ValidationEventErrorTests : TestBase
         // Assert
         response.Should().HaveStatusCode(HttpStatusCode.OK);
     }
+
+    [TestMethod]
+    public async Task Get_ReturnsOK_WhenCheckSplitterWarningsExists()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+
+        var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
+        submissionRequest.Id = submissionId;
+        await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
+
+        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(EventType.CheckSplitter);
+        request["validationWarnings"] = new JArray
+        {
+            TestRequests.ValidationEventError.ValidValidationEventWarning(ValidationType.CheckSplitter)
+        };
+        var submissionEventsPath = string.Format(SubmissionEventsBasePath, submissionId);
+
+        var requestStringContent = new StringContent(
+            request.ToString(),
+            Encoding.UTF8,
+            "application/json");
+        var checkSplitterCreateResponse = await HttpClient.PostAsync(submissionEventsPath, requestStringContent);
+
+        // Act
+        var errorPath = string.Format(ValidationEventWarningBasePath, submissionId);
+        var response = await HttpClient.GetAsync(errorPath);
+
+        // Assert
+        response.Should().HaveStatusCode(HttpStatusCode.OK);
+    }
 }

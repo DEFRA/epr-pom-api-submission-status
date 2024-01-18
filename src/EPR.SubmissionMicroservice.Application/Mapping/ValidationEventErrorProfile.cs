@@ -16,5 +16,6 @@ public class ValidationEventErrorProfile : Profile
         CreateMap<AbstractValidationWarning, AbstractValidationIssueGetResponse>()
             .IncludeAllDerived();
         CreateMap<ProducerValidationWarning, ProducerValidationIssueGetResponse>();
+        CreateMap<CheckSplitterValidationWarning, ProducerValidationIssueGetResponse>();
     }
 }

@@ -82,6 +82,18 @@ public static class TestCommands
             };
         }
 
+        public static AntivirusResultEventCreateCommand ValidAntivirusResultEventCreateCommandWithRequiresRowValidation()
+        {
+            return new AntivirusResultEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                Errors = null,
+                UserId = Guid.NewGuid(),
+                FileId = Guid.NewGuid(),
+                AntivirusScanResult = AntivirusScanResult.Success
+            };
+        }
+
         public static CheckSplitterValidationEventCreateCommand ValidCheckSplitterValidationEventCreateCommand()
         {
             return new CheckSplitterValidationEventCreateCommand
@@ -200,6 +212,8 @@ public static class TestCommands
                 RequiresPartnershipsFile = false,
                 BlobName = null,
                 BlobContainerName = null,
+                RowErrorCount = 6,
+                HasMaxRowErrors = false,
                 ValidationErrors = new()
                 {
                     CreateValidationError(1),

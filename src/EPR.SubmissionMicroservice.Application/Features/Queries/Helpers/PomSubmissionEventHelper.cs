@@ -167,7 +167,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         return await _submissionEventQueryRepository
             .GetAll(x => x.Type == EventType.ProducerValidation && x.BlobName == blobName)
             .Cast<ProducerValidationEvent>()
-            .Where(x => x.IsValid)
+            .Where(x => x.IsValid == true)
             .CountAsync(cancellationToken) == expectedDataCount;
     }
 
@@ -237,7 +237,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         return await _submissionEventQueryRepository
             .GetAll(x => x.Type == EventType.ProducerValidation && x.BlobName == blobName)
             .Cast<ProducerValidationEvent>()
-            .Where(x => !x.IsValid)
+            .Where(x => x.IsValid == false)
             .ToListAsync(cancellationToken);
     }
 

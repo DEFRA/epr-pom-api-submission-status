@@ -56,4 +56,9 @@ public class HeaderSetter : IHeaderSetter
         command.OrganisationId = _userContextProvider.OrganisationId;
         return command;
     }
+
+    public RegulatorPoMDecisionSubmissionEventGetQuery Set(RegulatorPoMDecisionSubmissionEventGetQuery command)
+    {
+        return command;
+    }
 }

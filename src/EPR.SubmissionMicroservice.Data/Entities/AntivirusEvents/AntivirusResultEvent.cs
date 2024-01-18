@@ -12,4 +12,6 @@ public class AntivirusResultEvent : AbstractSubmissionEvent
     public Guid FileId { get; set; }
 
     public AntivirusScanResult AntivirusScanResult { get; set; }
+
+    public bool? RequiresRowValidation { get; set; }
 }

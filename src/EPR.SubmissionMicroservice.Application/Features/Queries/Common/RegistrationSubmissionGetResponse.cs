@@ -38,4 +38,14 @@ public class RegistrationSubmissionGetResponse : AbstractSubmissionGetResponse
     public SubmittedRegistrationFilesInformation? LastSubmittedFiles { get; set; }
 
     public override bool HasValidFile => LastUploadedValidFiles is not null;
+
+    public bool HasMaxRowErrors { get; set; }
+
+    public int RowErrorCount { get; set; } = 0;
+
+    public bool CompanyDetailsFileIsValid { get; set; }
+
+    public bool BrandsDataIsValid { get; set; }
+
+    public bool PartnersDataIsValid { get; set; }
 }

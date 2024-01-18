@@ -6,9 +6,11 @@ using Common.Logging.Models;
 using Common.Logging.Services;
 using Data.Entities.SubmissionEvent;
 using Data.Repositories.Commands.Interfaces;
+using EPR.SubmissionMicroservice.Data.Constants;
 using ErrorOr;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Microsoft.FeatureManagement;
 
 public class SubmissionEventCreateCommandHandler :
     IRequestHandler<CheckSplitterValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
@@ -25,17 +27,20 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
     private readonly ILoggingService _loggingService;
     private readonly IMapper _mapper;
     private readonly ILogger<SubmissionEventCreateCommandHandler> _logger;
+    private readonly IFeatureManager _featureManager;
 
     public SubmissionEventCreateCommandHandler(
         ICommandRepository<AbstractSubmissionEvent> commandRepository,
         ILoggingService loggingService,
         IMapper mapper,
-        ILogger<SubmissionEventCreateCommandHandler> logger)
+        ILogger<SubmissionEventCreateCommandHandler> logger,
+        IFeatureManager featureManager)
     {
         _commandRepository = commandRepository;
         _loggingService = loggingService;
         _mapper = mapper;
         _logger = logger;
+        _featureManager = featureManager;
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusCheckEventCreateCommand command, CancellationToken cancellationToken)
@@ -55,12 +60,28 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusResultEventCreateCommand command, CancellationToken cancellationToken)
     {
+        // TODO: Remove once anti virus function app has the required flag
+        if (await _featureManager.IsEnabledAsync(FeatureFlags.EnableRowValidation))
+        {
+            command.RequiresRowValidation = true;
+        }
+
         return await AbstractHandle(command, cancellationToken);
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(CheckSplitterValidationEventCreateCommand command, CancellationToken cancellationToken)
     {
-        return await AbstractHandle(command, cancellationToken);
+        var result = await AbstractHandle(command, cancellationToken);
+
+        if (command.ValidationErrors.Any())
+        {
+            var errorsList = command.ValidationErrors
+                .SelectMany(x => x.ErrorCodes)
+                .Distinct();
+            LogAsync(command.SubmissionId, command.UserId.Value, string.Join(", ", errorsList));
+        }
+
+        return result;
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(ProducerValidationEventCreateCommand command, CancellationToken cancellationToken)

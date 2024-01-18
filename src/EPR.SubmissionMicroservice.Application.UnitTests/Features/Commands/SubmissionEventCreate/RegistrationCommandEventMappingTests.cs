@@ -19,6 +19,7 @@ public class RegistrationCommandEventMappingTests
             config => config.AddProfile(typeof(SubmissionEventProfile)));
 
         // Act
+
         // Assert
         mapperConfig.AssertConfigurationIsValid();
     }
@@ -60,15 +61,18 @@ public class RegistrationCommandEventMappingTests
         var registrationEvent = (RegistrationValidationEvent)submissionEvent;
         registrationEvent.ValidationErrors.Should().NotBeEmpty();
 
-        foreach (var validationError in registrationEvent.ValidationErrors.OfType<RegistrationValidationError>())
+        var validationErrors = registrationEvent.ValidationErrors.OfType<RegistrationValidationError>().ToList();
+        var expectedRowErrors = validationErrors.SelectMany(x => x.ColumnErrors).Count();
+        registrationEvent.RowErrorCount.Should().Be(expectedRowErrors);
+        registrationEvent.HasMaxRowErrors.Should().Be(false);
+
+        foreach (var validationError in validationErrors)
         {
             validationError.OrganisationId.Should().NotBeEmpty();
             validationError.SubsidiaryId.Should().NotBeEmpty();
         }
 
-        var columnErrors = registrationEvent.ValidationErrors
-            .OfType<RegistrationValidationError>()
-            .SelectMany(x => x.ColumnErrors);
+        var columnErrors = validationErrors.SelectMany(x => x.ColumnErrors);
 
         columnErrors.Should().AllSatisfy(column =>
         {

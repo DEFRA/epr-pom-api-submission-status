@@ -16,11 +16,9 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EPR.SubmissionMicroservice.Data\EPR.SubmissionMicroservice.Data.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Features" />
   </ItemGroup>
 </Project>

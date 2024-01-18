@@ -44,6 +44,34 @@ public class EventConverterTests
     }
 
     [TestMethod]
+    public async Task AntivirusResultEventConverter_WithRequiresRowValidation_VerifyIsPopulated()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidAntivirusResultEventCreateRequestWithRequiresRowValidation();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<AntivirusResultEventCreateCommand>();
+        result.As<AntivirusResultEventCreateCommand>().RequiresRowValidation.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task AntivirusResultEventConverter_WithoutRequiresRowValidation_VerifyIsNull()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidAntivirusResultEventCreateRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<AntivirusResultEventCreateCommand>();
+        result.As<AntivirusResultEventCreateCommand>().RequiresRowValidation.Should().BeNull();
+    }
+
+    [TestMethod]
     public async Task CheckSplitterValidationEventConverter()
     {
         // Arrange
@@ -80,6 +108,49 @@ public class EventConverterTests
 
         // Assert
         result.Should().BeOfType<RegistrationValidationEventCreateCommand>();
+    }
+
+    [TestMethod]
+    public async Task RegistrationValidationEventConverter_WithRowErrorCount_VerifyIsPopulated()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidRegistrationValidationEventCreateRequestWithRowErrors();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<RegistrationValidationEventCreateCommand>();
+        result.As<RegistrationValidationEventCreateCommand>().RowErrorCount.Should().BeGreaterThan(0);
+    }
+
+    [TestMethod]
+    public async Task RegistrationValidationEventConverter_WithoutRowErrorCount_VerifyIsNull()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidRegistrationValidationEventCreateRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<RegistrationValidationEventCreateCommand>();
+        result.As<RegistrationValidationEventCreateCommand>().RowErrorCount.Should().BeNull();
+        result.As<RegistrationValidationEventCreateCommand>().HasMaxRowErrors.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task RegistrationValidationEventConverter_WithoutHasMaxRowErrors_VerifyIsPopulated()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidRegistrationValidationEventCreateRequestWithRowErrors();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<RegistrationValidationEventCreateCommand>();
+        result.As<RegistrationValidationEventCreateCommand>().HasMaxRowErrors.Should().BeTrue();
     }
 
     [TestMethod]

@@ -1,9 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
+﻿using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 
-using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
-using FluentAssertions;
-using TestSupport;
-using TestSupport.Helpers;
+namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
 
 [TestClass]
 public class BrandValidationEventMappingTests

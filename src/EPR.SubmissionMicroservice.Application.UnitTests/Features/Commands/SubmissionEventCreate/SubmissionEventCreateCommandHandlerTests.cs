@@ -1,9 +1,11 @@
 ﻿using EPR.Common.Logging.Models;
 using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
+using EPR.SubmissionMicroservice.Data.Constants;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
+using Microsoft.FeatureManagement;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
 
@@ -23,7 +25,8 @@ public class SubmissionEventCreateCommandHandlerTests
             _mockCommandRepository.Object,
             _loggingService.Object,
             _mapper,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            Mock.Of<IFeatureManager>());
     }
 
     [TestMethod]
@@ -111,7 +114,24 @@ public class SubmissionEventCreateCommandHandlerTests
             new CheckSplitterValidationEventCreateCommand.CheckSplitterValidationError
             {
                 ValidationErrorType = ValidationType.CheckSplitter,
-                RowNumber = 1
+                RowNumber = 1,
+                ErrorCodes = new List<string>
+                {
+                    "99"
+                }
+            }
+        };
+
+        submissionEvent.ValidationWarnings = new List<AbstractValidationEventCreateCommand.AbstractValidationWarning>
+        {
+            new CheckSplitterValidationEventCreateCommand.CheckSplitterValidationWarning
+            {
+                ValidationWarningType = ValidationType.CheckSplitter,
+                RowNumber = 1,
+                ErrorCodes = new List<string>
+                {
+                    "58"
+                }
             }
         };
 

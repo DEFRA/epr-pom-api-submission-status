@@ -54,7 +54,7 @@ public class SubmissionFileGetQueryHandlerTests
     }
 
     [TestMethod]
-    public async Task Handle_WhenNoAntivirusCheckEventExits_ReturnsError()
+    public async Task Handle_WhenNoAntivirusCheckEventFound_ReturnsNotFoundError()
     {
         // Arrange
         var request = new SubmissionFileGetQuery(Guid.NewGuid());
@@ -65,7 +65,6 @@ public class SubmissionFileGetQueryHandlerTests
         {
             SubmissionType = SubmissionType.Producer
         };
-        var submissions = new[] { submission }.BuildMock();
 
         _submissionQueryRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -85,7 +84,7 @@ public class SubmissionFileGetQueryHandlerTests
     }
 
     [TestMethod]
-    public async Task Handle_WhenSubmissionAndAntivirusCheckEventExit_ReturnsResponse()
+    public async Task Handle_WhenAntivirusCheckEventExists_AndNoErrors_ReturnsResponse()
     {
         // Arrange
         var fileId = Guid.NewGuid();
@@ -94,7 +93,6 @@ public class SubmissionFileGetQueryHandlerTests
             Id = Guid.NewGuid(),
             SubmissionType = SubmissionType.Producer
         };
-        var submissions = new[] { submission }.BuildMock();
         var antivirusCheckEvent = new AntivirusCheckEvent
         {
             SubmissionId = submission.Id,
@@ -124,5 +122,50 @@ public class SubmissionFileGetQueryHandlerTests
         submissionFileGetResponse.FileId.Should().Be(fileId);
         submissionFileGetResponse.FileName.Should().Be("Test.csv");
         submissionFileGetResponse.SubmissionId.Should().Be(submission.Id);
+        submissionFileGetResponse.Errors.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task Handle_WhenAntivirusCheckEventExists_AndHasErrors_ReturnsResponse()
+    {
+        // Arrange
+        string expectedErrorCode = "123";
+        var fileId = Guid.NewGuid();
+        var submission = new Submission
+        {
+            Id = Guid.NewGuid(),
+            SubmissionType = SubmissionType.Producer
+        };
+
+        var antivirusCheckEvent = new AntivirusCheckEvent
+        {
+            SubmissionId = submission.Id,
+            Errors = new List<string> { expectedErrorCode },
+            UserId = Guid.NewGuid(),
+            FileId = fileId,
+            FileName = "Test.csv",
+            FileType = FileType.Pom,
+        };
+        var antivirusCheckEvents = new List<AntivirusCheckEvent> { antivirusCheckEvent };
+        var request = new SubmissionFileGetQuery(fileId);
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetByIdAsync(submission.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submission);
+        _submissionEventQueryRepositoryMock
+            .Setup(x => x.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(antivirusCheckEvents.BuildMock());
+
+        // Act
+        var result = await _systemUnderTest.Handle(request, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        result.Value.Should().NotBeNull();
+        var submissionFileGetResponse = result.Value.As<SubmissionFileGetResponse>();
+        submissionFileGetResponse.FileId.Should().Be(fileId);
+        submissionFileGetResponse.FileName.Should().Be("Test.csv");
+        submissionFileGetResponse.SubmissionId.Should().Be(submission.Id);
+        submissionFileGetResponse.Errors.Should().OnlyContain(x => x == expectedErrorCode);
     }
 }

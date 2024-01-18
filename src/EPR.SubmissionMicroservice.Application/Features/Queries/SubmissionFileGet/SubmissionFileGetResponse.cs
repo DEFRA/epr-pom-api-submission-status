@@ -20,5 +20,7 @@ public class SubmissionFileGetResponse
 
     public string SubmissionPeriod { get; set; }
 
+    public Guid? ComplianceSchemeId { get; set; }
+
     public List<string> Errors { get; set; }
 }

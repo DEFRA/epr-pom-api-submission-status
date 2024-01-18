@@ -21,6 +21,8 @@ public class EventWarningConverter : CustomCreationConverter<AbstractValidationE
     {
         return _validationWarningType switch
         {
+            ValidationType.CheckSplitter =>
+                new CheckSplitterValidationEventCreateCommand.CheckSplitterValidationWarning(),
             ValidationType.ProducerValidation =>
                 new ProducerValidationEventCreateCommand.ProducerValidationWarning(),
             _ => throw new NotImplementedException()

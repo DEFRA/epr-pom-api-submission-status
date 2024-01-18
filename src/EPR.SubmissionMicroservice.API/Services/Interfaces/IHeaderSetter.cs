@@ -1,12 +1,11 @@
-﻿using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
+﻿using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionCreate;
+using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
+using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
+using MediatR;
 
 namespace EPR.SubmissionMicroservice.API.Services.Interfaces;
-
-using Application.Features.Commands.SubmissionCreate;
-using Application.Features.Commands.SubmissionEventCreate;
-using Application.Features.Commands.SubmissionSubmit;
-using Application.Features.Queries.SubmissionsGet;
-using MediatR;
 
 public interface IHeaderSetter
 {
@@ -24,4 +23,6 @@ public interface IHeaderSetter
     RegulatorPoMDecisionSubmissionEventsGetQuery Set(RegulatorPoMDecisionSubmissionEventsGetQuery command);
 
     RegulatorRegistrationDecisionSubmissionEventsGetQuery Set(RegulatorRegistrationDecisionSubmissionEventsGetQuery command);
+
+    RegulatorPoMDecisionSubmissionEventGetQuery Set(RegulatorPoMDecisionSubmissionEventGetQuery command);
 }

@@ -96,6 +96,9 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<CheckSplitterValidationError>()
             .HasPartitionKey(x => x.Id);
 
+        modelBuilder.Entity<CheckSplitterValidationWarning>()
+            .HasPartitionKey(x => x.ValidationEventId);
+
         modelBuilder.Entity<ProducerValidationError>()
             .HasPartitionKey(x => x.Id);
 
@@ -161,7 +164,8 @@ public class SubmissionContext : EprCommonContext
             x.ToContainer("ProducerValidationWarnings");
             x.HasPartitionKey(warning => warning.ValidationEventId);
             x.HasDiscriminator(warning => warning.ValidationWarningType)
-                .HasValue<ProducerValidationWarning>(ValidationType.ProducerValidation);
+                .HasValue<ProducerValidationWarning>(ValidationType.ProducerValidation)
+                .HasValue<CheckSplitterValidationWarning>(ValidationType.CheckSplitter);
             x.Property(e => e.Id).ToJsonProperty("ProducerValidationWarningId");
             x.Property(e => e.ValidationWarningType).HasConversion<string>();
         });

@@ -11,6 +11,10 @@ public class RegistrationValidationEventCreateCommand : AbstractValidationEventC
 
     public bool RequiresPartnershipsFile { get; set; }
 
+    public bool? HasMaxRowErrors { get; set; }
+
+    public int? RowErrorCount { get; set; }
+
     public class RegistrationValidationError : AbstractValidationError
     {
         public List<ColumnValidationError> ColumnErrors { get; set; }
