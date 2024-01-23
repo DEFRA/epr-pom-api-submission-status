@@ -14,5 +14,5 @@ public class RegistrationValidationEvent : AbstractValidationEvent
 
     public bool? HasMaxRowErrors { get; set; }
 
-    public int? RowErrorCount { get; set; } = 0;
+    public int? RowErrorCount { get; set; }
 }

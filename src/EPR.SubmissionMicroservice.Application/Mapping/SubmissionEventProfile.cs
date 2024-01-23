@@ -25,10 +25,13 @@ public class SubmissionEventProfile : Profile
         CreateMap<CheckSplitterValidationEventCreateCommand, CheckSplitterValidationEvent>();
         CreateMap<ProducerValidationEventCreateCommand, ProducerValidationEvent>();
         CreateMap<AntivirusCheckEventCreateCommand, AntivirusCheckEvent>();
-        CreateMap<AntivirusResultEventCreateCommand, AntivirusResultEvent>();
+        CreateMap<AntivirusResultEventCreateCommand, AntivirusResultEvent>()
+            .ForMember(x => x.RequiresRowValidation, c => c.NullSubstitute(false));
         CreateMap<RegulatorPoMDecisionEventCreateCommand, RegulatorPoMDecisionEvent>();
 
         CreateMap<RegistrationValidationEventCreateCommand, RegistrationValidationEvent>()
+            .ForMember(x => x.HasMaxRowErrors, c => c.NullSubstitute(false))
+            .ForMember(x => x.RowErrorCount, c => c.NullSubstitute(0))
             .AfterMap((command, e) =>
             {
                 foreach (var validationError in e.ValidationErrors)

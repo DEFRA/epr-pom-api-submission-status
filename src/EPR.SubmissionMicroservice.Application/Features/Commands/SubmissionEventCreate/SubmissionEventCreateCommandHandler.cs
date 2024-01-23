@@ -60,12 +60,6 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusResultEventCreateCommand command, CancellationToken cancellationToken)
     {
-        // TODO: Remove once anti virus function app has the required flag
-        if (await _featureManager.IsEnabledAsync(FeatureFlags.EnableRowValidation))
-        {
-            command.RequiresRowValidation = true;
-        }
-
         return await AbstractHandle(command, cancellationToken);
     }
 
