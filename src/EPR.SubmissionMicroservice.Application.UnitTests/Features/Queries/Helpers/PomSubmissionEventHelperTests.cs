@@ -24,7 +24,6 @@ public class PomSubmissionEventHelperTests
     private readonly DateTime _fileTwoCreatedDateTime = DateTime.Now.AddMinutes(1);
     private readonly Guid _submissionId = Guid.NewGuid();
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventsRepositoryMock;
-    private Mock<IQueryRepository<AbstractValidationWarning>> _validationWarningRepositoryMock;
     private PomSubmissionGetResponse? _pomSubmissionGetResponse;
     private PomSubmissionEventHelper _systemUnderTest;
 
@@ -33,10 +32,7 @@ public class PomSubmissionEventHelperTests
     {
         _submissionEventsRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
         _pomSubmissionGetResponse = new PomSubmissionGetResponse { Id = _submissionId };
-        _validationWarningRepositoryMock = new Mock<IQueryRepository<AbstractValidationWarning>>();
-        _systemUnderTest = new PomSubmissionEventHelper(
-            _submissionEventsRepositoryMock.Object,
-            _validationWarningRepositoryMock.Object);
+        _systemUnderTest = new PomSubmissionEventHelper(_submissionEventsRepositoryMock.Object);
     }
 
     [TestMethod]
@@ -95,7 +91,8 @@ public class PomSubmissionEventHelperTests
             {
                 SubmissionId = _submissionId,
                 BlobName = FileOneBlobName,
-                IsValid = true
+                IsValid = true,
+                HasWarnings = true
             },
             new SubmittedEvent
             {
@@ -112,11 +109,6 @@ public class PomSubmissionEventHelperTests
             }
         };
 
-        _validationWarningRepositoryMock
-            .Setup(x => x.AnyAsync(
-                It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>(),
-                default))
-            .ReturnsAsync(true);
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());

@@ -2,7 +2,6 @@
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
-using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -12,14 +11,11 @@ namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 public class PomSubmissionEventHelper : IPomSubmissionEventHelper
 {
     private readonly IQueryRepository<AbstractSubmissionEvent> _submissionEventQueryRepository;
-    private readonly IQueryRepository<AbstractValidationWarning> _validationWarningQueryRepository;
 
     public PomSubmissionEventHelper(
-        IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
-        IQueryRepository<AbstractValidationWarning> validationWarningQueryRepository)
+        IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository)
     {
         _submissionEventQueryRepository = submissionEventQueryRepository;
-        _validationWarningQueryRepository = validationWarningQueryRepository;
     }
 
     public async Task SetValidationEventsAsync(PomSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken)
@@ -245,8 +241,12 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         string blobName,
         CancellationToken cancellationToken)
     {
-        return await _validationWarningQueryRepository
-            .AnyAsync(x => x.BlobName == blobName, cancellationToken);
+        return await _submissionEventQueryRepository
+            .GetAll(x => (x.Type == EventType.ProducerValidation || x.Type == EventType.CheckSplitter)
+                && x.BlobName == blobName)
+            .Cast<AbstractValidationEvent>()
+            .Where(x => x.HasWarnings == true)
+            .CountAsync(cancellationToken) > 0;
     }
 
     private async Task<int> GetProducerValidationEventCountByBlobNameAsync(string blobName, CancellationToken cancellationToken)

@@ -21,6 +21,10 @@ public class SubmissionEventProfile : Profile
                 d => d.IsValid,
                 opt => opt.MapFrom(
                     s => (s.ValidationErrors == null || !s.ValidationErrors.Any()) && (s.Errors == null || !s.Errors.Any())))
+            .ForMember(
+                d => d.HasWarnings,
+                opt => opt.MapFrom(
+                    s => (s.ValidationWarnings != null && s.ValidationWarnings.Any())))
             .IncludeAllDerived();
         CreateMap<CheckSplitterValidationEventCreateCommand, CheckSplitterValidationEvent>();
         CreateMap<ProducerValidationEventCreateCommand, ProducerValidationEvent>();
