@@ -226,13 +226,14 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
             .ToListAsync(cancellationToken);
     }
 
-    private async Task<List<ProducerValidationEvent>> GetInvalidProducerValidationEventsByBlobNameAsync(
+    private async Task<List<AbstractValidationEvent>> GetInvalidProducerValidationEventsByBlobNameAsync(
         string blobName,
         CancellationToken cancellationToken)
     {
         return await _submissionEventQueryRepository
-            .GetAll(x => x.Type == EventType.ProducerValidation && x.BlobName == blobName)
-            .Cast<ProducerValidationEvent>()
+            .GetAll(x => (x.Type == EventType.ProducerValidation || x.Type == EventType.CheckSplitter)
+                         && x.BlobName == blobName)
+            .Cast<AbstractValidationEvent>()
             .Where(x => x.IsValid == false)
             .ToListAsync(cancellationToken);
     }

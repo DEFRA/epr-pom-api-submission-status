@@ -12,7 +12,7 @@ public class ValidationEventErrorProfile : Profile
         CreateMap<AbstractValidationError, AbstractValidationIssueGetResponse>()
             .IncludeAllDerived();
         CreateMap<ProducerValidationError, ProducerValidationIssueGetResponse>();
-
+        CreateMap<CheckSplitterValidationError, ProducerValidationIssueGetResponse>();
         CreateMap<AbstractValidationWarning, AbstractValidationIssueGetResponse>()
             .IncludeAllDerived();
         CreateMap<ProducerValidationWarning, ProducerValidationIssueGetResponse>();
