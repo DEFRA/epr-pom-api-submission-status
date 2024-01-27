@@ -9,7 +9,9 @@ public abstract class AbstractValidationEvent : AbstractSubmissionEvent
 {
     public bool? IsValid { get; set; }
 
-    public bool? HasWarnings { get; set; }
+    public int? ErrorCount { get; set; }
+
+    public int? WarningCount { get; set; }
 
     public List<AbstractValidationError> ValidationErrors { get; set; }
 

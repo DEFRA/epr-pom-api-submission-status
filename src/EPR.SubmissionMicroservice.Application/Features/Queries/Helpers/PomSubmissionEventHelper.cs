@@ -2,6 +2,8 @@
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +13,17 @@ namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 public class PomSubmissionEventHelper : IPomSubmissionEventHelper
 {
     private readonly IQueryRepository<AbstractSubmissionEvent> _submissionEventQueryRepository;
+    private readonly IQueryRepository<AbstractValidationWarning> _validationWarningQueryRepository;
+    private readonly IQueryRepository<AbstractValidationError> _validationErrorQueryRepository;
 
     public PomSubmissionEventHelper(
-        IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository)
+        IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
+        IQueryRepository<AbstractValidationWarning> validationWarningQueryRepository,
+        IQueryRepository<AbstractValidationError> validationErrorQueryRepository)
     {
         _submissionEventQueryRepository = submissionEventQueryRepository;
+        _validationWarningQueryRepository = validationWarningQueryRepository;
+        _validationErrorQueryRepository = validationErrorQueryRepository;
     }
 
     public async Task SetValidationEventsAsync(PomSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken)
@@ -54,21 +62,34 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
                     latestFileUploadErrors.AddRange(latestUploadCheckSplitterEvent.Errors);
                 }
 
-                var latestProducerValidationCount =
-                    await GetProducerValidationEventCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
-                var latestProducerValidationErrors =
-                    await GetInvalidProducerValidationEventsByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+                var latestValidationEvents =
+                    await GetValidationEventsByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+                var latestProducerValidationCount = latestValidationEvents
+                    .Count(x => x.Type == EventType.ProducerValidation);
+                var latestValidationEventErrors = latestValidationEvents
+                    .Where(x => x.IsValid == false)
+                    .ToList();
                 var latestUploadHasAllExpectedValidationEvents =
                     latestUploadCheckSplitterEvent.DataCount == latestProducerValidationCount;
-                latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && !latestProducerValidationErrors.Any() && !latestFileUploadErrors.Any();
-                processingComplete = latestUploadHasAllExpectedValidationEvents;
-                validationPass = processingComplete && latestUploadIsValid;
-                hasWarningsInFile =
-                    await BlobHasWarningsAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
 
-                if (latestProducerValidationErrors.Any())
+                var currentErrorCount = await GetProducerValidationErrorsCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+                var currentWarningCount = await GetProducerValidationWarningsCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+
+                var errorCountSum = latestValidationEvents.Sum(x => x.ErrorCount);
+                var warningCountSum = latestValidationEvents.Sum(x => x.WarningCount);
+
+                hasWarningsInFile = warningCountSum > 0;
+
+                var hasEqualErrorCounts = currentErrorCount == errorCountSum;
+                var hasEqualWarningCounts = currentWarningCount == warningCountSum;
+
+                latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && !latestValidationEventErrors.Any() && !latestFileUploadErrors.Any();
+                processingComplete = latestUploadHasAllExpectedValidationEvents && hasEqualErrorCounts && hasEqualWarningCounts;
+                validationPass = processingComplete && latestUploadIsValid;
+
+                if (latestValidationEventErrors.Any())
                 {
-                    latestFileUploadErrors.AddRange(latestProducerValidationErrors.SelectMany(x => x.Errors));
+                    latestFileUploadErrors.AddRange(latestValidationEventErrors.SelectMany(x => x.Errors));
                 }
             }
 
@@ -90,7 +111,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
             if (isSubmitted)
             {
                 var latestSubmittedEvent = await GetLatestSubmittedEventAsync(submissionId, cancellationToken);
-                var submittedFileAntivirusCheckEvent = latestSubmittedEvent.FileId == latestValidFile!.FileId
+                var submittedFileAntivirusCheckEvent = latestSubmittedEvent.FileId == latestValidFile?.FileId
                     ? latestValidFile
                     : await GetAntivirusCheckEventByFileIdAsync(submissionId, latestSubmittedEvent.FileId, cancellationToken);
 
@@ -226,35 +247,29 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
             .ToListAsync(cancellationToken);
     }
 
-    private async Task<List<AbstractValidationEvent>> GetInvalidProducerValidationEventsByBlobNameAsync(
+    private async Task<List<AbstractValidationEvent>> GetValidationEventsByBlobNameAsync(
         string blobName,
         CancellationToken cancellationToken)
     {
         return await _submissionEventQueryRepository
-            .GetAll(x => (x.Type == EventType.ProducerValidation || x.Type == EventType.CheckSplitter)
-                         && x.BlobName == blobName)
+            .GetAll(x => (x.Type == EventType.ProducerValidation || x.Type == EventType.CheckSplitter) && x.BlobName == blobName)
             .Cast<AbstractValidationEvent>()
-            .Where(x => x.IsValid == false)
             .ToListAsync(cancellationToken);
     }
 
-    private async Task<bool> BlobHasWarningsAsync(
-        string blobName,
-        CancellationToken cancellationToken)
+    private async Task<int> GetProducerValidationWarningsCountByBlobNameAsync(string blobName, CancellationToken cancellationToken)
     {
-        return await _submissionEventQueryRepository
-            .GetAll(x => (x.Type == EventType.ProducerValidation || x.Type == EventType.CheckSplitter)
-                && x.BlobName == blobName)
-            .Cast<AbstractValidationEvent>()
-            .Where(x => x.HasWarnings == true)
-            .CountAsync(cancellationToken) > 0;
+        return await _validationWarningQueryRepository
+            .GetAll(x => x.BlobName == blobName)
+            .Cast<AbstractValidationWarning>()
+            .CountAsync(cancellationToken);
     }
 
-    private async Task<int> GetProducerValidationEventCountByBlobNameAsync(string blobName, CancellationToken cancellationToken)
+    private async Task<int> GetProducerValidationErrorsCountByBlobNameAsync(string blobName, CancellationToken cancellationToken)
     {
-        return await _submissionEventQueryRepository
-            .GetAll(x => x.Type == EventType.ProducerValidation && x.BlobName == blobName)
-            .Cast<ProducerValidationEvent>()
+        return await _validationErrorQueryRepository
+            .GetAll(x => x.BlobName == blobName)
+            .Cast<AbstractValidationError>()
             .CountAsync(cancellationToken);
     }
 }

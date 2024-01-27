@@ -2,6 +2,7 @@
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
@@ -24,6 +25,8 @@ public class PomSubmissionEventHelperTests
     private readonly DateTime _fileTwoCreatedDateTime = DateTime.Now.AddMinutes(1);
     private readonly Guid _submissionId = Guid.NewGuid();
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventsRepositoryMock;
+    private Mock<IQueryRepository<AbstractValidationWarning>> _validationWarningRepositoryMock;
+    private Mock<IQueryRepository<AbstractValidationError>> _validationErrorRepositoryMock;
     private PomSubmissionGetResponse? _pomSubmissionGetResponse;
     private PomSubmissionEventHelper _systemUnderTest;
 
@@ -32,17 +35,30 @@ public class PomSubmissionEventHelperTests
     {
         _submissionEventsRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
         _pomSubmissionGetResponse = new PomSubmissionGetResponse { Id = _submissionId };
-        _systemUnderTest = new PomSubmissionEventHelper(_submissionEventsRepositoryMock.Object);
+        _validationWarningRepositoryMock = new Mock<IQueryRepository<AbstractValidationWarning>>();
+        _validationErrorRepositoryMock = new Mock<IQueryRepository<AbstractValidationError>>();
+
+        _submissionEventsRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new List<AbstractSubmissionEvent>().BuildMock);
+
+        _validationErrorRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
+            .Returns(new List<AbstractValidationError>().BuildMock);
+
+        _validationWarningRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
+            .Returns(new List<AbstractValidationWarning>().BuildMock);
+
+        _systemUnderTest = new PomSubmissionEventHelper(
+            _submissionEventsRepositoryMock.Object,
+            _validationWarningRepositoryMock.Object,
+            _validationErrorRepositoryMock.Object);
     }
 
     [TestMethod]
     public async Task SetValidationEvents_DoesNotSetAnyProperties_WhenNoEventsExist()
     {
-        // Arrange
-        _submissionEventsRepositoryMock
-            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new List<AbstractSubmissionEvent>().BuildMock);
-
         // Act
         await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
 
@@ -61,9 +77,14 @@ public class PomSubmissionEventHelperTests
     }
 
     [TestMethod]
-    public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_WhenAllEventsShowSuccess()
+    public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_ForAllEvents()
     {
         // Arrange
+        var validFile = "ValidFile";
+        var validFileBlobName = Guid.NewGuid().ToString();
+        var validFileCreatedDateTime = DateTime.Now.AddHours(-5);
+        var validFileFileId = Guid.NewGuid();
+
         var events = new List<AbstractSubmissionEvent>
         {
             new AntivirusCheckEvent
@@ -74,31 +95,70 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 UserId = _userId
             },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = _submissionId,
+                FileName = validFile,
+                Created = validFileCreatedDateTime,
+                FileId = validFileFileId,
+                UserId = _userId
+            },
             new AntivirusResultEvent
             {
                 SubmissionId = _submissionId,
                 BlobName = FileOneBlobName,
                 FileId = _fileOneFileId
             },
+            new AntivirusResultEvent
+            {
+                SubmissionId = _submissionId,
+                BlobName = validFileBlobName,
+                FileId = validFileFileId
+            },
             new CheckSplitterValidationEvent
             {
                 SubmissionId = _submissionId,
                 BlobName = FileOneBlobName,
-                DataCount = 1,
+                DataCount = 2,
                 Created = DateTime.Now
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = _submissionId,
+                BlobName = validFileBlobName,
+                DataCount = 1,
+                Created = validFileCreatedDateTime
             },
             new ProducerValidationEvent
             {
                 SubmissionId = _submissionId,
                 BlobName = FileOneBlobName,
+                IsValid = false,
+                ErrorCount = 2,
+                WarningCount = 2,
+                Created = _fileOneCreatedDateTime
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = _submissionId,
+                BlobName = FileOneBlobName,
+                IsValid = false,
+                ErrorCount = 1,
+                WarningCount = 1,
+                Created = _fileOneCreatedDateTime
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = _submissionId,
+                BlobName = validFileBlobName,
                 IsValid = true,
-                HasWarnings = true
+                Created = validFileCreatedDateTime
             },
             new SubmittedEvent
             {
                 SubmissionId = _submissionId,
-                FileId = _fileOneFileId,
-                Created = _fileOneSubmittedDateTime,
+                FileId = validFileFileId,
+                Created = validFileCreatedDateTime,
                 UserId = _userId
             },
             new RegulatorPoMDecisionEvent
@@ -109,9 +169,31 @@ public class PomSubmissionEventHelperTests
             }
         };
 
+        var error = new ProducerValidationError();
+
+        var warning = new ProducerValidationWarning();
+
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
+
+        _validationErrorRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
+            .Returns(new List<AbstractValidationError>
+            {
+                error,
+                error,
+                error
+            }.BuildMock);
+
+        _validationWarningRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
+            .Returns(new List<AbstractValidationWarning>
+            {
+                warning,
+                warning,
+                warning
+            }.BuildMock);
 
         // Act
         await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
@@ -124,20 +206,20 @@ public class PomSubmissionEventHelperTests
             PomFileUploadDateTime = _fileOneCreatedDateTime,
             LastUploadedValidFile = new UploadedPomFileInformation
             {
-                FileName = FileOneName,
-                FileUploadDateTime = _fileOneCreatedDateTime,
+                FileName = validFile,
+                FileUploadDateTime = validFileCreatedDateTime,
                 UploadedBy = _userId,
-                FileId = _fileOneFileId
+                FileId = validFileFileId
             },
             LastSubmittedFile = new SubmittedPomFileInformation
             {
-                FileId = _fileOneFileId,
-                FileName = FileOneName,
+                FileId = validFileFileId,
+                FileName = validFile,
                 SubmittedBy = _userId,
-                SubmittedDateTime = _fileOneSubmittedDateTime
+                SubmittedDateTime = validFileCreatedDateTime
             },
             PomDataComplete = true,
-            ValidationPass = true,
+            ValidationPass = false,
             HasWarnings = true
         });
     }
