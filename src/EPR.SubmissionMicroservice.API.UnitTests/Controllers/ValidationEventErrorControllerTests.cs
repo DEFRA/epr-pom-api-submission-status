@@ -1,6 +1,7 @@
 ﻿using EPR.SubmissionMicroservice.API.Controllers;
 using EPR.SubmissionMicroservice.Application;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.RegistrationValidationErrors;
 using EPR.SubmissionMicroservice.Application.Features.Queries.ValidationEventErrorGet;
 using ErrorOr;
 using FluentAssertions;
@@ -123,5 +124,62 @@ public class ValidationEventErrorControllerTests
             .As<ProducerValidationIssueGetResponse>().DataSubmissionPeriod.Should().NotBeNull();
         result.Value.As<List<AbstractValidationIssueGetResponse>>().FirstOrDefault()
             .As<ProducerValidationIssueGetResponse>().SubsidiaryId.Should().NotBeNull();
+    }
+
+    [TestMethod]
+    public async Task GetOrganisationDetailsErrors_WhenRequestValid_ReturnsOk()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+        var registrationValidationIssueGetResponse = new List<AbstractValidationIssueGetResponse>
+        {
+            TestQueries.RegistrationValidation.ValidRegistrationValidationErrorGetResponse()
+        };
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<RegistrationValidationErrorQuery>(), default))
+            .ReturnsAsync(registrationValidationIssueGetResponse);
+
+        // Act
+        var result = await _systemUnderTest.GetOrganisationDetailsErrors(submissionId, organisationId) as OkObjectResult;
+
+        // Assert
+        result.Should().NotBeNull();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().BeEquivalentTo(registrationValidationIssueGetResponse);
+    }
+
+    [TestMethod]
+    public async Task GetOrganisationDetailsErrors_WhenRecordNotExists_ReturnsNotFound()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+        var problemDetails = new ProblemDetails()
+        {
+            Status = 404
+        };
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<RegistrationValidationErrorQuery>(), default))
+            .ReturnsAsync(Error.NotFound());
+
+        _mockProblemDetailsFactory
+            .Setup(x => x.CreateProblemDetails(
+                It.IsAny<HttpContext>(),
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()))
+            .Returns(problemDetails);
+
+        // Act
+        var result = await _systemUnderTest.GetOrganisationDetailsErrors(submissionId, organisationId) as ObjectResult;
+
+        // Assert
+        result.Should().NotBeNull();
+        result.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
 }

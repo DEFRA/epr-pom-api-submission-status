@@ -750,6 +750,45 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "GetOrganisationDetailsErrors",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submisison/organisation-details-errors",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submisison",
+						"organisation-details-errors"
+					],
+					"variable": [
+						{
+							"key": "submisison",
+							"value": "{{SubmissionId}}"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }

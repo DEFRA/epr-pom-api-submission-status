@@ -1,4 +1,5 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 using EPR.SubmissionMicroservice.Data.Enums;
 
 namespace TestSupport;
@@ -103,6 +104,35 @@ public static class TestQueries
                 {
                     "01"
                 }
+            };
+        }
+    }
+
+    public static class RegistrationValidation
+    {
+        public static RegistrationValidationIssueGetResponse ValidRegistrationValidationErrorGetResponse()
+        {
+            return new RegistrationValidationIssueGetResponse
+            {
+                ColumnErrors = new List<ColumnValidationError>
+                {
+                    new()
+                    {
+                        ErrorCode = "840",
+                        ColumnIndex = 3,
+                        ColumnName = "trading_name"
+                    },
+                    new()
+                    {
+                        ErrorCode = "819",
+                        ColumnIndex = 6,
+                        ColumnName = "main_activity_sic"
+                    },
+                },
+                OrganisationId = "876",
+                SubsidiaryId = "8865",
+                RowNumber = 4,
+                ErrorCodes = { }
             };
         }
     }
