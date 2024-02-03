@@ -13,5 +13,7 @@ public class AntivirusResultEvent : AbstractSubmissionEvent
 
     public AntivirusScanResult AntivirusScanResult { get; set; }
 
+    public AntivirusScanTrigger? AntivirusScanTrigger { get; set; }
+
     public bool? RequiresRowValidation { get; set; }
 }

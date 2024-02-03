@@ -54,6 +54,7 @@ public static class TestRequests
             {
                 type = EventType.AntivirusResult,
                 antivirusScanResult = AntivirusScanResult.Success,
+                antivirusScanTrigger = AntivirusScanTrigger.Upload,
                 fileId = new Guid("95b3799a-2758-4124-868a-0a8a50ebdea5")
             });
         }

@@ -49,7 +49,7 @@ public static class TestCommands
                 EventType.CheckSplitter => ValidCheckSplitterValidationEventCreateCommand(),
                 EventType.ProducerValidation => ValidProducerValidationEventCreateCommand(),
                 EventType.Registration => ValidRegistrationValidationEventCreateCommand(),
-                EventType.AntivirusResult => ValidAntivirusResultEventCreateCommand(),
+                EventType.AntivirusResult => ValidAntivirusResultEventUploadCreateCommand(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateCommand(),
                 _ => throw new NotImplementedException()
             };
@@ -70,7 +70,7 @@ public static class TestCommands
             };
         }
 
-        public static AntivirusResultEventCreateCommand ValidAntivirusResultEventCreateCommand()
+        public static AntivirusResultEventCreateCommand ValidAntivirusResultEventUploadCreateCommand()
         {
             return new AntivirusResultEventCreateCommand
             {
@@ -78,7 +78,23 @@ public static class TestCommands
                 Errors = null,
                 UserId = Guid.NewGuid(),
                 FileId = Guid.NewGuid(),
-                AntivirusScanResult = AntivirusScanResult.Success
+                AntivirusScanResult = AntivirusScanResult.Success,
+                AntivirusScanTrigger = AntivirusScanTrigger.Upload
+            };
+        }
+
+        public static AntivirusResultEventCreateCommand ValidAntivirusResultEventDownloadCreateCommand()
+        {
+            return new AntivirusResultEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                Errors = null,
+                UserId = Guid.NewGuid(),
+                FileId = Guid.NewGuid(),
+                AntivirusScanResult = AntivirusScanResult.Started,
+                AntivirusScanTrigger = AntivirusScanTrigger.Download,
+                BlobName = BlobName,
+                BlobContainerName = BlobContainerName
             };
         }
 

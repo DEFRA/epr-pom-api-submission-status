@@ -1,11 +1,9 @@
 ﻿using EPR.Common.Logging.Models;
 using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
-using EPR.SubmissionMicroservice.Data.Constants;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
-using Microsoft.FeatureManagement;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
 
@@ -25,8 +23,7 @@ public class SubmissionEventCreateCommandHandlerTests
             _mockCommandRepository.Object,
             _loggingService.Object,
             _mapper,
-            _mockLogger.Object,
-            Mock.Of<IFeatureManager>());
+            _mockLogger.Object);
     }
 
     [TestMethod]
@@ -66,9 +63,9 @@ public class SubmissionEventCreateCommandHandlerTests
     }
 
     [TestMethod]
-    public async Task AntivirusResultHandle_GivenValidCommand_ShouldReturnSuccess()
+    public async Task AntivirusResultHandle_GivenValidUploadCommand_ShouldReturnSuccess()
     {
-        var antivirusEvent = TestCommands.SubmissionEvent.ValidAntivirusResultEventCreateCommand();
+        var antivirusEvent = TestCommands.SubmissionEvent.ValidAntivirusResultEventUploadCreateCommand();
 
         _mockCommandRepository
             .Setup(x => x.SaveChangesAsync(default))
@@ -84,6 +81,45 @@ public class SubmissionEventCreateCommandHandlerTests
     }
 
     [TestMethod]
+    public async Task AntivirusResultHandle_GivenValidUploadCommandWithoutAntivirusScanTrigger_ShouldReturnSuccessAndSetTriggerToUpload()
+    {
+        var antivirusEvent = TestCommands.SubmissionEvent.ValidAntivirusResultEventUploadCreateCommand();
+        antivirusEvent.AntivirusScanTrigger = null;
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            antivirusEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        antivirusEvent.AntivirusScanTrigger.Should().Be(AntivirusScanTrigger.Upload);
+    }
+
+    [TestMethod]
+    public async Task AntivirusResultHandle_GivenValidDownloadCommand_ShouldReturnSuccessAndNotAlterAntivirusScanTrigger()
+    {
+        var antivirusEvent = TestCommands.SubmissionEvent.ValidAntivirusResultEventDownloadCreateCommand();
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            antivirusEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        antivirusEvent.AntivirusScanTrigger.Should().Be(AntivirusScanTrigger.Download);
+    }
+
+    [TestMethod]
     public async Task AntivirusResultHandle_GivenRepositoryError_ShouldReturnError()
     {
         // Arrange
@@ -93,7 +129,7 @@ public class SubmissionEventCreateCommandHandlerTests
 
         // Act
         var result = await _systemUnderTest.Handle(
-            TestCommands.SubmissionEvent.ValidAntivirusResultEventCreateCommand(),
+            TestCommands.SubmissionEvent.ValidAntivirusResultEventUploadCreateCommand(),
             default);
 
         // Assert

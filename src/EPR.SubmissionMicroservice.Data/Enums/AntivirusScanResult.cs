@@ -16,4 +16,7 @@ public enum AntivirusScanResult
 
     /// <summary> File has not been able to be scanned. </summary>
     FailedToVirusScan = 5,
+
+    // <summary> File virus scan has not yet finished. </summary>
+    Started = 6
 }

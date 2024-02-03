@@ -4,13 +4,13 @@ using AutoMapper;
 using Common.Logging.Constants;
 using Common.Logging.Models;
 using Common.Logging.Services;
+using Data.Constants;
 using Data.Entities.SubmissionEvent;
+using Data.Enums;
 using Data.Repositories.Commands.Interfaces;
-using EPR.SubmissionMicroservice.Data.Constants;
 using ErrorOr;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Microsoft.FeatureManagement;
 
 public class SubmissionEventCreateCommandHandler :
     IRequestHandler<CheckSplitterValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
@@ -27,20 +27,17 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
     private readonly ILoggingService _loggingService;
     private readonly IMapper _mapper;
     private readonly ILogger<SubmissionEventCreateCommandHandler> _logger;
-    private readonly IFeatureManager _featureManager;
 
     public SubmissionEventCreateCommandHandler(
         ICommandRepository<AbstractSubmissionEvent> commandRepository,
         ILoggingService loggingService,
         IMapper mapper,
-        ILogger<SubmissionEventCreateCommandHandler> logger,
-        IFeatureManager featureManager)
+        ILogger<SubmissionEventCreateCommandHandler> logger)
     {
         _commandRepository = commandRepository;
         _loggingService = loggingService;
         _mapper = mapper;
         _logger = logger;
-        _featureManager = featureManager;
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusCheckEventCreateCommand command, CancellationToken cancellationToken)
@@ -60,6 +57,8 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusResultEventCreateCommand command, CancellationToken cancellationToken)
     {
+        command.AntivirusScanTrigger ??= AntivirusScanTrigger.Upload;
+
         return await AbstractHandle(command, cancellationToken);
     }
 

@@ -21,4 +21,16 @@
   <ItemGroup>
     <ProjectReference Include="..\EPR.SubmissionMicroservice.Data\EPR.SubmissionMicroservice.Data.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <SonarQubeSetting Include="sonar.coverage.exclusions">
+      <Value>
+        **/CheckSplitterValidationEventCreateCommand.cs
+      </Value>
+    </SonarQubeSetting>
+    <SonarQubeSetting Include="sonar.cpd.exclusions">
+      <Value>
+        **/CheckSplitterValidationEventCreateCommand.cs
+      </Value>
+    </SonarQubeSetting>
+  </ItemGroup>
 </Project>

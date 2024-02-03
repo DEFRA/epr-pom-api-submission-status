@@ -173,8 +173,11 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<AntivirusCheckEvent>()
             .Property(e => e.FileType).HasConversion<string>();
 
-        modelBuilder.Entity<AntivirusResultEvent>()
-            .Property(e => e.AntivirusScanResult).HasConversion<string>();
+        modelBuilder.Entity<AntivirusResultEvent>(x =>
+        {
+            x.Property(e => e.AntivirusScanResult).HasConversion<string>();
+            x.Property(e => e.AntivirusScanTrigger).HasConversion<string>();
+        });
 
         modelBuilder.Entity<Migration>(x =>
         {
