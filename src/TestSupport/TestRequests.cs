@@ -94,7 +94,8 @@ public static class TestRequests
             {
                 type = EventType.Registration,
                 requiresBrandsFile = false,
-                requiresPartnershipsFile = false
+                requiresPartnershipsFile = false,
+                organisationMemberCount = 10
             });
         }
 

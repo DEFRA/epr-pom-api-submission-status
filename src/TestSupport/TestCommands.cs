@@ -141,7 +141,8 @@ public static class TestCommands
                 SubmissionId = Guid.NewGuid(),
                 UserId = Guid.NewGuid(),
                 RequiresBrandsFile = false,
-                RequiresPartnershipsFile = false
+                RequiresPartnershipsFile = false,
+                OrganisationMemberCount = 10
             };
         }
 
@@ -230,6 +231,7 @@ public static class TestCommands
                 BlobContainerName = null,
                 RowErrorCount = 6,
                 HasMaxRowErrors = false,
+                OrganisationMemberCount = null,
                 ValidationErrors = new()
                 {
                     CreateValidationError(1),

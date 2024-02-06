@@ -40,6 +40,7 @@ public class SubmissionEventProfile : Profile
         CreateMap<RegistrationValidationEventCreateCommand, RegistrationValidationEvent>()
             .ForMember(x => x.HasMaxRowErrors, c => c.NullSubstitute(false))
             .ForMember(x => x.RowErrorCount, c => c.NullSubstitute(0))
+            .ForMember(x => x.OrganisationMemberCount, c => c.NullSubstitute(0))
             .AfterMap((command, e) =>
             {
                 foreach (var validationError in e.ValidationErrors)

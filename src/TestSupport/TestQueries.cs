@@ -52,7 +52,8 @@ public static class TestQueries
                 BrandsFileName = null,
                 PartnershipsFileName = null,
                 RequiresBrandsFile = false,
-                RequiresPartnershipsFile = false
+                RequiresPartnershipsFile = false,
+                OrganisationMemberCount = 10
             };
         }
     }

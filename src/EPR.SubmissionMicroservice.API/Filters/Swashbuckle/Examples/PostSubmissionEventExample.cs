@@ -134,6 +134,7 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
                 ["requiresPartnershipsFile"] = true,
                 ["hasMaxRowErrors"] = true,
                 ["rowErrorCount"] = 200,
+                ["OrganisationMemberCount"] = 10,
                 ["isValid"] = true,
                 ["blobName"] = "organisation-registrations.csv",
                 ["blobContainerName"] = "registration-upload-container"

@@ -15,6 +15,8 @@ public class RegistrationValidationEventCreateCommand : AbstractValidationEventC
 
     public int? RowErrorCount { get; set; }
 
+    public int? OrganisationMemberCount { get; set; }
+
     public class RegistrationValidationError : AbstractValidationError
     {
         public List<ColumnValidationError> ColumnErrors { get; set; }

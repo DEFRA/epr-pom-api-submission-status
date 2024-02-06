@@ -366,6 +366,7 @@ public class RegistrationSubmissionEventHelperTests
             },
             LastSubmittedFiles = null,
             ValidationPass = true,
+            OrganisationMemberCount = registrationValidationEvent.OrganisationMemberCount
         });
     }
 
@@ -1819,6 +1820,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(2),
             UserId = userId,
             IsValid = true,
+            OrganisationMemberCount = 10
         };
         var uploadOneSubmittedEvent = new SubmittedEvent
         {
@@ -1851,6 +1853,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(6),
             UserId = userId,
             IsValid = true,
+            OrganisationMemberCount = 10
         };
         var uploadTwoBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -1928,6 +1931,7 @@ public class RegistrationSubmissionEventHelperTests
         {
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = true,
+            OrganisationMemberCount = 10,
             CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
             CompanyDetailsDataComplete = true,
             CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
@@ -2004,7 +2008,8 @@ public class RegistrationSubmissionEventHelperTests
             RequiresBrandsFile = false,
             RequiresPartnershipsFile = false,
             Created = DateTime.Now.AddMinutes(2),
-            UserId = userId
+            UserId = userId,
+            OrganisationMemberCount = 10
         };
         var uploadOneSubmittedEvent = new SubmittedEvent
         {
@@ -2035,7 +2040,8 @@ public class RegistrationSubmissionEventHelperTests
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = true,
             Created = DateTime.Now.AddMinutes(6),
-            UserId = userId
+            UserId = userId,
+            OrganisationMemberCount = 10
         };
         var uploadTwoBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -2086,6 +2092,7 @@ public class RegistrationSubmissionEventHelperTests
         {
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = true,
+            OrganisationMemberCount = 10,
             CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
             CompanyDetailsDataComplete = true,
             CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
@@ -2162,6 +2169,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(2),
             UserId = userId,
             IsValid = true,
+            OrganisationMemberCount = 10
         };
         var uploadOneBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -2217,6 +2225,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(8),
             UserId = userId,
             IsValid = true,
+            OrganisationMemberCount = 10
         };
         var uploadTwoBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -2270,6 +2279,7 @@ public class RegistrationSubmissionEventHelperTests
         {
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = false,
+            OrganisationMemberCount = 10,
             CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
             CompanyDetailsDataComplete = true,
             CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
@@ -2347,6 +2357,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(2),
             UserId = userId,
             IsValid = true,
+            OrganisationMemberCount = 10
         };
         var uploadOneBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -2396,6 +2407,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(8),
             UserId = userId,
             IsValid = true,
+            OrganisationMemberCount = 10
         };
         var uploadTwoBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -2448,6 +2460,7 @@ public class RegistrationSubmissionEventHelperTests
         {
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = false,
+            OrganisationMemberCount = 10,
             CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
             CompanyDetailsDataComplete = true,
             CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
@@ -3468,41 +3481,6 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = null,
             ValidationPass = false
         });
-    }
-
-    [TestMethod]
-    public async Task VerifyFileIdIsForValidFileAsync_ReturnsTrue_WhenAntivirusResultEventExists()
-    {
-        // Arrange
-        var fileId = Guid.NewGuid();
-        var submissionId = Guid.NewGuid();
-        var antivirusResultEvent = new AntivirusResultEvent { SubmissionId = submissionId, FileId = fileId };
-
-        _submissionEventRepositoryMock
-            .Setup(x => x.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new List<AbstractSubmissionEvent> { antivirusResultEvent }.BuildMock);
-
-        // Act
-        var result = await _systemUnderTest.VerifyFileIdIsForValidFileAsync(submissionId, fileId, CancellationToken.None);
-
-        // Assert
-        result.Should().BeTrue();
-    }
-
-    [TestMethod]
-    public async Task VerifyFileIdIsForValidFileAsync_ReturnsFalse_WhenAntivirusResultEventDoesNotExist()
-    {
-        // Arrange
-        var fileId = Guid.NewGuid();
-        _submissionEventRepositoryMock
-            .Setup(x => x.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new List<AbstractSubmissionEvent>().BuildMock);
-
-        // Act
-        var result = await _systemUnderTest.VerifyFileIdIsForValidFileAsync(Guid.NewGuid(), fileId, CancellationToken.None);
-
-        // Assert
-        result.Should().BeFalse();
     }
 
     [TestMethod]

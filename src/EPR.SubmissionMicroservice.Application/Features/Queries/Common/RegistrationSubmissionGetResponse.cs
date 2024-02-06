@@ -48,4 +48,6 @@ public class RegistrationSubmissionGetResponse : AbstractSubmissionGetResponse
     public bool BrandsDataIsValid { get; set; }
 
     public bool PartnersDataIsValid { get; set; }
+
+    public int? OrganisationMemberCount { get; set; }
 }

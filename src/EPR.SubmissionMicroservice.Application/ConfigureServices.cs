@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using EPR.SubmissionMicroservice.Application.Behaviours;
+using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Application.Options;
@@ -31,6 +32,7 @@ public static class ConfigureServices
             .AddScoped<IPomSubmissionEventHelper, PomSubmissionEventHelper>()
             .AddScoped<IValidationEventHelper, ValidationEventHelper>()
             .AddScoped<IRegistrationSubmissionEventHelper, RegistrationSubmissionEventHelper>()
+            .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();
 

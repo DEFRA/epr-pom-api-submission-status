@@ -65,7 +65,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                 requiresBrandsFile = latestRegistrationValidationEvent.RequiresBrandsFile;
                 requiresPartnershipsFile = latestRegistrationValidationEvent.RequiresPartnershipsFile;
                 companyDetailsDataComplete = true;
-
+                response.OrganisationMemberCount = latestRegistrationValidationEvent.OrganisationMemberCount;
                 AddErrorsToListIfPresent(latestFileUploadErrors, latestRegistrationValidationEvent.Errors);
                 response.HasMaxRowErrors = latestRegistrationValidationEvent.HasMaxRowErrors.GetValueOrDefault();
                 response.RowErrorCount = latestRegistrationValidationEvent.RowErrorCount.GetValueOrDefault(0);
@@ -313,13 +313,6 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         }
     }
 
-    public async Task<bool> VerifyFileIdIsForValidFileAsync(Guid submissionId, Guid fileId, CancellationToken cancellationToken)
-    {
-        return await _submissionEventQueryRepository.GetAll(x => x.SubmissionId == submissionId && x.Type == EventType.AntivirusResult)
-            .Cast<AntivirusResultEvent>()
-            .FirstOrDefaultAsync(x => x.FileId == fileId, cancellationToken) is not null;
-    }
-
     private static void AddErrorsToListIfPresent(List<string> errors, List<string>? eventErrors)
     {
         if (eventErrors != null && eventErrors.Any())
@@ -402,8 +395,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
     private async Task<List<AbstractSubmissionEvent>> GetEventsAsync(Guid submissionId, CancellationToken cancellationToken)
     {
-        return await _submissionEventQueryRepository
+        var res = _submissionEventQueryRepository
             .GetAll(x => x.SubmissionId == submissionId)
             .ToListAsync(cancellationToken);
+        return await res;
     }
 }

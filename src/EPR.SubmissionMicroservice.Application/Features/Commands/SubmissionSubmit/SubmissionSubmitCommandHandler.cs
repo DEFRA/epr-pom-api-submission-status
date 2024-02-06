@@ -20,10 +20,10 @@ public class SubmissionSubmitCommandHandler : IRequestHandler<SubmissionSubmitCo
     private readonly ICommandRepository<AbstractSubmissionEvent> _submissionEventCommandRepository;
     private readonly SubmissionContext _submissionContext;
     private readonly IPomSubmissionEventHelper _pomSubmissionEventHelper;
-    private readonly IRegistrationSubmissionEventHelper _registrationSubmissionEventHelper;
     private readonly IQueryRepository<Submission> _submissionQueryRepository;
     private readonly ILogger<SubmissionSubmitCommandHandler> _logger;
     private readonly ILoggingService _loggingService;
+    private readonly ISubmissionEventsValidator _submissionEventValidator;
 
     public SubmissionSubmitCommandHandler(
         ICommandRepository<Submission> submissionCommandRepository,
@@ -33,7 +33,7 @@ public class SubmissionSubmitCommandHandler : IRequestHandler<SubmissionSubmitCo
         SubmissionContext submissionContext,
         IPomSubmissionEventHelper pomSubmissionEventHelper,
         ILoggingService loggingService,
-        IRegistrationSubmissionEventHelper registrationSubmissionEventHelper)
+        ISubmissionEventsValidator submissionEventValidator)
     {
         _submissionCommandRepository = submissionCommandRepository;
         _logger = logger;
@@ -42,7 +42,7 @@ public class SubmissionSubmitCommandHandler : IRequestHandler<SubmissionSubmitCo
         _submissionContext = submissionContext;
         _pomSubmissionEventHelper = pomSubmissionEventHelper;
         _loggingService = loggingService;
-        _registrationSubmissionEventHelper = registrationSubmissionEventHelper;
+        _submissionEventValidator = submissionEventValidator;
     }
 
     public async Task<ErrorOr<Unit>> Handle(SubmissionSubmitCommand command, CancellationToken cancellationToken)
@@ -58,7 +58,7 @@ public class SubmissionSubmitCommandHandler : IRequestHandler<SubmissionSubmitCo
 
             var isFileIdForValidFile = submission!.SubmissionType is SubmissionType.Producer
                 ? await _pomSubmissionEventHelper.VerifyFileIdIsForValidFileAsync(submissionId, fileId, cancellationToken)
-                : await _registrationSubmissionEventHelper.VerifyFileIdIsForValidFileAsync(submissionId, fileId, cancellationToken);
+                : await _submissionEventValidator.IsSubmissionValidAsync(submissionId, fileId, cancellationToken);
 
             if (!isFileIdForValidFile)
             {

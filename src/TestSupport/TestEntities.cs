@@ -102,6 +102,7 @@ public static class TestEntities
                 ValidationErrors = null,
                 RequiresBrandsFile = true,
                 RequiresPartnershipsFile = false,
+                OrganisationMemberCount = 10,
                 Created = default
             };
         }
