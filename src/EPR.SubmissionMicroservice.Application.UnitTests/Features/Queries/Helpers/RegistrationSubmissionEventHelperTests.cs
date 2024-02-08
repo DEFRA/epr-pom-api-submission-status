@@ -1437,6 +1437,7 @@ public class RegistrationSubmissionEventHelperTests
             RequiresPartnershipsFile = true,
             Created = DateTime.Now.AddMinutes(2),
             UserId = userId,
+            IsValid = true,
         };
         var uploadOneBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -1512,7 +1513,8 @@ public class RegistrationSubmissionEventHelperTests
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = true,
             Created = DateTime.Now.AddMinutes(12),
-            UserId = userId
+            UserId = userId,
+            IsValid = false,
         };
 
         _submissionEventRepositoryMock
@@ -1614,6 +1616,7 @@ public class RegistrationSubmissionEventHelperTests
             RequiresPartnershipsFile = true,
             Created = startTime.AddMinutes(2),
             UserId = userId,
+            IsValid = true,
         };
         var uploadOneBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -1717,7 +1720,8 @@ public class RegistrationSubmissionEventHelperTests
             RequiresBrandsFile = true,
             RequiresPartnershipsFile = true,
             Created = startTime.AddDays(1).AddMinutes(3),
-            UserId = userId
+            UserId = userId,
+            IsValid = true,
         };
 
         _submissionEventRepositoryMock
@@ -1754,14 +1758,17 @@ public class RegistrationSubmissionEventHelperTests
             CompanyDetailsDataComplete = true,
             CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
             CompanyDetailsUploadedDate = uploadTwoCompanyDetailsAntivirusCheckEvent.Created,
+            CompanyDetailsFileIsValid = true,
             BrandsFileName = null,
             BrandsDataComplete = false,
             BrandsUploadedBy = null,
             BrandsUploadedDate = null,
+            BrandsDataIsValid = false,
             PartnershipsFileName = null,
             PartnershipsDataComplete = false,
             PartnershipsUploadedBy = null,
             PartnershipsUploadedDate = null,
+            PartnersDataIsValid = false,
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
@@ -2000,7 +2007,7 @@ public class RegistrationSubmissionEventHelperTests
             BlobName = uploadOneCompanyDetailsBlobName,
             AntivirusScanResult = AntivirusScanResult.Success,
             Created = DateTime.Now.AddMinutes(1),
-            UserId = userId
+            UserId = userId,
         };
         var uploadOneRegistrationValidationEvent = new RegistrationValidationEvent
         {
@@ -2009,7 +2016,8 @@ public class RegistrationSubmissionEventHelperTests
             RequiresPartnershipsFile = false,
             Created = DateTime.Now.AddMinutes(2),
             UserId = userId,
-            OrganisationMemberCount = 10
+            OrganisationMemberCount = 10,
+            IsValid = true,
         };
         var uploadOneSubmittedEvent = new SubmittedEvent
         {
@@ -2041,7 +2049,8 @@ public class RegistrationSubmissionEventHelperTests
             RequiresPartnershipsFile = true,
             Created = DateTime.Now.AddMinutes(6),
             UserId = userId,
-            OrganisationMemberCount = 10
+            OrganisationMemberCount = 10,
+            IsValid = true,
         };
         var uploadTwoBrandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -2097,6 +2106,7 @@ public class RegistrationSubmissionEventHelperTests
             CompanyDetailsDataComplete = true,
             CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
             CompanyDetailsUploadedDate = uploadTwoCompanyDetailsAntivirusCheckEvent.Created,
+            CompanyDetailsFileIsValid = true,
             BrandsFileName = uploadTwoBrandsAntivirusCheckEvent.FileName,
             BrandsDataComplete = true,
             BrandsDataIsValid = true,

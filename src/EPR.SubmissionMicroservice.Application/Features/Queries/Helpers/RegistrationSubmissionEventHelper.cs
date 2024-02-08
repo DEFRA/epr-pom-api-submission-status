@@ -223,7 +223,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
             var registrationEvent = GetRegistrationValidationEventByBlobName(registrationValidationEvents, antivirusResultEvent.BlobName);
 
-            if (registrationEvent is null || registrationEvent.Errors.Any())
+            if (registrationEvent is null || registrationEvent.IsValid != true)
             {
                 continue;
             }
