@@ -5,7 +5,9 @@ using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.Common;
 using Application.Features.Queries.SubmissionFileGet;
 using Application.Features.Queries.SubmissionGet;
+using Application.Features.Queries.SubmissionsEventsGet;
 using Application.Features.Queries.SubmissionsGet;
+using Application.Features.Queries.SubmissionsPeriodGet;
 using AutoMapper;
 using Contracts.Submission.Create;
 using Contracts.Submission.Submit;
@@ -107,5 +109,33 @@ public class SubmissionController : ApiController
         return result.IsError
             ? Problem(result.Errors)
             : NoContent();
+    }
+
+    [HttpGet("events/events-by-type/{submissionId:guid}", Name = nameof(GetSubmissionEvents))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionsEventsGetResponse))]
+    public async Task<IActionResult> GetSubmissionEvents([FromRoute] Guid submissionId, [FromQuery] FileSubmissionsEventGetRequest request)
+    {
+        var query = new SubmissionsEventsGetQuery(submissionId, request.LastSyncTime);
+
+        var result = await Mediator.Send(query);
+
+        return result.IsError
+           ? Problem(result.Errors)
+           : Ok(result.Value);
+    }
+
+    [HttpGet("submissions", Name = nameof(GetSubmissionsByType))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionGetResponse))]
+    public async Task<IActionResult> GetSubmissionsByType([FromQuery] SubmissionGetRequest request)
+    {
+        var query = _mapper.Map<SubmissionsPeriodGetQuery>(request);
+
+        var result = await Mediator.Send(query);
+
+        return result.IsError
+           ? Problem(result.Errors)
+           : Ok(result.Value);
     }
 }

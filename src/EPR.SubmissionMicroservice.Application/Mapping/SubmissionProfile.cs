@@ -15,5 +15,9 @@ public class SubmissionProfile : Profile
             .IncludeAllDerived();
         CreateMap<Submission, PomSubmissionGetResponse>();
         CreateMap<Submission, RegistrationSubmissionGetResponse>();
+
+        CreateMap<Submission, SubmissionGetResponse>()
+            .ForMember(dest => dest.SubmissionId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Year, opt => opt.MapFrom(src => src.Created.Year));
     }
 }

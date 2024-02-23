@@ -132,6 +132,35 @@ public class SubmissionTests : TestBase
         RestoreOrganisationId();
     }
 
+    [TestMethod]
+    public async Task GetSubmissionEvents_ReturnsOK_WhenRecordExistsAgainstBothSubmissionIdAndLastSyncTime()
+    {
+        // Arrrange
+        var submissionId = Guid.Parse("4ccc06b9-f238-4f19-8f74-5d7d3fb79ff8");
+        string lastSyncTime = "2024-01-01";
+
+        // Act
+        var response = await HttpClient.GetAsync($"{BasePath}/events/events-by-type/{submissionId}?LastSyncTime={lastSyncTime}");
+
+        // Assert
+        response.Should().HaveStatusCode(HttpStatusCode.OK);
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionsByType_ReturnsOK_WhenRecordExistAgainstsOrganisationIdTypeAndYear()
+    {
+        // Arrrange
+        var organisationId = Guid.Parse("92fb59d8-b6a7-4546-89a8-1ae938663993");
+        string submissionType = "Producer";
+        int year = 2023;
+
+        // Act
+        var response = await HttpClient.GetAsync($"{BasePath}/submissions?Type={submissionType}&OrganisationId={organisationId}&Year={year}");
+
+        // Assert
+        response.Should().HaveStatusCode(HttpStatusCode.OK);
+    }
+
     private void ReplaceOrganisationId()
     {
         HttpClient.DefaultRequestHeaders.Remove("organisationId");

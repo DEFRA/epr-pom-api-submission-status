@@ -1,11 +1,11 @@
-﻿using EPR.SubmissionMicroservice.API.Contracts.SubmissionEvents.Get;
-using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
+﻿namespace EPR.SubmissionMicroservice.API.Mapping;
 
-namespace EPR.SubmissionMicroservice.API.Mapping;
-
+using API.Contracts.SubmissionEvents.Get;
 using Application.Features.Commands.SubmissionCreate;
 using Application.Features.Commands.SubmissionSubmit;
+using Application.Features.Queries.SubmissionEventsGet;
 using Application.Features.Queries.SubmissionsGet;
+using Application.Features.Queries.SubmissionsPeriodGet;
 using AutoMapper;
 using Contracts.Decisions.Get;
 using Contracts.Submission.Create;
@@ -28,6 +28,8 @@ public class SubmissionProfile : Profile
         CreateMap<SubmissionsGetRequest, SubmissionsGetQuery>()
             .ForMember(dest => dest.Periods, options =>
                 options.MapFrom<SplitStringCommaResolver, string>(src => src.Periods));
+
+        CreateMap<SubmissionGetRequest, SubmissionsPeriodGetQuery>();
 
         CreateMap<DecisionGetRequest, RegulatorPoMDecisionSubmissionEventGetQuery>();
     }

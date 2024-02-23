@@ -6,7 +6,9 @@ using Application.Features.Commands.SubmissionCreate;
 using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.Common;
 using Application.Features.Queries.SubmissionGet;
+using Application.Features.Queries.SubmissionsEventsGet;
 using Application.Features.Queries.SubmissionsGet;
+using Application.Features.Queries.SubmissionsPeriodGet;
 using AutoMapper;
 using Contracts.Submission.Submit;
 using Contracts.Submissions.Get;
@@ -16,9 +18,7 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Moq;
 using TestSupport;
 
@@ -152,5 +152,123 @@ public class SubmissionControllerTests
         // Assert
         result.Should().BeOfType<NoContentResult>();
         _mockMediator.Verify(x => x.Send(command, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionsByType_Return_OkObjectResult()
+    {
+        // Arrange
+        var response = new List<SubmissionGetResponse>
+        {
+            new SubmissionGetResponse
+            {
+                SubmissionId = Guid.NewGuid(),
+                SubmissionPeriod = "Jan to Jun 2023",
+                Year = 2023
+            }
+        };
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionsPeriodGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionsByType(new SubmissionGetRequest()) as OkObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(response);
+        result.Value.Should().BeOfType<List<SubmissionGetResponse>>();
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionsByType_ReturnEmptyArray_OkObjectResult()
+    {
+        // Arrange
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionsPeriodGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(new List<SubmissionGetResponse>());
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionsByType(new SubmissionGetRequest()) as OkObjectResult;
+
+        // Assert
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().BeOfType<List<SubmissionGetResponse>>();
+        result.Value.Should().BeEquivalentTo(Enumerable.Empty<SubmissionGetResponse>());
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionEvents_Return_OkObjectResult()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var submissionId = Guid.NewGuid();
+        string fileName = "TestFile.csv";
+
+        var response = new SubmissionsEventsGetResponse();
+
+        response.SubmittedEvents.Add(new SubmittedEvents
+        {
+            Created = DateTime.Now,
+            FileId = fileId,
+            FileName = fileName,
+            SubmissionId = submissionId,
+            SubmittedBy = "Test User",
+            UserId = userId
+        });
+
+        response.RegulatorDecisionEvents.Add(new RegulatorDecisionEvents
+        {
+            Comment = string.Empty,
+            Created = DateTime.Now,
+            Decision = "Accepted",
+            FileId = fileId,
+            FileName = fileName,
+            SubmissionId = submissionId,
+            UserId = userId
+        });
+
+        response.AntivirusCheckEvents.Add(new AntivirusCheckEvents
+        {
+            UserId = userId,
+            FileId = fileId,
+            FileName = fileName,
+            SubmissionId = submissionId,
+            Created = DateTime.Now
+        });
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionsEventsGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionEvents(submissionId, new FileSubmissionsEventGetRequest()) as OkObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(response);
+        result.Value.Should().BeOfType<SubmissionsEventsGetResponse>();
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionEvents_ReturnEmptyObject_OkObjectResult()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionsEventsGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(new SubmissionsEventsGetResponse());
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionEvents(submissionId, new FileSubmissionsEventGetRequest()) as OkObjectResult;
+
+        // Assert
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().BeOfType<SubmissionsEventsGetResponse>();
     }
 }
