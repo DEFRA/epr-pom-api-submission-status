@@ -15,7 +15,5 @@ public class SubmissionsGetQuery : IRequest<ErrorOr<List<AbstractSubmissionGetRe
 
     public Guid? ComplianceSchemeId { get; set; }
 
-    public bool? IsFirstComplianceScheme { get; set; }
-
     public int? Limit { get; set; }
 }

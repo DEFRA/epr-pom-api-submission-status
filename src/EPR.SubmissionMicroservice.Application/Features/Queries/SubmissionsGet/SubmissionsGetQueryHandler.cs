@@ -33,16 +33,6 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
     {
         var submissions = await GetSubmissionsAsync(request, cancellationToken);
 
-        /*
-         * This logic is a temporary measure to support the retrieval of submissions
-         * that were created before ComplianceSchemeId was a property on the Submission entity.
-         * The queryWithComplianceSchemeIdIfExists allows the ComplianceSchemeId query filtering to be excluded by passing false
-        */
-        if (!submissions.Any() && request is { IsFirstComplianceScheme: true })
-        {
-            submissions = await GetSubmissionsAsync(request, cancellationToken, false);
-        }
-
         var submissionsWithEvents = new List<AbstractSubmissionGetResponse>();
 
         foreach (var submission in submissions)
@@ -69,8 +59,7 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
 
     private async Task<List<Submission>> GetSubmissionsAsync(
         SubmissionsGetQuery request,
-        CancellationToken cancellationToken,
-        bool queryWithComplianceSchemeIdIfExists = true)
+        CancellationToken cancellationToken)
     {
         var query = _submissionQueryRepository
             .GetAll(x => x.OrganisationId == request.OrganisationId)
@@ -82,7 +71,7 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
             query = query.Where(x => request.Periods.Contains(x.SubmissionPeriod));
         }
 
-        if (request.ComplianceSchemeId is not null && queryWithComplianceSchemeIdIfExists)
+        if (request.ComplianceSchemeId is not null)
         {
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
         }

@@ -11,6 +11,4 @@ public class SubmissionsGetRequest
     public int? Limit { get; set; }
 
     public Guid? ComplianceSchemeId { get; set; }
-
-    public bool? IsFirstComplianceScheme { get; set; }
 }
