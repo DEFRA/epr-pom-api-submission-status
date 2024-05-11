@@ -5,6 +5,7 @@ using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.Common;
 using Application.Features.Queries.SubmissionFileGet;
 using Application.Features.Queries.SubmissionGet;
+using Application.Features.Queries.SubmissionOrganisationDetailsGet;
 using Application.Features.Queries.SubmissionsEventsGet;
 using Application.Features.Queries.SubmissionsGet;
 using Application.Features.Queries.SubmissionsPeriodGet;
@@ -88,6 +89,22 @@ public class SubmissionController : ApiController
     public async Task<IActionResult> GetSubmissionFile([FromRoute] Guid fileId)
     {
         var result = await Mediator.Send(new SubmissionFileGetQuery(fileId));
+
+        return result.IsError
+            ? Problem(result.Errors)
+            : Ok(result.Value);
+    }
+
+    [HttpGet("{submissionId:guid}/organisation-details", Name = nameof(GetSubmissionOrganisationDetails))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionOrganisationDetailsGetResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSubmissionOrganisationDetails(
+        [FromRoute] Guid submissionId,
+        [FromQuery] string blobName)
+    {
+        var result = await Mediator.Send(new SubmissionOrganisationDetailsGetQuery(submissionId, blobName));
 
         return result.IsError
             ? Problem(result.Errors)

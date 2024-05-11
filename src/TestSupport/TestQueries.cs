@@ -1,4 +1,5 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionFileGet;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 using EPR.SubmissionMicroservice.Data.Enums;
 
@@ -32,6 +33,23 @@ public static class TestQueries
                 PomDataComplete = false,
                 ValidationPass = false,
                 PomFileName = null
+            };
+        }
+
+        public static SubmissionFileGetResponse ValidSubmissionFileResponse()
+        {
+            return new SubmissionFileGetResponse
+            {
+                FileId = Guid.NewGuid(),
+                FileName = "test",
+                FileType = FileType.CompanyDetails,
+                SubmissionId = Guid.NewGuid(),
+                SubmissionType = SubmissionType.Producer,
+                SubmissionPeriod = null,
+                OrganisationId = default,
+                UserId = default,
+                ComplianceSchemeId = default,
+                Errors = new List<string>(),
             };
         }
 

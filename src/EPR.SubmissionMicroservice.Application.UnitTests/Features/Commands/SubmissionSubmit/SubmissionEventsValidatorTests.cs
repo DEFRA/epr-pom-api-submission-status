@@ -533,12 +533,7 @@ public class SubmissionEventsValidatorTests
         result.Should().BeTrue();
     }
 
-    private SubmissionEventsValidator CreateSubmissionEventsValidator()
-    {
-        return new SubmissionEventsValidator(_eventsRepository.Object);
-    }
-
-    private IEnumerable<AbstractSubmissionEvent> CreateEventSet(
+    private static IEnumerable<AbstractSubmissionEvent> CreateEventSet(
         FileType fileType,
         Guid? registrationSetId = null,
         Guid? fileId = null,
@@ -604,5 +599,10 @@ public class SubmissionEventsValidatorTests
                 IsValid = isValid,
             };
         }
+    }
+
+    private SubmissionEventsValidator CreateSubmissionEventsValidator()
+    {
+        return new SubmissionEventsValidator(_eventsRepository.Object);
     }
 }

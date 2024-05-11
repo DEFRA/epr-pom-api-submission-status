@@ -5,7 +5,9 @@ using API.Services.Interfaces;
 using Application.Features.Commands.SubmissionCreate;
 using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.Common;
+using Application.Features.Queries.SubmissionFileGet;
 using Application.Features.Queries.SubmissionGet;
+using Application.Features.Queries.SubmissionOrganisationDetailsGet;
 using Application.Features.Queries.SubmissionsEventsGet;
 using Application.Features.Queries.SubmissionsGet;
 using Application.Features.Queries.SubmissionsPeriodGet;
@@ -95,6 +97,49 @@ public class SubmissionControllerTests
     }
 
     [TestMethod]
+    public async Task GetSubmissionFiles_Return_OkObjectResult()
+    {
+        // Arrange
+        var response = TestQueries.Submission.ValidSubmissionFileResponse();
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionFileGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionFile(new Guid()) as OkObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(response);
+        result.Value.Should().BeOfType<SubmissionFileGetResponse>();
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionOrganisationDetails_Return_OkObjectResult()
+    {
+        // Arrange
+        var response = new SubmissionOrganisationDetailsGetResponse
+        {
+            BlobName = Guid.NewGuid().ToString(),
+        };
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionOrganisationDetailsGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionOrganisationDetails(new Guid(), "test_blob") as OkObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(response);
+        result.Value.Should().BeOfType<SubmissionOrganisationDetailsGetResponse>();
+    }
+
+    [TestMethod]
     public async Task GetSubmissions_ReturnsOkObjectResultWithSubmissions()
     {
         // Arrange
@@ -160,7 +205,7 @@ public class SubmissionControllerTests
         // Arrange
         var response = new List<SubmissionGetResponse>
         {
-            new SubmissionGetResponse
+            new()
             {
                 SubmissionId = Guid.NewGuid(),
                 SubmissionPeriod = "Jan to Jun 2023",

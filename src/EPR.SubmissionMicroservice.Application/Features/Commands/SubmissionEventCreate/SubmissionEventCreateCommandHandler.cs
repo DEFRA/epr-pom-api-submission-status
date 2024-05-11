@@ -4,7 +4,6 @@ using AutoMapper;
 using Common.Logging.Constants;
 using Common.Logging.Models;
 using Common.Logging.Services;
-using Data.Constants;
 using Data.Entities.SubmissionEvent;
 using Data.Enums;
 using Data.Repositories.Commands.Interfaces;

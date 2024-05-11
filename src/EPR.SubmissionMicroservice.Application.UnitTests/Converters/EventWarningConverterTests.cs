@@ -2,7 +2,6 @@
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using TestSupport;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Converters;
 

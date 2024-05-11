@@ -1,7 +1,4 @@
 ﻿using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
-using FluentAssertions;
-using TestSupport;
-using TestSupport.Helpers;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
 

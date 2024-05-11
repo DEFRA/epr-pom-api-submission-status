@@ -721,6 +721,55 @@
 			"response": []
 		},
 		{
+			"name": "GetSubmissionOrganisationDetails",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "organisationId",
+						"value": "{{OrganisationId}}"
+					},
+					{
+						"key": "userId",
+						"value": "{{UserId}}"
+					}
+				],
+				"url": {
+					"raw": "{{SubmissionApi_BaseUrl}}/v{{ApiVersion}}/submissions/:submissionId/organisation-details?blobName=:blobName",
+					"host": [
+						"{{SubmissionApi_BaseUrl}}"
+					],
+					"path": [
+						"v{{ApiVersion}}",
+						"submissions",
+						":submissionId",
+						"organisation-details"
+					],
+					"query": [
+						{
+							"key": "blobName",
+							"value": "{{BrandOrPartnerBlobName}}"
+						}
+					],
+					"variable": [
+						{
+							"key": "submissionId",
+							"value": "{{SubmissionId}}"
+						},
+						{
+							"key": "blobName",
+							"value": "{{BrandOrPartnerBlobName}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "GetValidationEventError",
 			"request": {
 				"method": "GET",
