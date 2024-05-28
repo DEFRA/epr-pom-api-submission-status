@@ -210,12 +210,12 @@ public class EventConverterTests
     public async Task RegulatorRegistrationDecisionEventConverter()
     {
         // Arrange
-        var submissionEvent = TestRequests.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateRequest();
+        var submissionEvent = TestRequests.SubmissionEvent.ValidFileDownloadCheckEventCreateRequest();
 
         // Act
         var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
 
         // Assert
-        result.Should().BeOfType<RegulatorRegistrationDecisionEventCreateCommand>();
+        result.Should().BeOfType<FileDownloadCheckEventCreateCommand>();
     }
 }
