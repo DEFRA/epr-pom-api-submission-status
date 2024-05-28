@@ -51,6 +51,7 @@ public static class TestCommands
                 EventType.Registration => ValidRegistrationValidationEventCreateCommand(),
                 EventType.AntivirusResult => ValidAntivirusResultEventUploadCreateCommand(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateCommand(),
+                EventType.FileDownloadCheck => ValidCheckFileDownloadCheckEventCreateCommand(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -119,6 +120,20 @@ public static class TestCommands
                 DataCount = 1,
                 BlobName = BlobName,
                 BlobContainerName = BlobContainerName
+            };
+        }
+
+        public static FileDownloadCheckEventCreateCommand ValidCheckFileDownloadCheckEventCreateCommand()
+        {
+            return new FileDownloadCheckEventCreateCommand
+            {
+                 SubmissionId = Guid.NewGuid(),
+                 UserId = Guid.NewGuid(),
+                 UserEmail = "fake@fake.com",
+                 ContentScan = "file",
+                 FileId = Guid.NewGuid(),
+                 FileName = "fake.cv",
+                 SubmissionType = SubmissionType.Registration
             };
         }
 

@@ -30,6 +30,7 @@ public class EventConverter : CustomCreationConverter<AbstractSubmissionEventCre
             EventType.AntivirusResult => new AntivirusResultEventCreateCommand(),
             EventType.RegulatorPoMDecision => new RegulatorPoMDecisionEventCreateCommand(),
             EventType.RegulatorRegistrationDecision => new RegulatorRegistrationDecisionEventCreateCommand(),
+            EventType.FileDownloadCheck => new FileDownloadCheckEventCreateCommand(),
             _ => throw new NotImplementedException()
         };
     }

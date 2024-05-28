@@ -2,6 +2,7 @@
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Entities.FileDownload;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
@@ -57,6 +58,7 @@ public class SubmissionEventProfile : Profile
                 d => d.IsValid,
                 opt => opt.MapFrom(x => x.Errors == null || !x.Errors.Any()));
         CreateMap<RegulatorRegistrationDecisionEventCreateCommand, RegulatorRegistrationDecisionEvent>();
+        CreateMap<FileDownloadCheckEventCreateCommand, FileDownloadCheckEvent>();
 
         CreateMap<AbstractValidationEventCreateCommand.AbstractValidationError, AbstractValidationError>()
             .ForMember(o => o.Created, m => m.Ignore())
