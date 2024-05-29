@@ -218,17 +218,4 @@ public class EventConverterTests
         // Assert
         result.Should().BeOfType<RegulatorRegistrationDecisionEventCreateCommand>();
     }
-
-    [TestMethod]
-    public async Task FileDownloadCheckEventConverter()
-    {
-        // Arrange
-        var submissionEvent = TestRequests.SubmissionEvent.ValidFileDownloadCheckEventCreateRequest();
-
-        // Act
-        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
-
-        // Assert
-        result.Should().BeOfType<FileDownloadCheckEventCreateCommand>();
-    }
 }

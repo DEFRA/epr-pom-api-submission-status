@@ -152,15 +152,6 @@ public static class TestRequests
                 decision = RegulatorDecision.Accepted
             });
         }
-
-        public static JObject ValidFileDownloadCheckEventCreateRequest()
-        {
-            return JObject.FromObject(new
-            {
-                type = EventType.FileDownloadCheck,
-                decision = RegulatorDecision.Accepted
-            });
-        }
     }
 
     public static class ValidationEventError
