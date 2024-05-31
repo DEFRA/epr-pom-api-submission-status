@@ -8,6 +8,7 @@ using EPR.Common.Functions.Services.Interfaces;
 using EPR.SubmissionMicroservice.Data.Converters;
 using EPR.SubmissionMicroservice.Data.Entities;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Entities.FileDownload;
 using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
@@ -72,6 +73,9 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<RegulatorRegistrationDecisionEvent>()
             .HasPartitionKey(x => x.Id);
 
+        modelBuilder.Entity<FileDownloadCheckEvent>()
+           .HasPartitionKey(x => x.Id);
+
         modelBuilder.Entity<AntivirusResultEvent>()
             .HasPartitionKey(x => x.Id);
 
@@ -132,6 +136,7 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<AntivirusResultEvent>(EventType.AntivirusResult)
                 .HasValue<RegulatorPoMDecisionEvent>(EventType.RegulatorPoMDecision)
                 .HasValue<RegulatorRegistrationDecisionEvent>(EventType.RegulatorRegistrationDecision)
+                .HasValue<FileDownloadCheckEvent>(EventType.FileDownloadCheck)
                 .HasValue<SubmittedEvent>(EventType.Submitted);
             x.Property(e => e.Id).ToJsonProperty("SubmissionEventId");
             x.Property(e => e.Type).HasConversion<string>();
