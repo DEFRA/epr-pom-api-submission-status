@@ -1,6 +1,7 @@
 ﻿namespace EPR.SubmissionMicroservice.Data;
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -12,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 ///     This class is written based on CosmosExecutionStrategy.cs
 ///     in namespace Microsoft.EntityFrameworkCore.Cosmos.Storage.Internal.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class CosmosDbRetryExecutionStrategy : ExecutionStrategy
 {
     public CosmosDbRetryExecutionStrategy(

@@ -18,6 +18,8 @@ public class CustomProblemDetailsFactoryTests
         var options = new ApiBehaviorOptions();
         var optionsWrapper = Options.Create(options);
         _factory = new CustomProblemDetailsFactory(optionsWrapper);
+
+        options.ClientErrorMapping.Add(500, new ClientErrorData { Title = "internalError", Link = "testLink" });
     }
 
     [TestMethod]

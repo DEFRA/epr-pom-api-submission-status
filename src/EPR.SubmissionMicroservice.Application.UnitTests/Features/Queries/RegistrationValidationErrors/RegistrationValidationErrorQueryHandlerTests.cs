@@ -185,6 +185,18 @@ public class RegistrationValidationErrorQueryHandlerTests
             .As<RegistrationValidationIssueGetResponse>().ErrorCodes.Should().BeEmpty();
     }
 
+    private static AntivirusResultEvent GenerateAntiVirusResult(Guid submissionId, Guid fileId, string blobName)
+    {
+        return new AntivirusResultEvent()
+        {
+            Id = Guid.NewGuid(),
+            SubmissionId = submissionId,
+            FileId = fileId,
+            AntivirusScanResult = AntivirusScanResult.Success,
+            BlobName = blobName
+        };
+    }
+
     private IQueryable<AbstractValidationError> GenerateRegistrationValidationErrorQueryEventMock()
     {
         return new List<AbstractValidationError>
@@ -212,17 +224,5 @@ public class RegistrationValidationErrorQueryHandlerTests
                 ErrorCodes = { }
             },
         }.BuildMock();
-    }
-
-    private AntivirusResultEvent GenerateAntiVirusResult(Guid submissionId, Guid fileId, string blobName)
-    {
-        return new AntivirusResultEvent()
-        {
-            Id = Guid.NewGuid(),
-            SubmissionId = submissionId,
-            FileId = fileId,
-            AntivirusScanResult = AntivirusScanResult.Success,
-            BlobName = blobName
-        };
     }
 }

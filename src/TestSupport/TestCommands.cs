@@ -192,6 +192,7 @@ public static class TestCommands
                 FileId = Guid.NewGuid(),
                 Decision = RegulatorDecision.Accepted,
                 Comments = string.Empty,
+                IsResubmissionRequired = false
             };
         }
 
@@ -218,6 +219,31 @@ public static class TestCommands
                 BlobName = null,
                 BlobContainerName = null
             };
+        }
+
+        public static CheckSplitterValidationEventCreateCommand InvalidCheckSplitterValidationWithErrorsEventCreateCommand()
+        {
+            return new CheckSplitterValidationEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                DataCount = 1,
+                BlobName = BlobName,
+                BlobContainerName = BlobContainerName,
+                ValidationErrors = new List<AbstractValidationEventCreateCommand.AbstractValidationError> { CreateValidationError(1), CreateValidationError(2) }
+            };
+
+            CheckSplitterValidationEventCreateCommand.CheckSplitterValidationError CreateValidationError(int row)
+            {
+                return new CheckSplitterValidationEventCreateCommand.CheckSplitterValidationError
+                {
+                    BlobName = $"Blob file {row}",
+                    RowNumber = row,
+                    ValidationErrorType = ValidationType.CheckSplitter,
+                    SubsidiaryId = "1",
+                    ErrorCodes = new List<string>() { "ER" + row }
+                };
+            }
         }
 
         public static ProducerValidationEventCreateCommand InvalidProducerValidationEventCreateCommand()

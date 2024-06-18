@@ -1,5 +1,6 @@
 ﻿namespace EPR.SubmissionMicroservice.Data;
 
+using System.Diagnostics.CodeAnalysis;
 using Common.Functions.Database.Context.Interfaces;
 using Common.Functions.Extensions;
 using Microsoft.Azure.Cosmos;
@@ -13,6 +14,7 @@ using Repositories.Commands.Interfaces;
 using Repositories.Queries;
 using Repositories.Queries.Interfaces;
 
+[ExcludeFromCodeCoverage]
 public static class ConfigureServices
 {
     public static IServiceCollection AddDataServices(

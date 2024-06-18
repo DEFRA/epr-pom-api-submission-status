@@ -19,7 +19,7 @@ public class QueryRepository<TEntity> : IQueryRepository<TEntity>
 
     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> expression, CancellationToken cancellationToken = default)
     {
-        return await GetAll(expression).CountAsync(cancellationToken) > 0;
+        return await GetAll(expression).AnyAsync(cancellationToken);
     }
 
     public IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> expression)

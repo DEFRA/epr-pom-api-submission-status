@@ -1,7 +1,9 @@
-﻿using EPR.SubmissionMicroservice.Data.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using EPR.SubmissionMicroservice.Data.Enums;
 
 namespace EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 
+[ExcludeFromCodeCoverage]
 public class RegulatorRegistrationDecisionEvent : AbstractSubmissionEvent
 {
     public override EventType Type => EventType.RegulatorRegistrationDecision;

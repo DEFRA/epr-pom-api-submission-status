@@ -138,6 +138,78 @@ public class SubmissionEventCreateCommandHandlerTests
     }
 
     [TestMethod]
+    public async Task RegulatorPoMDecisionHandle_GivenValidCommand_ShouldReturnSuccess()
+    {
+        var decisionEvent = TestCommands.SubmissionEvent.ValidRegulatorPoMDecisionEventCreateCommand();
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            decisionEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task RegulatorPoMDecisionHandle_GivenRepositoryError_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            TestCommands.SubmissionEvent.ValidRegulatorPoMDecisionEventCreateCommand(),
+            default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [TestMethod]
+    public async Task RegulatorRegistrationDecisionHandle_GivenValidCommand_ShouldReturnSuccess()
+    {
+        var decisionEvent = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            decisionEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task RegulatorRegistrationDecisionHandle_GivenRepositoryError_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand(),
+            default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [TestMethod]
     public async Task CheckSplitterUploadHandle_GivenValidCommand_ShouldReturnSuccess()
     {
         var submissionEvent = TestCommands.SubmissionEvent.ValidCheckSplitterValidationEventCreateCommand();
@@ -200,6 +272,26 @@ public class SubmissionEventCreateCommandHandlerTests
         // Assert
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [TestMethod]
+    public async Task CheckSplitterHandle_GivenLoggingServiceException_ShouldLogError()
+    {
+        // Arrange
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(false);
+        var exception = new Exception();
+
+        _loggingService.Setup(l => l.SendEventAsync(It.IsAny<Guid>(), It.IsAny<ProtectiveMonitoringEvent>())).ThrowsAsync(exception);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            TestCommands.SubmissionEvent.InvalidCheckSplitterValidationWithErrorsEventCreateCommand(),
+            default);
+
+        // Assert
+        _mockLogger.VerifyLog(x => x.LogError(exception, "An error occurred creating the protective monitoring event"), Times.Once);
     }
 
     [TestMethod]

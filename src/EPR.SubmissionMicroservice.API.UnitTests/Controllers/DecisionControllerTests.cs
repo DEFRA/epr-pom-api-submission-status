@@ -44,7 +44,8 @@ public class DecisionControllerTests
         // Arrange
         var request = new DecisionGetRequest
         {
-            SubmissionId = Guid.NewGuid()
+            SubmissionId = Guid.NewGuid(),
+            Limit = 1
         };
 
         var response = new List<AbstractSubmissionEventGetResponse>

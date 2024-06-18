@@ -84,7 +84,7 @@ public class CustomProblemDetailsFactory : ProblemDetailsFactory
         }
 
         var traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
-        if (string.IsNullOrWhiteSpace(traceId))
+        if (!string.IsNullOrWhiteSpace(traceId))
         {
             problemDetails.Extensions["traceId"] = traceId;
         }

@@ -166,7 +166,7 @@ public class SubmissionEventControllerTests
             .ReturnsAsync(response);
 
         // Act
-        var result = await _systemUnderTest.GetSubmissionEventsByType(new RegulatorPoMDecisionSubmissionEventsGetRequest()) as OkObjectResult;
+        var result = await _systemUnderTest.GetSubmissionEventsByType(new RegulatorPoMDecisionSubmissionEventsGetRequest() { LastSyncTime = DateTime.Now }) as OkObjectResult;
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();

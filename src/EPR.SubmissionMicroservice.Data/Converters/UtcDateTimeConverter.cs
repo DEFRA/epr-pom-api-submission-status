@@ -1,8 +1,10 @@
 ﻿namespace EPR.SubmissionMicroservice.Data.Converters;
 
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+[ExcludeFromCodeCoverage]
 internal static class UtcDateTimeConverter
 {
     private static readonly ValueConverter<DateTime, DateTime> UtcConverter = new(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Utc));

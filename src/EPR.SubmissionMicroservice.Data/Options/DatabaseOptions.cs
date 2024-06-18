@@ -1,5 +1,8 @@
-﻿namespace EPR.SubmissionMicroservice.Data.Options;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace EPR.SubmissionMicroservice.Data.Options;
+
+[ExcludeFromCodeCoverage]
 public class DatabaseOptions
 {
     public const string ConfigSection = "Database";
