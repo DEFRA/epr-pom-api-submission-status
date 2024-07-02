@@ -31,6 +31,6 @@ public class SubmissionProfile : Profile
 
         CreateMap<SubmissionGetRequest, SubmissionsPeriodGetQuery>();
 
-        CreateMap<DecisionGetRequest, RegulatorPoMDecisionSubmissionEventGetQuery>();
+        CreateMap<DecisionGetRequest, RegulatorDecisionSubmissionEventGetQuery>();
     }
 }

@@ -110,7 +110,7 @@ public class HeaderSetterTests
     public void Set_RegulatorPoMDecisionSubmissionEventCommand()
     {
         // Arrange
-        var command = new RegulatorPoMDecisionSubmissionEventGetQuery();
+        var command = new RegulatorDecisionSubmissionEventGetQuery();
 
         _userContextProviderMock.SetupAllProperties();
 

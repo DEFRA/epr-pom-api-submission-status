@@ -1,10 +1,11 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Data.Enums;
 using ErrorOr;
 using MediatR;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
 
-public class RegulatorPoMDecisionSubmissionEventGetQuery : IRequest<ErrorOr<List<AbstractSubmissionEventGetResponse>>>
+public class RegulatorDecisionSubmissionEventGetQuery : IRequest<ErrorOr<List<AbstractSubmissionEventGetResponse>>>
 {
     public Guid FileId { get; set; }
 
@@ -17,4 +18,6 @@ public class RegulatorPoMDecisionSubmissionEventGetQuery : IRequest<ErrorOr<List
     public DateTime LastSyncTime { get; set; }
 
     public Guid SubmissionId { get; set; }
+
+    public SubmissionType Type { get; set; }
 }

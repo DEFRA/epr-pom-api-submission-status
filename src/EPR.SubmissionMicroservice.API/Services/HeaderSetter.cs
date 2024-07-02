@@ -57,7 +57,7 @@ public class HeaderSetter : IHeaderSetter
         return command;
     }
 
-    public RegulatorPoMDecisionSubmissionEventGetQuery Set(RegulatorPoMDecisionSubmissionEventGetQuery command)
+    public RegulatorDecisionSubmissionEventGetQuery Set(RegulatorDecisionSubmissionEventGetQuery command)
     {
         return command;
     }

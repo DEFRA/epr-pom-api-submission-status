@@ -26,7 +26,7 @@ public class DecisionController : ApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetDecisions([FromQuery] DecisionGetRequest request)
     {
-        var query = _headerSetter.Set(_mapper.Map<RegulatorPoMDecisionSubmissionEventGetQuery>(request));
+        var query = _headerSetter.Set(_mapper.Map<RegulatorDecisionSubmissionEventGetQuery>(request));
         var result = await Mediator.Send(query);
 
         return result.IsError

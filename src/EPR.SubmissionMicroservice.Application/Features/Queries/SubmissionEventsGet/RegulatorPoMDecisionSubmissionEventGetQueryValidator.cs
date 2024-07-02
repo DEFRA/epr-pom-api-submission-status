@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
 [ExcludeFromCodeCoverage]
-public class RegulatorPoMDecisionSubmissionEventGetQueryValidator : AbstractValidator<RegulatorPoMDecisionSubmissionEventGetQuery>
+public class RegulatorPoMDecisionSubmissionEventGetQueryValidator : AbstractValidator<RegulatorDecisionSubmissionEventGetQuery>
 {
     public RegulatorPoMDecisionSubmissionEventGetQueryValidator()
     {

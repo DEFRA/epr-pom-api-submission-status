@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.Contracts.Decisions.Get;
+﻿using EPR.SubmissionMicroservice.Data.Enums;
+
+namespace EPR.SubmissionMicroservice.API.Contracts.Decisions.Get;
 
 public class DecisionGetRequest
 {
@@ -7,4 +9,6 @@ public class DecisionGetRequest
     public int? Limit { get; set; }
 
     public Guid SubmissionId { get; set; }
+
+    public SubmissionType Type { get; set; }
 }
