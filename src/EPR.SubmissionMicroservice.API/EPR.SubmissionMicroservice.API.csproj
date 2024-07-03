@@ -29,6 +29,7 @@
         <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="3.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
         <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="6.1.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.6.2" />
     </ItemGroup>
     <ItemGroup>
         <SonarQubeSetting Include="sonar.coverage.exclusions">
