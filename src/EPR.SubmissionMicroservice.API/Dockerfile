@@ -1,17 +1,17 @@
 ﻿FROM defradigital/dotnetcore-development:dotnet6.0 AS build-env
-
+USER root
 # Expose the app on a defined port, configurable via a build argument
 ARG PORT=3000
 ENV ASPNETCORE_URLS=http://*:${PORT}
 EXPOSE ${PORT}
 
 # Copy everything
-COPY --chown=dotnet EPR.SubmissionMicroservice.API/. ./EPR.SubmissionMicroservice.API/.
-COPY --chown=dotnet EPR.SubmissionMicroservice.Application/. ./EPR.SubmissionMicroservice.Application/.
-COPY --chown=dotnet EPR.SubmissionMicroservice.Data/. ./EPR.SubmissionMicroservice.Data/.
-COPY --chown=dotnet stylecop.ruleset ./
-COPY --chown=dotnet NuGet.Config ./
-COPY --chown=dotnet Directory.Build.props ./
+COPY EPR.SubmissionMicroservice.API/. ./EPR.SubmissionMicroservice.API/.
+COPY EPR.SubmissionMicroservice.Application/. ./EPR.SubmissionMicroservice.Application/.
+COPY EPR.SubmissionMicroservice.Data/. ./EPR.SubmissionMicroservice.Data/.
+COPY stylecop.ruleset ./
+COPY NuGet.Config ./
+COPY Directory.Build.props ./
 
 # Use Build Argument to insert PAT into Nuget file
 ARG PAT=localhost
