@@ -16,7 +16,7 @@ public class ApiController : ControllerBase
 
     protected ActionResult Problem(List<Error> errors)
     {
-        if (errors.TrueForAll(x => x.Type == ErrorType.Validation))
+        if (errors.All(x => x.Type == ErrorType.Validation))
         {
             var modelStateDictionary = new ModelStateDictionary();
 
@@ -30,7 +30,7 @@ public class ApiController : ControllerBase
 
         HttpContext.Items[Constants.Http.Errors] = errors;
 
-        var firstError = errors[0];
+        var firstError = errors.First();
 
         var statusCode = firstError switch
         {
