@@ -7,7 +7,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="EPR.Common.Functions" Version="1.0.20-rc.633780" />
+    <PackageReference Include="EPR.Common.Functions" Version="1.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="8.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7">
       <PrivateAssets>all</PrivateAssets>
