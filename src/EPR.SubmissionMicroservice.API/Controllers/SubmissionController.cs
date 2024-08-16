@@ -9,7 +9,6 @@ using Application.Features.Queries.SubmissionOrganisationDetailsGet;
 using Application.Features.Queries.SubmissionsEventsGet;
 using Application.Features.Queries.SubmissionsGet;
 using Application.Features.Queries.SubmissionsPeriodGet;
-using Asp.Versioning;
 using AutoMapper;
 using Contracts.Submission.Create;
 using Contracts.Submission.Submit;

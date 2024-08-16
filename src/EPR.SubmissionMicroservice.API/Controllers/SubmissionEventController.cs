@@ -1,5 +1,4 @@
-﻿using Asp.Versioning;
-using AutoMapper;
+﻿using AutoMapper;
 using EPR.SubmissionMicroservice.API.Contracts.SubmissionEvents.Get;
 using EPR.SubmissionMicroservice.API.Filters.Swashbuckle;
 using EPR.SubmissionMicroservice.API.Filters.Swashbuckle.Examples;

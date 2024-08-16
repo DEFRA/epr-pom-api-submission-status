@@ -6,7 +6,7 @@ Submission Status API is a database wrapper for file upload services
 
 ### Prerequisites
 In order to run the service you will need the following dependencies
-- .NET 8
+- .NET 6
 
 #### epr-packaging-common
 ##### Developers working for a DEFRA supplier
