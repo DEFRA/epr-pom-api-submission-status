@@ -16,18 +16,21 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
     private readonly IQueryRepository<Submission> _submissionQueryRepository;
     private readonly IPomSubmissionEventHelper _pomSubmissionEventHelper;
     private readonly IRegistrationSubmissionEventHelper _registrationSubmissionEventHelper;
+    private readonly ISubsidiarySubmissionEventHelper _subsidiarySubmissionEventHelper;
     private readonly IMapper _mapper;
 
     public SubmissionGetQueryHandler(
         IQueryRepository<Submission> submissionQueryRepository,
         IPomSubmissionEventHelper pomSubmissionEventHelper,
         IRegistrationSubmissionEventHelper registrationSubmissionEventHelper,
+        ISubsidiarySubmissionEventHelper subsidiarySubmissionEventHelper,
         IMapper mapper)
     {
         _submissionQueryRepository = submissionQueryRepository;
         _mapper = mapper;
         _pomSubmissionEventHelper = pomSubmissionEventHelper;
         _registrationSubmissionEventHelper = registrationSubmissionEventHelper;
+        _subsidiarySubmissionEventHelper = subsidiarySubmissionEventHelper;
     }
 
     public async Task<ErrorOr<AbstractSubmissionGetResponse>> Handle(
@@ -57,6 +60,12 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
                 var registrationResponse = _mapper.Map<RegistrationSubmissionGetResponse>(submission);
                 await _registrationSubmissionEventHelper.SetValidationEvents(registrationResponse, submission is { IsSubmitted: true }, cancellationToken);
                 return registrationResponse;
+
+            case SubmissionType.Subsidiary:
+                var subsidiaryResponse = _mapper.Map<SubsidiarySubmissionGetResponse>(submission);
+                await _subsidiarySubmissionEventHelper.SetValidationEventsAsync(subsidiaryResponse, submission is { IsSubmitted: true }, cancellationToken);
+                return subsidiaryResponse;
+
             default:
                 throw new BadRequestException("Undefined submission type");
         }

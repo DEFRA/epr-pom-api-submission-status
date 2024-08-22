@@ -15,6 +15,7 @@ public class SubmissionProfile : Profile
             .IncludeAllDerived();
         CreateMap<Submission, PomSubmissionGetResponse>();
         CreateMap<Submission, RegistrationSubmissionGetResponse>();
+        CreateMap<Submission, SubsidiarySubmissionGetResponse>();
 
         CreateMap<Submission, SubmissionGetResponse>()
             .ForMember(dest => dest.SubmissionId, opt => opt.MapFrom(src => src.Id))
