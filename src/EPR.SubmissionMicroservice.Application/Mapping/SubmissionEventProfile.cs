@@ -21,7 +21,7 @@ public class SubmissionEventProfile : Profile
             .ForMember(
                 d => d.IsValid,
                 opt => opt.MapFrom(
-                    s => (s.ValidationErrors == null || !s.ValidationErrors.Any()) && (s.Errors == null || !s.Errors.Any())))
+                    s => (s.ValidationErrors == null || s.ValidationErrors.Count == 0) && (s.Errors == null || s.Errors.Count == 0)))
             .ForMember(
                 d => d.ErrorCount,
                 opt => opt.MapFrom(
@@ -52,11 +52,11 @@ public class SubmissionEventProfile : Profile
         CreateMap<BrandValidationEventCreateCommand, BrandValidationEvent>()
             .ForMember(
                 d => d.IsValid,
-                opt => opt.MapFrom(x => x.Errors == null || !x.Errors.Any()));
+                opt => opt.MapFrom(x => x.Errors == null || x.Errors.Count == 0));
         CreateMap<PartnerValidationEventCreateCommand, PartnerValidationEvent>()
             .ForMember(
                 d => d.IsValid,
-                opt => opt.MapFrom(x => x.Errors == null || !x.Errors.Any()));
+                opt => opt.MapFrom(x => x.Errors == null || x.Errors.Count == 0));
         CreateMap<RegulatorRegistrationDecisionEventCreateCommand, RegulatorRegistrationDecisionEvent>();
         CreateMap<FileDownloadCheckEventCreateCommand, FileDownloadCheckEvent>();
 

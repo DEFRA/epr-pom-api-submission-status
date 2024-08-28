@@ -71,7 +71,7 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
     {
         var result = await AbstractHandle(command, cancellationToken);
 
-        if (command.ValidationErrors.Any())
+        if (command.ValidationErrors.Count > 0)
         {
             var errorsList = command.ValidationErrors
                 .SelectMany(x => x.ErrorCodes)
@@ -86,7 +86,7 @@ IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<Submiss
     {
         var result = await AbstractHandle(command, cancellationToken);
 
-        if (command.ValidationErrors.Any())
+        if (command.ValidationErrors.Count > 0)
         {
             var errorsList = command.ValidationErrors
                 .SelectMany(x => x.ErrorCodes)

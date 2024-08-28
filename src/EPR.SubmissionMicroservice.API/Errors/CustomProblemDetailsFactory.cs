@@ -50,10 +50,7 @@ public class CustomProblemDetailsFactory : ProblemDetailsFactory
         string? detail = null,
         string? instance = null)
     {
-        if (modelStateDictionary == null)
-        {
-            throw new ArgumentNullException(nameof(modelStateDictionary));
-        }
+        ArgumentNullException.ThrowIfNull(nameof(modelStateDictionary));
 
         statusCode ??= 400;
 

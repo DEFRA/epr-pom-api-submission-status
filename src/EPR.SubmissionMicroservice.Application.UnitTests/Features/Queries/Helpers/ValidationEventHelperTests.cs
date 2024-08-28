@@ -1,5 +1,4 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
-using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
@@ -11,7 +10,7 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.Help
 public class ValidationEventHelperTests
 {
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventQueryRepositoryMock;
-    private IValidationEventHelper _systemUnderTest;
+    private ValidationEventHelper _systemUnderTest;
 
     [TestInitialize]
     public void TestInitialize()

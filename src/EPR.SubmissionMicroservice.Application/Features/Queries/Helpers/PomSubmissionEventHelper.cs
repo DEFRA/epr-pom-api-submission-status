@@ -43,12 +43,12 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         var validationPass = false;
         var hasWarningsInFile = false;
 
-        if (latestAntivirusResultEvent is not null && latestAntivirusResultEvent.Errors.Any())
+        if (latestAntivirusResultEvent is not null && latestAntivirusResultEvent.Errors.Count > 0)
         {
             latestFileUploadErrors.AddRange(latestAntivirusResultEvent.Errors);
         }
 
-        if (checkSplitterEvents.Any())
+        if (checkSplitterEvents.Count > 0)
         {
             var latestUploadIsValid = false;
             var latestUploadCheckSplitterEvent = latestAntivirusResultEvent is not null
@@ -57,7 +57,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
 
             if (latestUploadCheckSplitterEvent is not null)
             {
-                if (latestUploadCheckSplitterEvent.Errors.Any())
+                if (latestUploadCheckSplitterEvent.Errors.Count > 0)
                 {
                     latestFileUploadErrors.AddRange(latestUploadCheckSplitterEvent.Errors);
                 }
@@ -83,11 +83,11 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
                 var hasEqualErrorCounts = currentErrorCount == errorCountSum;
                 var hasEqualWarningCounts = currentWarningCount == warningCountSum;
 
-                latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && !latestValidationEventErrors.Any() && !latestFileUploadErrors.Any();
+                latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && latestValidationEventErrors.Count == 0 && latestFileUploadErrors.Count == 0;
                 processingComplete = latestUploadHasAllExpectedValidationEvents && hasEqualErrorCounts && hasEqualWarningCounts;
                 validationPass = processingComplete && latestUploadIsValid;
 
-                if (latestValidationEventErrors.Any())
+                if (latestValidationEventErrors.Count > 0)
                 {
                     latestFileUploadErrors.AddRange(latestValidationEventErrors.SelectMany(x => x.Errors));
                 }

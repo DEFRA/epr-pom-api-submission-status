@@ -38,7 +38,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         var events = await GetEventsAsync(submissionId, cancellationToken);
         var antivirusCheckEvents = events.OfType<AntivirusCheckEvent>().ToList();
 
-        if (!antivirusCheckEvents.Any())
+        if (antivirusCheckEvents.Count == 0)
         {
             return;
         }
@@ -186,7 +186,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                                   && response.CompanyDetailsFileIsValid
                                   && IsBrandsFileValid(response)
                                   && IsPartnersFileValid(response)
-                                  && !response.Errors.Any();
+                                  && response.Errors.Count == 0;
 
         if (response.ValidationPass)
         {
@@ -315,7 +315,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
     private static void AddErrorsToListIfPresent(List<string> errors, List<string>? eventErrors)
     {
-        if (eventErrors != null && eventErrors.Any())
+        if (eventErrors != null && eventErrors.Count > 0)
         {
             errors.AddRange(eventErrors);
         }

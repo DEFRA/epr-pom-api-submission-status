@@ -49,7 +49,7 @@ public class SubmissionsEventsGetQueryHandler : IRequestHandler<SubmissionsEvent
             .OrderByDescending(x => x.Created)
             .ToListAsync(cancellationToken);
 
-        if (submittedEvents.Any())
+        if (submittedEvents.Count > 0)
         {
             response.SubmittedEvents
                 .AddRange(submittedEvents
@@ -64,7 +64,7 @@ public class SubmissionsEventsGetQueryHandler : IRequestHandler<SubmissionsEvent
                 }));
         }
 
-        if (regulatorPOMDecisionEvents.Any())
+        if (regulatorPOMDecisionEvents.Count > 0)
         {
             response.RegulatorDecisionEvents
                 .AddRange(regulatorPOMDecisionEvents
@@ -80,7 +80,7 @@ public class SubmissionsEventsGetQueryHandler : IRequestHandler<SubmissionsEvent
                 }));
         }
 
-        if (antivirusCheckEvents.Any())
+        if (antivirusCheckEvents.Count > 0)
         {
             response.AntivirusCheckEvents
                 .AddRange(antivirusCheckEvents

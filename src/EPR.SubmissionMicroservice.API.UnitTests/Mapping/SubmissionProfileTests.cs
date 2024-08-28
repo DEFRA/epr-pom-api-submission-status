@@ -14,7 +14,7 @@ using TestSupport;
 [TestClass]
 public class SubmissionProfileTests
 {
-    private IMapper _mapper;
+    private Mapper _mapper;
 
     [TestInitialize]
     public async Task Setup()

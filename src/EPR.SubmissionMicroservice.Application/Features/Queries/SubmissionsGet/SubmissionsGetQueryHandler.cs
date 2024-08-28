@@ -66,7 +66,7 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
             .OrderByDescending(x => x.Created)
             .AsQueryable();
 
-        if (request.Periods is not null && request.Periods.Any())
+        if (request.Periods is not null && request.Periods.Count > 0)
         {
             query = query.Where(x => request.Periods.Contains(x.SubmissionPeriod));
         }
