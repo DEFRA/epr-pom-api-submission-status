@@ -29,5 +29,25 @@ public class PostSubmissionExample : IMultipleExamplesProvider<SubmissionCreateR
                 DataSourceType = DataSourceType.File,
                 SubmissionPeriod = "2023",
             });
+
+        yield return SwaggerExample.Create(
+            "Subsidiary",
+            new SubmissionCreateRequest
+            {
+                Id = Guid.NewGuid(),
+                SubmissionType = SubmissionType.Subsidiary,
+                DataSourceType = DataSourceType.File,
+                SubmissionPeriod = "NA Subsidiary File Upload",
+            });
+
+        yield return SwaggerExample.Create(
+            "CompaniesHouse",
+            new SubmissionCreateRequest
+            {
+                Id = Guid.NewGuid(),
+                SubmissionType = SubmissionType.CompaniesHouse,
+                DataSourceType = DataSourceType.File,
+                SubmissionPeriod = "NA Companies House File Upload",
+            });
     }
 }

@@ -58,6 +58,8 @@ public class SubmissionController : ApiController
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PomSubmissionGetResponse))]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RegistrationSubmissionGetResponse))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubsidiarySubmissionGetResponse))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CompaniesHouseSubmissionGetResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubmission([FromRoute] Guid submissionId, [FromHeader] Guid organisationId)

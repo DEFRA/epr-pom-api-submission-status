@@ -17,6 +17,7 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
     private readonly IPomSubmissionEventHelper _pomSubmissionEventHelper;
     private readonly IRegistrationSubmissionEventHelper _registrationSubmissionEventHelper;
     private readonly ISubsidiarySubmissionEventHelper _subsidiarySubmissionEventHelper;
+    private readonly ICompaniesHouseSubmissionEventHelper _companiesHouseSubmissionEventHelper;
     private readonly IMapper _mapper;
 
     public SubmissionGetQueryHandler(
@@ -24,6 +25,7 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
         IPomSubmissionEventHelper pomSubmissionEventHelper,
         IRegistrationSubmissionEventHelper registrationSubmissionEventHelper,
         ISubsidiarySubmissionEventHelper subsidiarySubmissionEventHelper,
+        ICompaniesHouseSubmissionEventHelper companiesHouseSubmissionEventHelper,
         IMapper mapper)
     {
         _submissionQueryRepository = submissionQueryRepository;
@@ -31,6 +33,7 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
         _pomSubmissionEventHelper = pomSubmissionEventHelper;
         _registrationSubmissionEventHelper = registrationSubmissionEventHelper;
         _subsidiarySubmissionEventHelper = subsidiarySubmissionEventHelper;
+        _companiesHouseSubmissionEventHelper = companiesHouseSubmissionEventHelper;
     }
 
     public async Task<ErrorOr<AbstractSubmissionGetResponse>> Handle(
@@ -65,6 +68,11 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
                 var subsidiaryResponse = _mapper.Map<SubsidiarySubmissionGetResponse>(submission);
                 await _subsidiarySubmissionEventHelper.SetValidationEventsAsync(subsidiaryResponse, submission is { IsSubmitted: true }, cancellationToken);
                 return subsidiaryResponse;
+
+            case SubmissionType.CompaniesHouse:
+                var companiesHouseResponse = _mapper.Map<CompaniesHouseSubmissionGetResponse>(submission);
+                await _companiesHouseSubmissionEventHelper.SetValidationEventsAsync(companiesHouseResponse, cancellationToken);
+                return companiesHouseResponse;
 
             default:
                 throw new BadRequestException("Undefined submission type");

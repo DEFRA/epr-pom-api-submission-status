@@ -55,6 +55,28 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
             });
 
         yield return SwaggerExample.Create(
+            "Anti Virus Check for file upload - Subsidiary",
+            new JObject
+            {
+                ["type"] = (int)EventType.AntivirusCheck,
+                ["errors"] = new JArray { "99" },
+                ["fileName"] = "Subsidiary.csv",
+                ["fileType"] = (int)FileType.Subsidiaries,
+                ["fileId"] = Guid.NewGuid()
+            });
+
+        yield return SwaggerExample.Create(
+            "Anti Virus Check for file upload - Companies House",
+            new JObject
+            {
+                ["type"] = (int)EventType.AntivirusCheck,
+                ["errors"] = new JArray { "99" },
+                ["fileName"] = "CompaniesHouseFileName.csv",
+                ["fileType"] = (int)FileType.CompaniesHouse,
+                ["fileId"] = Guid.NewGuid()
+            });
+
+        yield return SwaggerExample.Create(
             "Anti Virus Result",
             new JObject
             {
