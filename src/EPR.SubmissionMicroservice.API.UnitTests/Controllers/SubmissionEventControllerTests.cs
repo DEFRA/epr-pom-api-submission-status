@@ -8,7 +8,9 @@ using Application.Features.Queries.SubmissionEventsGet;
 using AutoMapper;
 using Data.Enums;
 using EPR.SubmissionMicroservice.API.Contracts.SubmissionEvents.Get;
+using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionCreate;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using ErrorOr;
 using Errors;
 using FluentAssertions;
 using MediatR;
@@ -143,6 +145,63 @@ public class SubmissionEventControllerTests
 
         // Assert
         result.StatusCode.Should().Be((int)HttpStatusCode.Created);
+    }
+
+    [TestMethod]
+    public async Task CreateValidationEvent_ContainsValidationWarnings_ReturnsCreated()
+    {
+        // Arrange
+        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(EventType.RegulatorOrganisationRegistrationDecision);
+        request["validationWarnings"] = new JArray
+        {
+            new JObject
+            {
+                ["RowNumber"] = 1
+            }
+        };
+
+        var command = TestCommands.SubmissionEvent.ValidSubmissionEventCreateCommand(EventType.RegulatorOrganisationRegistrationDecision);
+
+        _mockHeaderSetter.Setup(x => x.Set(It.IsAny<AbstractSubmissionEventCreateCommand>()))
+            .Returns(command);
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<AbstractSubmissionEventCreateCommand>(), default))
+            .ReturnsAsync(new SubmissionEventCreateResponse(command.SubmissionId));
+
+        // Act
+        var result = (IStatusCodeActionResult)await _systemUnderTest.CreateEvent(command.SubmissionId, request);
+
+        // Assert
+        result.StatusCode.Should().Be((int)HttpStatusCode.Created);
+    }
+
+    [TestMethod]
+    public async Task CreateValidationEvent_SendCommand_ReturnsError_ReturnsProblem()
+    {
+        // Arrange
+        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(EventType.RegulatorOrganisationRegistrationDecision);
+
+        var command = TestCommands.SubmissionEvent.ValidSubmissionEventCreateCommand(EventType.RegulatorOrganisationRegistrationDecision);
+
+        var errorList = new List<Error>()
+        {
+            Error.Failure("test", "test failure")
+        };
+        var errorResult = ErrorOr<SubmissionEventCreateResponse>.From(errorList);
+
+        _mockHeaderSetter.Setup(x => x.Set(It.IsAny<AbstractSubmissionEventCreateCommand>()))
+            .Returns(command);
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<AbstractSubmissionEventCreateCommand>(), default))
+            .ReturnsAsync(errorResult);
+
+        // Act
+        var result = (ActionResult)await _systemUnderTest.CreateEvent(command.SubmissionId, request);
+
+        // Assert
+        (result as ObjectResult).Value.Should().BeOfType(typeof(ProblemDetails));
     }
 
     [TestMethod]

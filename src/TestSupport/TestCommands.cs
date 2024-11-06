@@ -52,6 +52,7 @@ public static class TestCommands
                 EventType.AntivirusResult => ValidAntivirusResultEventUploadCreateCommand(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateCommand(),
                 EventType.FileDownloadCheck => ValidCheckFileDownloadCheckEventCreateCommand(),
+                EventType.RegulatorOrganisationRegistrationDecision => ValidRegulatorOrganisationRegistrationDecisionEventCreateCommand(),
                 _ => throw new NotImplementedException()
             };
         }
