@@ -196,4 +196,28 @@ public class SubmissionEventControllerTests
         result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().Be(response);
     }
+
+    [TestMethod]
+    public async Task GetRegulatorOrgansiationRegistrationDecisionSubmissionEvents_ReturnsOkObjectResult()
+    {
+        // Arrange
+        var request = new RegulatorOrganisationRegistrationDecisionSubmissionEventsGetRequest() { SubmissionId = Guid.NewGuid(), LastSyncTime = DateTime.Now };
+        var query = new RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery();
+        var response = new List<RegulatorOrganisationRegistrationDecisionGetResponse>();
+
+        _mockHeaderSetter.Setup(x => x.Set(It.IsAny<RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery>()))
+            .Returns(query);
+
+        _mockMediator
+            .Setup(x => x.Send(query, CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetRegulatorOrganisationRegistrationSubmissionEvents(request) as ObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(response);
+    }
 }

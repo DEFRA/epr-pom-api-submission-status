@@ -35,6 +35,8 @@ public class RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQueryHa
             submissionEventsQuery = submissionEventsQuery.Where(x => x.SubmissionId == query.SubmissionId);
         }
 
+        submissionEventsQuery = submissionEventsQuery.OrderByDescending(x => x.Created);
+
         var submissionEvents = await submissionEventsQuery.ToListAsync(cancellationToken);
 
         return submissionEvents

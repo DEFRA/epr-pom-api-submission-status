@@ -175,4 +175,21 @@ public class HeaderSetterTests
         result.Should().NotBeNull();
         result.LastSyncTime.Should().Be(dateLastSync);
     }
+
+    [TestMethod]
+    public void Set_RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQueryCommand()
+    {
+        // Arrange
+        var dateLastSync = DateTime.UtcNow;
+        var command = new RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery() { LastSyncTime = dateLastSync };
+
+        _userContextProviderMock.SetupAllProperties();
+
+        // Act
+        var result = _systemUnderTest.Set(command);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.LastSyncTime.Should().Be(dateLastSync);
+    }
 }

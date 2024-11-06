@@ -82,11 +82,11 @@ public class SubmissionEventProfile : Profile
            .ForMember(o => o.IsResubmissionRequired, m => m.Ignore());
         CreateMap<RegulatorRegistrationDecisionEvent, RegulatorRegistrationDecisionGetResponse>()
             .ForMember(o => o.IsResubmissionRequired, m => m.Ignore());
+
         CreateMap<RegulatorOrganisationRegistrationDecisionGetResponse, AbstractSubmissionEventGetResponse>();
-        CreateMap<RegulatorOrganisationRegistrationDecisionEvent, RegulatorOrganisationRegistrationDecisionGetResponse>();
+        CreateMap<RegulatorOrganisationRegistrationDecisionEvent, RegulatorOrganisationRegistrationDecisionGetResponse>()
+            .ForMember(o => o.IsResubmissionRequired, m => m.Ignore());
         CreateMap<RegulatorOrganisationRegistrationDecisionEventCreateCommand, RegulatorOrganisationRegistrationDecisionEvent>()
-                .ForMember(o => o.Type, m => m.Ignore());
-        CreateMap<RegulatorOrganisationRegistrationDecisionEvent, RegulatorDecisionGetResponse>()
-                .ForMember(o => o.Type, m => m.Ignore());
+            .ForMember(o => o.Type, m => m.Ignore());
     }
 }
