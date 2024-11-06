@@ -25,6 +25,8 @@ public class SubmissionProfile : Profile
 
         CreateMap<RegulatorRegistrationDecisionSubmissionEventsGetRequest, RegulatorRegistrationDecisionSubmissionEventsGetQuery>();
 
+        CreateMap<RegulatorOrganisationRegistrationDecisionSubmissionEventsGetRequest, RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery>();
+
         CreateMap<SubmissionsGetRequest, SubmissionsGetQuery>()
             .ForMember(dest => dest.Periods, options =>
                 options.MapFrom<SplitStringCommaResolver, string>(src => src.Periods));

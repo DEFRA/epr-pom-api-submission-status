@@ -12,5 +12,6 @@ public enum EventType
     BrandValidation = 8,
     PartnerValidation = 9,
     RegulatorRegistrationDecision = 10,
-    FileDownloadCheck = 11
+    FileDownloadCheck = 11,
+    RegulatorOrganisationRegistrationDecision = 12
 }

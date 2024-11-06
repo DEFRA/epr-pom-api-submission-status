@@ -21,9 +21,9 @@ public class HeaderFilter : IOperationFilter
             Required = true,
             Schema = new OpenApiSchema
             {
-                Type = "String",
+                Type = "string",
                 Format = "uuid",
-                Example = new OpenApiString(Guid.Empty.ToString())
+                Example = new OpenApiString(Guid.NewGuid().ToString())
             }
         });
 
@@ -35,9 +35,9 @@ public class HeaderFilter : IOperationFilter
             Required = true,
             Schema = new OpenApiSchema
             {
-                Type = "String",
+                Type = "string",
                 Format = "uuid",
-                Example = new OpenApiString(Guid.Empty.ToString())
+                Example = new OpenApiString(Guid.NewGuid().ToString())
             }
         });
     }

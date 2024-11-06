@@ -24,5 +24,7 @@ public interface IHeaderSetter
 
     RegulatorRegistrationDecisionSubmissionEventsGetQuery Set(RegulatorRegistrationDecisionSubmissionEventsGetQuery command);
 
+    RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery Set(RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery command);
+
     RegulatorDecisionSubmissionEventGetQuery Set(RegulatorDecisionSubmissionEventGetQuery command);
 }

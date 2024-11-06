@@ -70,6 +70,9 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<RegulatorPoMDecisionEvent>()
             .HasPartitionKey(x => x.Id);
 
+        modelBuilder.Entity<RegulatorOrganisationRegistrationDecisionEvent>()
+            .HasPartitionKey(x => x.Id);
+
         modelBuilder.Entity<RegulatorRegistrationDecisionEvent>()
             .HasPartitionKey(x => x.Id);
 
@@ -135,6 +138,7 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<AntivirusCheckEvent>(EventType.AntivirusCheck)
                 .HasValue<AntivirusResultEvent>(EventType.AntivirusResult)
                 .HasValue<RegulatorPoMDecisionEvent>(EventType.RegulatorPoMDecision)
+                .HasValue<RegulatorOrganisationRegistrationDecisionEvent>(EventType.RegulatorOrganisationRegistrationDecision)
                 .HasValue<RegulatorRegistrationDecisionEvent>(EventType.RegulatorRegistrationDecision)
                 .HasValue<FileDownloadCheckEvent>(EventType.FileDownloadCheck)
                 .HasValue<SubmittedEvent>(EventType.Submitted);
@@ -148,6 +152,11 @@ public class SubmissionContext : EprCommonContext
         });
 
         modelBuilder.Entity<RegulatorRegistrationDecisionEvent>(x =>
+        {
+            x.Property(e => e.Decision).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<RegulatorOrganisationRegistrationDecisionEvent>(x =>
         {
             x.Property(e => e.Decision).HasConversion<string>();
         });

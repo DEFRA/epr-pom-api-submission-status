@@ -61,4 +61,9 @@ public class HeaderSetter : IHeaderSetter
     {
         return command;
     }
+
+    public RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery Set(RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery command)
+    {
+        return command;
+    }
 }
