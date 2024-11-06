@@ -6,7 +6,7 @@ namespace EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 [ExcludeFromCodeCoverage]
 public class RegulatorOrganisationRegistrationDecisionEvent : AbstractSubmissionEvent
 {
-    public override EventType Type => EventType.RegulatorOrganisationRegistrationDecision;
+    public override EventType Type => EventType.RegulatorRegistrationDecision;
 
     public RegulatorDecision Decision { get; set; }
 
