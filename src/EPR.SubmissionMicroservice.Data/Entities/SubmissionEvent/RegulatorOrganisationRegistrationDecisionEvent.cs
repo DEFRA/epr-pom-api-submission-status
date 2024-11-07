@@ -10,5 +10,7 @@ public class RegulatorOrganisationRegistrationDecisionEvent : AbstractSubmission
 
     public RegulatorDecision Decision { get; set; }
 
+    public string? RegistrationReferenceNumber { get; set; }
+
     public string Comments { get; set; }
 }

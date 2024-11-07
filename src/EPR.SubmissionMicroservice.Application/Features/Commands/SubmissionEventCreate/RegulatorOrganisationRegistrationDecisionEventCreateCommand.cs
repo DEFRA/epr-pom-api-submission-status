@@ -8,6 +8,8 @@ public class RegulatorOrganisationRegistrationDecisionEventCreateCommand : Abstr
 
     public RegulatorDecision Decision { get; set; }
 
+    public string? RegistrationReferenceNumber { get; set; }
+
     /// <summary>
     /// Gets or sets the Comments value.
     /// This is required for the Regulator Organisation Registration Journey.

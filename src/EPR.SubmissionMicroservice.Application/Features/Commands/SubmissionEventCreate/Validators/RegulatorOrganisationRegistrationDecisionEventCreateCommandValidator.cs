@@ -9,7 +9,11 @@ public class RegulatorOrganisationRegistrationDecisionEventCreateCommandValidato
 {
     public RegulatorOrganisationRegistrationDecisionEventCreateCommandValidator(IQueryRepository<Submission> queryRepository)
     {
-        Include(new SubmissionEventCreateCommandValidator(queryRepository));
+        //Include(new SubmissionEventCreateCommandValidator(queryRepository));
+
+        RuleFor(p => p.SubmissionId).NotNull().NotEmpty().NotEqual(Guid.Empty).WithMessage("'Submission Id' must be supplied");
+
+        RuleFor(p => p.UserId).NotNull().NotEmpty().NotEqual(Guid.Empty).WithMessage("'User Id' must not be empty.");
 
         RuleFor(x => x.Decision).IsInEnum();
         RuleFor(x => x.Decision).NotEqual(RegulatorDecision.None);
