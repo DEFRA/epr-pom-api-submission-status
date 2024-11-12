@@ -5,4 +5,6 @@ public class RegulatorOrganisationRegistrationDecisionGetResponse : AbstractSubm
     public string Decision { get; set; }
 
     public string RegistrationReferenceNumber { get; set; }
+
+    public DateTime? DecisionDate { get; set; }
 }

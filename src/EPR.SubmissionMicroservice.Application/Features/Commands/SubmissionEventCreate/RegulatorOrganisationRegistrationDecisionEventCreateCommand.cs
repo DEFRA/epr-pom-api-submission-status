@@ -10,10 +10,7 @@ public class RegulatorOrganisationRegistrationDecisionEventCreateCommand : Abstr
 
     public string? RegistrationReferenceNumber { get; set; }
 
-    /// <summary>
-    /// Gets or sets the Comments value.
-    /// This is required for the Regulator Organisation Registration Journey.
-    /// </summary>
-    /// <value>An optional string containing Regulator (or other) comments.</value>
+    public DateTime? DecisionDate { get; set; }
+
     public string? Comments { get; set; }
 }
