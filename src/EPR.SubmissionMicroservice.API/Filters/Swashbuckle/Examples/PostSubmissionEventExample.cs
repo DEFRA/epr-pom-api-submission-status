@@ -11,6 +11,16 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
     public IEnumerable<SwaggerExample<JObject>> GetExamples()
     {
         yield return SwaggerExample.Create(
+            "Regulator Organisation Registration Decision Event",
+            new JObject
+            {
+                ["type"] = (int)EventType.RegulatorOrganisationRegistrationDecision,
+                ["decision"] = (int)RegulatorDecision.Cancelled,
+                ["comments"] = "An example test comment",
+                ["userid"] = "1c1c1be4-76b7-49c6-a23f-c1ce8ffdcde7"
+            });
+
+        yield return SwaggerExample.Create(
             "Anti Virus Check for file upload - PoM",
             new JObject
             {

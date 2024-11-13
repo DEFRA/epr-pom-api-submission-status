@@ -52,6 +52,7 @@ public static class TestCommands
                 EventType.AntivirusResult => ValidAntivirusResultEventUploadCreateCommand(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateCommand(),
                 EventType.FileDownloadCheck => ValidCheckFileDownloadCheckEventCreateCommand(),
+                EventType.RegulatorOrganisationRegistrationDecision => ValidRegulatorOrganisationRegistrationDecisionEventCreateCommand(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -203,6 +204,17 @@ public static class TestCommands
                 SubmissionId = Guid.NewGuid(),
                 UserId = Guid.NewGuid(),
                 FileId = Guid.NewGuid(),
+                Decision = RegulatorDecision.Accepted,
+                Comments = string.Empty,
+            };
+        }
+
+        public static RegulatorOrganisationRegistrationDecisionEventCreateCommand ValidRegulatorOrganisationRegistrationDecisionEventCreateCommand()
+        {
+            return new RegulatorOrganisationRegistrationDecisionEventCreateCommand()
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
                 Decision = RegulatorDecision.Accepted,
                 Comments = string.Empty,
             };

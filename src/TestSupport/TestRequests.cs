@@ -33,6 +33,7 @@ public static class TestRequests
                 EventType.Registration => ValidRegistrationValidationEventCreateRequest(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateRequest(),
                 EventType.RegulatorRegistrationDecision => ValidRegulatorRegistrationDecisionEventCreateRequest(),
+                EventType.RegulatorOrganisationRegistrationDecision => ValidRegulatorOrganisationRegistrationDecisionEventCreateRequest(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -150,6 +151,15 @@ public static class TestRequests
             {
                 type = EventType.RegulatorRegistrationDecision,
                 decision = RegulatorDecision.Accepted
+            });
+        }
+
+        public static JObject ValidRegulatorOrganisationRegistrationDecisionEventCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.RegulatorOrganisationRegistrationDecision,
+                decision = RegulatorDecision.Queried
             });
         }
 

@@ -31,6 +31,7 @@ public class EventConverter : CustomCreationConverter<AbstractSubmissionEventCre
             EventType.RegulatorPoMDecision => new RegulatorPoMDecisionEventCreateCommand(),
             EventType.RegulatorRegistrationDecision => new RegulatorRegistrationDecisionEventCreateCommand(),
             EventType.FileDownloadCheck => new FileDownloadCheckEventCreateCommand(),
+            EventType.RegulatorOrganisationRegistrationDecision => new RegulatorOrganisationRegistrationDecisionEventCreateCommand(),
             _ => throw new NotImplementedException()
         };
     }
