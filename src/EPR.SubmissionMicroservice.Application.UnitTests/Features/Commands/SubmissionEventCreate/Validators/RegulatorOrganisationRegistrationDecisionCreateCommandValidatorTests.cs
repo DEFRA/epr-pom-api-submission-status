@@ -89,8 +89,8 @@ public class RegulatorOrganisationRegistrationDecisionCreateCommandValidatorTest
         var result = await _systemUnderTest.TestValidateAsync(command);
         result.Should().NotBeNull();
         // Assert
-        //result.ShouldHaveValidationErrorFor(x => x.SubmissionId)
-          //  .WithErrorMessage($"Submission with id {command.SubmissionId} does not exist.");
+        result.ShouldHaveValidationErrorFor(x => x.SubmissionId)
+              .WithErrorMessage($"Submission with id {command.SubmissionId} does not exist.");
     }
 
     [TestMethod]
