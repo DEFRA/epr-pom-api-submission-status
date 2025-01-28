@@ -21,8 +21,11 @@ public class SubmissionEventCreateCommandHandler :
     IRequestHandler<BrandValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<PartnerValidationEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<RegulatorRegistrationDecisionEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
-    IRequestHandler<RegulatorOrganisationRegistrationDecisionEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
-    IRequestHandler<FileDownloadCheckEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
+    //IRequestHandler<RegulatorOrganisationRegistrationDecisionEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<RegistrationFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<RegistrationApplicationSubmittedEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<FileDownloadCheckEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<PackagingDataResubmissionFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
 {
     private readonly ICommandRepository<AbstractSubmissionEvent> _commandRepository;
     private readonly ILoggingService _loggingService;
@@ -113,7 +116,17 @@ public class SubmissionEventCreateCommandHandler :
         return await AbstractHandle(command, cancellationToken);
     }
 
-    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegulatorOrganisationRegistrationDecisionEventCreateCommand command, CancellationToken cancellationToken)
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegistrationFeePaymentEventCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegistrationApplicationSubmittedEventCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingDataResubmissionFeePaymentEventCreateCommand command, CancellationToken cancellationToken)
     {
         return await AbstractHandle(command, cancellationToken);
     }

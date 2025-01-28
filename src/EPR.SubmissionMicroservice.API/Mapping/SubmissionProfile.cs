@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.Mapping;
+﻿using EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
+
+namespace EPR.SubmissionMicroservice.API.Mapping;
 
 using API.Contracts.SubmissionEvents.Get;
 using Application.Features.Commands.SubmissionCreate;
@@ -17,6 +19,8 @@ public class SubmissionProfile : Profile
 {
     public SubmissionProfile()
     {
+        CreateMap<GetRegistrationApplicationDetailsRequest, GetRegistrationApplicationDetailsQuery>();
+
         CreateMap<SubmissionCreateRequest, SubmissionCreateCommand>();
 
         CreateMap<SubmissionPayload, SubmissionSubmitCommand>();

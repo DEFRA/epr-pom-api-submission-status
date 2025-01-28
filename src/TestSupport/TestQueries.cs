@@ -1,5 +1,6 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionFileGet;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionUploadedFileGet;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 using EPR.SubmissionMicroservice.Data.Enums;
 
@@ -49,6 +50,22 @@ public static class TestQueries
                 OrganisationId = default,
                 UserId = default,
                 ComplianceSchemeId = default,
+                Errors = new List<string>(),
+            };
+        }
+
+        public static SubmissionUploadedFileGetResponse ValidSubmissionUploadedFileResponse()
+        {
+            return new SubmissionUploadedFileGetResponse
+            {
+                SubmissionId = Guid.NewGuid(),
+                SubmissionType = SubmissionType.Registration,
+                FileId = Guid.NewGuid(),
+                UserId = default,
+                OrganisationId = default,
+                BlobName = Guid.NewGuid().ToString(),
+                AntivirusScanResult = AntivirusScanResult.Success,
+                AntivirusScanTrigger = AntivirusScanTrigger.Download,
                 Errors = new List<string>(),
             };
         }

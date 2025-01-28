@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.Controllers;
+﻿using EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
+
+namespace EPR.SubmissionMicroservice.API.Controllers;
 
 using Application.Features.Commands.SubmissionCreate;
 using Application.Features.Commands.SubmissionSubmit;
@@ -14,6 +16,7 @@ using AutoMapper;
 using Contracts.Submission.Create;
 using Contracts.Submission.Submit;
 using Contracts.Submissions.Get;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionUploadedFileGet;
 using Filters.Swashbuckle;
 using Filters.Swashbuckle.Examples;
 using Microsoft.AspNetCore.Mvc;
@@ -98,14 +101,26 @@ public class SubmissionController : ApiController
             : Ok(result.Value);
     }
 
+    [HttpGet("{submissionId}/uploadedfile/{fileId}", Name = nameof(GetSubmissionUploadedFile))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionUploadedFileGetResponse))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSubmissionUploadedFile([FromRoute] Guid submissionId, [FromRoute] Guid fileId)
+    {
+        var result = await Mediator.Send(new SubmissionUploadedFileGetQuery(fileId, submissionId));
+
+        return result.IsError
+            ? Problem(result.Errors)
+            : Ok(result.Value);
+    }
+
     [HttpGet("{submissionId:guid}/organisation-details", Name = nameof(GetSubmissionOrganisationDetails))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionOrganisationDetailsGetResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetSubmissionOrganisationDetails(
-        [FromRoute] Guid submissionId,
-        [FromQuery] string blobName)
+    public async Task<IActionResult> GetSubmissionOrganisationDetails([FromRoute] Guid submissionId, [FromQuery] string blobName)
     {
         var result = await Mediator.Send(new SubmissionOrganisationDetailsGetQuery(submissionId, blobName));
 
@@ -116,9 +131,7 @@ public class SubmissionController : ApiController
 
     [HttpPost("{submissionId:guid}/submit")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Submit(
-        [FromRoute] Guid submissionId,
-        [FromBody] SubmissionPayload request)
+    public async Task<IActionResult> Submit([FromRoute] Guid submissionId, [FromBody] SubmissionPayload request)
     {
         var command = _mapper.Map<SubmissionSubmitCommand>(request);
         command = _headerSetter.Set(command);
@@ -157,5 +170,19 @@ public class SubmissionController : ApiController
         return result.IsError
            ? Problem(result.Errors)
            : Ok(result.Value);
+    }
+
+    [HttpGet("get-registration-application-details", Name = nameof(GetRegistrationApplicationDetails))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionGetResponse))]
+    public async Task<IActionResult> GetRegistrationApplicationDetails([FromQuery] GetRegistrationApplicationDetailsRequest request)
+    {
+        var query = _mapper.Map<GetRegistrationApplicationDetailsQuery>(request);
+
+        var result = await Mediator.Send(query);
+
+        return result.Value is null
+               ? NoContent()
+               : Ok(result.Value);
     }
 }

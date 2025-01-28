@@ -128,4 +128,88 @@ public class RegulatorRegistrationDecisionCreateCommandValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Comments)
             .WithErrorMessage("'Comments' must not be empty.");
     }
+
+    [TestMethod]
+    public async Task Validator_ReturnErrors_WhenUserSubmissionIdIsEmpty()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.SubmissionId = default;
+
+        _mockQueryRepository
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Submission());
+
+        // Act
+        var result = await _systemUnderTest.TestValidateAsync(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.SubmissionId)
+            .WithErrorMessage("'Submission Id' must not be empty.");
+    }
+
+    [TestMethod]
+    public async Task Validator_ReturnErrors_WhenUserSubmissionIdIsNotFound()
+    {
+        // Arrange
+        var expectedGuid = Guid.NewGuid();
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.SubmissionId = Guid.NewGuid();
+
+        _mockQueryRepository
+            .Setup(x => x.GetByIdAsync(command.SubmissionId, It.IsAny<CancellationToken>())).ReturnsAsync((Submission)null);
+
+        // Act
+        var result = await _systemUnderTest.TestValidateAsync(command);
+        result.Should().NotBeNull();
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.SubmissionId)
+              .WithErrorMessage($"Submission with id {command.SubmissionId} does not exist.");
+    }
+
+    [TestMethod]
+    [DataRow(default)]
+    [DataRow(RegulatorDecision.None)]
+    public async Task Validator_ReturnErrors_WhenDecisionIsDefaultOrNone(RegulatorDecision regulatorDecision)
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.IsForOrganisationRegistration = true;
+        command.Decision = regulatorDecision;
+
+        _mockQueryRepository
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Submission());
+
+        // Act
+        var result = await _systemUnderTest.TestValidateAsync(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.Decision)
+            .WithErrorMessage($"'Decision' must not be equal to '{RegulatorDecision.None}'.");
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow(" ")]
+    [DataRow("")]
+    public async Task Validator_ReturnError_WhenApplicationReferenceNumberIsInvalid(string appRefNum)
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.IsForOrganisationRegistration = true;
+        command.Decision = RegulatorDecision.Accepted;
+        command.AppReferenceNumber = appRefNum;
+
+        _mockQueryRepository
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Submission());
+
+        // Act
+        var result = await _systemUnderTest.TestValidateAsync(command);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x.AppReferenceNumber)
+            .WithErrorMessage("'App Reference Number' must not be empty.");
+    }
 }

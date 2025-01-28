@@ -33,7 +33,8 @@ public static class TestRequests
                 EventType.Registration => ValidRegistrationValidationEventCreateRequest(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateRequest(),
                 EventType.RegulatorRegistrationDecision => ValidRegulatorRegistrationDecisionEventCreateRequest(),
-                EventType.RegulatorOrganisationRegistrationDecision => ValidRegulatorOrganisationRegistrationDecisionEventCreateRequest(),
+                EventType.RegistrationFeePayment => ValidRegistrationFeePaymentEventCreateRequest(),
+                EventType.PackagingDataResubmissionFeePayment => ValidPackagingDataResubmissionFeePaymentCreateRequest(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -154,12 +155,25 @@ public static class TestRequests
             });
         }
 
-        public static JObject ValidRegulatorOrganisationRegistrationDecisionEventCreateRequest()
+        public static JObject ValidRegistrationFeePaymentEventCreateRequest()
         {
             return JObject.FromObject(new
             {
-                type = EventType.RegulatorOrganisationRegistrationDecision,
-                decision = RegulatorDecision.Queried
+                type = EventType.RegistrationFeePayment,
+                paymentmethod = "offine",
+                paymentstatus = "paid",
+                paidamount = "£100.00"
+            });
+        }
+
+        public static JObject ValidPackagingDataResubmissionFeePaymentCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.PackagingDataResubmissionFeePayment,
+                paymentmethod = "offine",
+                paymentstatus = "paid",
+                paidamount = "£50.00"
             });
         }
 

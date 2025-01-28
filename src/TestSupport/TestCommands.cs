@@ -52,7 +52,9 @@ public static class TestCommands
                 EventType.AntivirusResult => ValidAntivirusResultEventUploadCreateCommand(),
                 EventType.RegulatorPoMDecision => ValidRegulatorPoMDecisionEventCreateCommand(),
                 EventType.FileDownloadCheck => ValidCheckFileDownloadCheckEventCreateCommand(),
-                EventType.RegulatorOrganisationRegistrationDecision => ValidRegulatorOrganisationRegistrationDecisionEventCreateCommand(),
+                EventType.RegistrationFeePayment => ValidRegistrationFeePaymentEventCreateCommand(),
+                EventType.RegulatorRegistrationDecision => ValidRegulatorRegistrationDecisionEventCreateCommand(),
+                EventType.PackagingDataResubmissionFeePayment => ValidPackagingDataResubmissionFeePaymentEventCreateCommand(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -209,14 +211,41 @@ public static class TestCommands
             };
         }
 
-        public static RegulatorOrganisationRegistrationDecisionEventCreateCommand ValidRegulatorOrganisationRegistrationDecisionEventCreateCommand()
+        public static RegistrationFeePaymentEventCreateCommand ValidRegistrationFeePaymentEventCreateCommand()
         {
-            return new RegulatorOrganisationRegistrationDecisionEventCreateCommand()
+            return new RegistrationFeePaymentEventCreateCommand
             {
                 SubmissionId = Guid.NewGuid(),
                 UserId = Guid.NewGuid(),
-                Decision = RegulatorDecision.Accepted,
+                PaidAmount = "£100.00",
+                PaymentMethod = "Offline",
+                PaymentStatus = "Paid"
+            };
+        }
+
+        public static PackagingDataResubmissionFeePaymentEventCreateCommand ValidPackagingDataResubmissionFeePaymentEventCreateCommand()
+        {
+            return new PackagingDataResubmissionFeePaymentEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                PaidAmount = "£50.00",
+                PaymentMethod = "Offline",
+                PaymentStatus = "Paid",
+                ReferenceNumber = "TestRef1234",
+                ComplianceSchemeId = Guid.NewGuid()
+            };
+        }
+
+        public static RegistrationApplicationSubmittedEventCreateCommand ValidRegistrationApplicationSubmittedEventCreateCommand()
+        {
+            return new RegistrationApplicationSubmittedEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
                 Comments = string.Empty,
+                ApplicationReferenceNumber = "PEPR00002125P1",
+                SubmissionDate = DateTime.Today,
             };
         }
 

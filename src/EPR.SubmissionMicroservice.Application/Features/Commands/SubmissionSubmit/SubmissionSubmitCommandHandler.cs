@@ -66,9 +66,10 @@ public class SubmissionSubmitCommandHandler : IRequestHandler<SubmissionSubmitCo
                 return Error.Failure();
             }
 
-            if (submission is not { IsSubmitted: true })
+            if (submission is not { IsSubmitted: true } || (string.IsNullOrWhiteSpace(submission.AppReferenceNumber) && !string.IsNullOrWhiteSpace(command.AppReferenceNumber)))
             {
                 submission.IsSubmitted = true;
+                submission.AppReferenceNumber = command.AppReferenceNumber;
                 _submissionCommandRepository.Update(submission);
             }
 

@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
-        <SonarQubeTestProject>true</SonarQubeTestProject>
+		<SonarQubeTestProject>true</SonarQubeTestProject>
     </PropertyGroup>
 
     <ItemGroup>

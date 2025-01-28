@@ -13,5 +13,7 @@ public enum EventType
     PartnerValidation = 9,
     RegulatorRegistrationDecision = 10,
     FileDownloadCheck = 11,
-    RegulatorOrganisationRegistrationDecision = 12
+    RegistrationFeePayment = 12,
+    RegistrationApplicationSubmitted = 13,
+    PackagingDataResubmissionFeePayment = 14
 }

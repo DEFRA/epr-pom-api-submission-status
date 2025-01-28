@@ -5,6 +5,9 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <IncludeOpenAPIAnalyzers>true</IncludeOpenAPIAnalyzers>
     </PropertyGroup>
+    <PropertyGroup>
+        <NoWarn>S4792</NoWarn>
+    </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />

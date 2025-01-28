@@ -13,6 +13,7 @@ builder.Services
     .AddApplicationServices(configuration)
     .AddApiServices(configuration)
     .AddApplicationInsightsTelemetry()
+    .AddLogging()
     .AddFeatureManagement();
 
 var app = builder.Build();

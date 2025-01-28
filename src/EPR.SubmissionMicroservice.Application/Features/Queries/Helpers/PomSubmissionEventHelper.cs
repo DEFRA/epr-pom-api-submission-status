@@ -193,13 +193,18 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         var antivirusResultEvent = await _submissionEventQueryRepository
             .GetAll(x => x.BlobName == blobName && x.Type == EventType.AntivirusResult)
             .Cast<AntivirusResultEvent>()
-            .FirstAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (antivirusResultEvent == null)
+        {
+            return null;
+        }
 
         return await _submissionEventQueryRepository
             .GetAll(x => x.Type == EventType.AntivirusCheck)
             .Cast<AntivirusCheckEvent>()
             .Where(x => x.FileId == antivirusResultEvent.FileId)
-            .FirstAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private async Task<SubmittedEvent> GetLatestSubmittedEventAsync(

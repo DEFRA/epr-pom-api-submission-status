@@ -535,4 +535,58 @@ public class SubmissionEventCreateCommandHandlerTests
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.Failure);
     }
+
+    [TestMethod]
+    public async Task RegistrationFeePaymentHandle_GivenValidCommand_ShouldReturnSuccess()
+    {
+        var submissionEvent = TestCommands.SubmissionEvent.ValidRegistrationFeePaymentEventCreateCommand();
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(submissionEvent, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task RegistrationFeePaymentHandle_GivenRepositoryError_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(TestCommands.SubmissionEvent.ValidRegistrationFeePaymentEventCreateCommand(), default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [TestMethod]
+    public async Task GivenValidCommand_RegistrationApplicationSubmittedHandle_ShouldReturnSuccess()
+    {
+        // Arrange
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(TestCommands.SubmissionEvent.ValidRegistrationApplicationSubmittedEventCreateCommand(), CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task GivenRepositoryError_RegistrationApplicationSubmittedHandle_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(TestCommands.SubmissionEvent.ValidRegistrationApplicationSubmittedEventCreateCommand(), default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
 }

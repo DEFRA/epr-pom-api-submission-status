@@ -3,7 +3,7 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <SonarQubeTestProject>true</SonarQubeTestProject>
-    </PropertyGroup>
+	</PropertyGroup>
 
     <ItemGroup>
        <PackageReference Include="coverlet.msbuild" Version="6.0.2">

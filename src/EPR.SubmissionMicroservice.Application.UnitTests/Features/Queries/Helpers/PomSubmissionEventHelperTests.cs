@@ -445,6 +445,69 @@ public class PomSubmissionEventHelperTests
     }
 
     [TestMethod]
+    public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_WhenAntiVirusResultIsMissing()
+    {
+        // Arrange
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new AntivirusCheckEvent
+            {
+                SubmissionId = _submissionId,
+                FileName = FileOneName,
+                Created = _fileOneCreatedDateTime,
+                FileId = _fileOneFileId,
+                UserId = _userId
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = _submissionId,
+                BlobName = FileOneBlobName,
+                DataCount = 1,
+                Created = DateTime.Now.AddHours(-2)
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = _submissionId,
+                BlobName = FileOneBlobName,
+                IsValid = true
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = _submissionId,
+                FileId = _fileOneFileId,
+                Created = _fileOneSubmittedDateTime,
+                UserId = _userId
+            }
+        };
+
+        _submissionEventsRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
+
+        // Act
+        await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
+
+        // Assert
+        _pomSubmissionGetResponse.Should().BeEquivalentTo(new PomSubmissionGetResponse
+        {
+            Id = _submissionId,
+            PomFileName = FileOneName,
+            PomFileUploadDateTime = _fileOneCreatedDateTime,
+            LastUploadedValidFile = null,
+            LastSubmittedFile = new SubmittedPomFileInformation
+            {
+                FileId = _fileOneFileId,
+                FileName = FileOneName,
+                SubmittedBy = _userId,
+                SubmittedDateTime = _fileOneSubmittedDateTime
+            },
+            PomDataComplete = false,
+            ValidationPass = false,
+            HasWarnings = false
+        });
+    }
+
+    [TestMethod]
     public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_WhenLatestAntivirusResultEventsDoesNotExist()
     {
         // Arrange

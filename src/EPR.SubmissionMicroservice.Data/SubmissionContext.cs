@@ -70,9 +70,6 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<RegulatorPoMDecisionEvent>()
             .HasPartitionKey(x => x.Id);
 
-        modelBuilder.Entity<RegulatorOrganisationRegistrationDecisionEvent>()
-            .HasPartitionKey(x => x.Id);
-
         modelBuilder.Entity<RegulatorRegistrationDecisionEvent>()
             .HasPartitionKey(x => x.Id);
 
@@ -100,6 +97,12 @@ public class SubmissionContext : EprCommonContext
         modelBuilder.Entity<PartnerValidationEvent>()
             .HasPartitionKey(x => x.Id);
 
+        modelBuilder.Entity<RegistrationFeePaymentEvent>()
+            .HasPartitionKey(x => x.Id);
+
+        modelBuilder.Entity<RegistrationApplicationSubmittedEvent>()
+            .HasPartitionKey(x => x.Id);
+
         modelBuilder.Entity<CheckSplitterValidationError>()
             .HasPartitionKey(x => x.Id);
 
@@ -113,6 +116,9 @@ public class SubmissionContext : EprCommonContext
             .HasPartitionKey(x => x.ValidationEventId);
 
         modelBuilder.Entity<RegistrationValidationError>()
+            .HasPartitionKey(x => x.Id);
+
+        modelBuilder.Entity<PackagingDataResubmissionFeePaymentEvent>()
             .HasPartitionKey(x => x.Id);
     }
 
@@ -138,10 +144,12 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<AntivirusCheckEvent>(EventType.AntivirusCheck)
                 .HasValue<AntivirusResultEvent>(EventType.AntivirusResult)
                 .HasValue<RegulatorPoMDecisionEvent>(EventType.RegulatorPoMDecision)
-                .HasValue<RegulatorOrganisationRegistrationDecisionEvent>(EventType.RegulatorOrganisationRegistrationDecision)
                 .HasValue<RegulatorRegistrationDecisionEvent>(EventType.RegulatorRegistrationDecision)
                 .HasValue<FileDownloadCheckEvent>(EventType.FileDownloadCheck)
-                .HasValue<SubmittedEvent>(EventType.Submitted);
+                .HasValue<SubmittedEvent>(EventType.Submitted)
+                .HasValue<RegistrationFeePaymentEvent>(EventType.RegistrationFeePayment)
+                .HasValue<RegistrationApplicationSubmittedEvent>(EventType.RegistrationApplicationSubmitted)
+                .HasValue<PackagingDataResubmissionFeePaymentEvent>(EventType.PackagingDataResubmissionFeePayment);
             x.Property(e => e.Id).ToJsonProperty("SubmissionEventId");
             x.Property(e => e.Type).HasConversion<string>();
         });
@@ -152,11 +160,6 @@ public class SubmissionContext : EprCommonContext
         });
 
         modelBuilder.Entity<RegulatorRegistrationDecisionEvent>(x =>
-        {
-            x.Property(e => e.Decision).HasConversion<string>();
-        });
-
-        modelBuilder.Entity<RegulatorOrganisationRegistrationDecisionEvent>(x =>
         {
             x.Property(e => e.Decision).HasConversion<string>();
         });

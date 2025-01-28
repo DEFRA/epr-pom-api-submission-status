@@ -21,5 +21,7 @@ public class Submission : EntityWithId, ICreated
 
     public Guid? ComplianceSchemeId { get; set; }
 
+    public string? AppReferenceNumber { get; set; }
+
     public DateTime Created { get; set; }
 }

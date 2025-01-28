@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.UnitTests.Controllers;
+﻿using EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
+
+namespace EPR.SubmissionMicroservice.API.UnitTests.Controllers;
 
 using API.Controllers;
 using API.Services.Interfaces;
@@ -15,6 +17,7 @@ using AutoMapper;
 using Contracts.Submission.Submit;
 using Contracts.Submissions.Get;
 using Data.Enums;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionUploadedFileGet;
 using ErrorOr;
 using FluentAssertions;
 using MediatR;
@@ -315,5 +318,57 @@ public class SubmissionControllerTests
         // Assert
         result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().BeOfType<SubmissionsEventsGetResponse>();
+    }
+
+    [TestMethod]
+    public async Task GetRegistrationApplicationSubmissionDetails_ReturnEmptyObject_OkObjectResult()
+    {
+        // Arrange
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<GetRegistrationApplicationDetailsQuery>(), CancellationToken.None))
+            .ReturnsAsync(ErrorOrFactory.From(new GetRegistrationApplicationDetailsResponse()));
+
+        // Act
+        var result = await _systemUnderTest.GetRegistrationApplicationDetails(new GetRegistrationApplicationDetailsRequest()) as OkObjectResult;
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Value.Should().NotBeNull();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+    }
+
+    [TestMethod]
+    public async Task GetRegistrationApplicationSubmissionDetails_EmptyObject_NullResult()
+    {
+        // Arrange
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<GetRegistrationApplicationDetailsQuery>(), CancellationToken.None))
+            .ReturnsAsync(new ErrorOr<GetRegistrationApplicationDetailsResponse>());
+
+        // Act
+        var result = await _systemUnderTest.GetRegistrationApplicationDetails(new GetRegistrationApplicationDetailsRequest()) as OkObjectResult;
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task GetSubmissionUploadedFile_Return_OkObjectResult()
+    {
+        // Arrange
+        var response = TestQueries.Submission.ValidSubmissionUploadedFileResponse();
+
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<SubmissionUploadedFileGetQuery>(), CancellationToken.None))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _systemUnderTest.GetSubmissionUploadedFile(new Guid(), new Guid()) as OkObjectResult;
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+        result.Value.Should().Be(response);
+        result.Value.Should().BeOfType<SubmissionUploadedFileGetResponse>();
     }
 }

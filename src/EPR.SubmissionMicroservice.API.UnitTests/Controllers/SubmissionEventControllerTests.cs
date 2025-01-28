@@ -1,5 +1,6 @@
 ﻿namespace EPR.SubmissionMicroservice.API.UnitTests.Controllers;
 
+using System.Collections.Generic;
 using System.Net;
 using API.Controllers;
 using API.Services.Interfaces;
@@ -8,7 +9,6 @@ using Application.Features.Queries.SubmissionEventsGet;
 using AutoMapper;
 using Data.Enums;
 using EPR.SubmissionMicroservice.API.Contracts.SubmissionEvents.Get;
-using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionCreate;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using ErrorOr;
 using Errors;
@@ -148,10 +148,13 @@ public class SubmissionEventControllerTests
     }
 
     [TestMethod]
-    public async Task CreateValidationEvent_ContainsValidationWarnings_ReturnsCreated()
+    [DataRow(EventType.RegulatorRegistrationDecision)]
+    [DataRow(EventType.RegistrationFeePayment)]
+    [DataRow(EventType.PackagingDataResubmissionFeePayment)]
+    public async Task CreateValidationEvent_ContainsValidationWarnings_ReturnsCreated(EventType eventType)
     {
         // Arrange
-        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(EventType.RegulatorOrganisationRegistrationDecision);
+        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(eventType);
         request["validationWarnings"] = new JArray
         {
             new JObject
@@ -160,7 +163,7 @@ public class SubmissionEventControllerTests
             }
         };
 
-        var command = TestCommands.SubmissionEvent.ValidSubmissionEventCreateCommand(EventType.RegulatorOrganisationRegistrationDecision);
+        var command = TestCommands.SubmissionEvent.ValidSubmissionEventCreateCommand(eventType);
 
         _mockHeaderSetter.Setup(x => x.Set(It.IsAny<AbstractSubmissionEventCreateCommand>()))
             .Returns(command);
@@ -177,12 +180,15 @@ public class SubmissionEventControllerTests
     }
 
     [TestMethod]
-    public async Task CreateValidationEvent_SendCommand_ReturnsError_ReturnsProblem()
+    [DataRow(EventType.RegulatorRegistrationDecision)]
+    [DataRow(EventType.RegistrationFeePayment)]
+    [DataRow(EventType.PackagingDataResubmissionFeePayment)]
+    public async Task CreateValidationEvent_SendCommand_ReturnsError_ReturnsProblem(EventType eventType)
     {
         // Arrange
-        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(EventType.RegulatorOrganisationRegistrationDecision);
+        var request = TestRequests.SubmissionEvent.ValidSubmissionEventCreateRequest(eventType);
 
-        var command = TestCommands.SubmissionEvent.ValidSubmissionEventCreateCommand(EventType.RegulatorOrganisationRegistrationDecision);
+        var command = TestCommands.SubmissionEvent.ValidSubmissionEventCreateCommand(eventType);
 
         var errorList = new List<Error>()
         {
@@ -272,11 +278,39 @@ public class SubmissionEventControllerTests
             .ReturnsAsync(response);
 
         // Act
-        var result = await _systemUnderTest.GetRegulatorOrganisationRegistrationSubmissionEvents(request) as ObjectResult;
+        var result = await _systemUnderTest.GetOrganisationRegistrationSubmissionEvents(request) as ObjectResult;
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
         result.StatusCode.Should().Be(StatusCodes.Status200OK);
         result.Value.Should().Be(response);
+    }
+
+    [TestMethod]
+    public async Task GetRegulatorOrganisationRegistrationDecisionSubmissionEvents_ReturnsProblemctResult()
+    {
+        // Arrange
+        var request = new RegulatorOrganisationRegistrationDecisionSubmissionEventsGetRequest() { SubmissionId = Guid.NewGuid(), LastSyncTime = DateTime.Now };
+        var query = new RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery();
+        var errorList = new List<Error>()
+        {
+            Error.Failure("test", "test failure")
+        };
+        var errorResult = ErrorOr<List<RegulatorOrganisationRegistrationDecisionGetResponse>>.From(errorList);
+
+        _mockHeaderSetter.Setup(x => x.Set(It.IsAny<RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQuery>()))
+            .Returns(query);
+
+        _mockMediator
+            .Setup(x => x.Send(query, CancellationToken.None))
+            .ReturnsAsync(errorResult);
+
+        // Act
+        var result = await _systemUnderTest.GetOrganisationRegistrationSubmissionEvents(request) as ObjectResult;
+
+        // Assert
+        Assert.IsNotNull(result);
+        result.Value.Should().BeOfType(typeof(ProblemDetails));
+        result.StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
     }
 }

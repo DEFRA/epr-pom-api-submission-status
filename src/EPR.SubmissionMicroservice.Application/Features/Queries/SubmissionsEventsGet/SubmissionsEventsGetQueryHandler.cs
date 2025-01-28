@@ -24,11 +24,6 @@ public class SubmissionsEventsGetQueryHandler : IRequestHandler<SubmissionsEvent
 
     public async Task<ErrorOr<SubmissionsEventsGetResponse>> Handle(SubmissionsEventsGetQuery request, CancellationToken cancellationToken)
     {
-        if (request.LastSyncTime.Year > DateTime.Now.Year)
-        {
-            return Error.Failure("Provided last sync time provided is invalid");
-        }
-
         var response = new SubmissionsEventsGetResponse();
 
         var submittedEvents = await _submittedEventQueryRepository.GetAll(x =>

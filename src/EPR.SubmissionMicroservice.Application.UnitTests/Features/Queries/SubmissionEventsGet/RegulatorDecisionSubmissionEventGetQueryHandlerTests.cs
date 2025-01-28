@@ -10,10 +10,10 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.Subm
 public class RegulatorDecisionSubmissionEventGetQueryHandlerTests
 {
     private readonly Guid _submissionId = Guid.NewGuid();
-    private Mock<IQueryRepository<RegulatorPoMDecisionEvent>> _pomSubmissionQueryRepositoryMock;
-    private Mock<IQueryRepository<RegulatorRegistrationDecisionEvent>> _registrationSubmissionQueryRepositoryMock;
-    private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventQueryRepositoryMock;
-    private RegulatorDecisionSubmissionEventGetQueryHandler _systemUnderTest;
+    private Mock<IQueryRepository<RegulatorPoMDecisionEvent>> _pomSubmissionQueryRepositoryMock = null!;
+    private Mock<IQueryRepository<RegulatorRegistrationDecisionEvent>> _registrationSubmissionQueryRepositoryMock = null!;
+    private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventQueryRepositoryMock = null!;
+    private RegulatorDecisionSubmissionEventGetQueryHandler _systemUnderTest = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -111,7 +111,7 @@ public class RegulatorDecisionSubmissionEventGetQueryHandlerTests
         var eventResult = orderedResult[0] as AbstractSubmissionEventGetResponse;
         var decisionResult = orderedResult[1] as RegulatorDecisionGetResponse;
         eventResult.SubmissionId.Should().Be(eventId);
-        decisionResult.SubmissionId.Should().Be(_submissionId);
+        decisionResult!.SubmissionId.Should().Be(_submissionId);
         decisionResult.FileId.Should().Be(fileId01);
     }
 
@@ -186,7 +186,7 @@ public class RegulatorDecisionSubmissionEventGetQueryHandlerTests
         result.Should().NotBeNull();
         result.Value.Should().HaveCount(1);
         var decisionResult = result.Value[0] as RegulatorDecisionGetResponse;
-        decisionResult.SubmissionId.Should().Be(_submissionId);
+        decisionResult!.SubmissionId.Should().Be(_submissionId);
         decisionResult.FileId.Should().Be(fileId01);
     }
 
@@ -270,7 +270,7 @@ public class RegulatorDecisionSubmissionEventGetQueryHandlerTests
         var eventResult = orderedResult[0] as AbstractSubmissionEventGetResponse;
         var decisionResult = orderedResult[1] as RegulatorDecisionGetResponse;
         eventResult.SubmissionId.Should().Be(eventId);
-        decisionResult.SubmissionId.Should().Be(_submissionId);
+        decisionResult!.SubmissionId.Should().Be(_submissionId);
         decisionResult.FileId.Should().Be(fileId01);
     }
 
@@ -357,7 +357,7 @@ public class RegulatorDecisionSubmissionEventGetQueryHandlerTests
         var eventResult = orderedResult[0] as AbstractSubmissionEventGetResponse;
         var decisionResult = orderedResult[1] as RegulatorDecisionGetResponse;
         eventResult.SubmissionId.Should().Be(eventId);
-        decisionResult.SubmissionId.Should().Be(_submissionId);
+        decisionResult!.SubmissionId.Should().Be(_submissionId);
         decisionResult.FileId.Should().Be(fileId01);
     }
 }

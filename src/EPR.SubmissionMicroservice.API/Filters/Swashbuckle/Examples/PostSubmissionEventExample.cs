@@ -14,10 +14,20 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
             "Regulator Organisation Registration Decision Event",
             new JObject
             {
-                ["type"] = (int)EventType.RegulatorOrganisationRegistrationDecision,
+                ["type"] = (int)EventType.RegulatorRegistrationDecision,
                 ["decision"] = (int)RegulatorDecision.Cancelled,
                 ["comments"] = "An example test comment",
                 ["userid"] = "1c1c1be4-76b7-49c6-a23f-c1ce8ffdcde7"
+            });
+
+        yield return SwaggerExample.Create(
+            "Registration Application Submitted Event",
+            new JObject
+            {
+                ["type"] = (int)EventType.RegistrationApplicationSubmitted,
+                ["comments"] = "We have agreed to settle for a part-payment of £24,500",
+                ["applicationReferenceNumber"] = "PEPR00002125P1",
+                ["submissionDate"] = DateTime.Today,
             });
 
         yield return SwaggerExample.Create(

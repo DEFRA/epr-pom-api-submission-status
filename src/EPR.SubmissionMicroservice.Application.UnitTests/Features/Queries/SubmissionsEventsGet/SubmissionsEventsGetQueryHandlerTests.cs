@@ -11,16 +11,15 @@ using Data.Repositories.Queries.Interfaces;
 [TestClass]
 public class SubmissionsEventsGetQueryHandlerTests
 {
-    private readonly Guid submissionId = Guid.NewGuid();
-    private readonly DateTime lastSyncTime = DateTime.Now;
-    private readonly Guid fileId = Guid.NewGuid();
-    private readonly Guid userId = Guid.NewGuid();
+    private readonly Guid _submissionId = Guid.NewGuid();
+    private readonly DateTime _lastSyncTime = DateTime.Now;
+    private readonly Guid _fileId = Guid.NewGuid();
+    private readonly Guid _userId = Guid.NewGuid();
 
-    private Mock<IQueryRepository<SubmittedEvent>> _submittedEventQueryRepository;
-    private Mock<IQueryRepository<RegulatorPoMDecisionEvent>> _regulatorPoMDecisionEventQueryRepository;
-    private Mock<IQueryRepository<AntivirusCheckEvent>> _antivirusCheckEventQueryRepository;
-
-    private SubmissionsEventsGetQueryHandler _systemUnderTest;
+    private Mock<IQueryRepository<SubmittedEvent>> _submittedEventQueryRepository = null!;
+    private Mock<IQueryRepository<RegulatorPoMDecisionEvent>> _regulatorPoMDecisionEventQueryRepository = null!;
+    private Mock<IQueryRepository<AntivirusCheckEvent>> _antivirusCheckEventQueryRepository = null!;
+    private SubmissionsEventsGetQueryHandler _systemUnderTest = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -39,18 +38,18 @@ public class SubmissionsEventsGetQueryHandlerTests
     public async Task Handle_ReturnsExpectedGetResponses()
     {
         // Arrange
-        var query = new SubmissionsEventsGetQuery(submissionId, lastSyncTime);
+        var query = new SubmissionsEventsGetQuery(_submissionId, _lastSyncTime);
 
         var submittedEvent = new List<SubmittedEvent>
         {
             new()
             {
                 Created = DateTime.Now,
-                FileId = fileId,
+                FileId = _fileId,
                 Id = Guid.NewGuid(),
-                SubmissionId = submissionId,
+                SubmissionId = _submissionId,
                 SubmittedBy = "Test User",
-                UserId = userId
+                UserId = _userId
             }
         };
 
@@ -62,13 +61,13 @@ public class SubmissionsEventsGetQueryHandlerTests
         {
             new()
             {
-                UserId = userId,
-                SubmissionId = submissionId,
+                UserId = _userId,
+                SubmissionId = _submissionId,
                 IsResubmissionRequired = true,
                 Comments = string.Empty,
                 Decision = RegulatorDecision.Accepted,
                 Id = Guid.NewGuid(),
-                FileId = fileId,
+                FileId = _fileId,
                 Created = DateTime.Now
             }
         };
@@ -82,12 +81,12 @@ public class SubmissionsEventsGetQueryHandlerTests
             new()
             {
                 Created = DateTime.Now,
-                FileId = fileId,
+                FileId = _fileId,
                 FileName = "TestFile.csv",
                 Id = Guid.NewGuid(),
                 RegistrationSetId = Guid.NewGuid(),
-                SubmissionId = submissionId,
-                UserId = userId,
+                SubmissionId = _submissionId,
+                UserId = _userId,
             }
         };
 
@@ -122,7 +121,7 @@ public class SubmissionsEventsGetQueryHandlerTests
     public async Task Handle_ReturnsNoRecords_WhenEntitiesAreEmpty()
     {
         // Arrange
-        var query = new SubmissionsEventsGetQuery(submissionId, lastSyncTime);
+        var query = new SubmissionsEventsGetQuery(_submissionId, _lastSyncTime);
 
         var submittedEvent = new List<SubmittedEvent>();
 
@@ -167,8 +166,6 @@ public class SubmissionsEventsGetQueryHandlerTests
         // Arrange
         var query = new SubmissionsEventsGetQuery(Guid.Empty, DateTime.MinValue);
 
-        var submittedEvent = new List<SubmittedEvent>();
-
         _submittedEventQueryRepository
             .Setup(x => x.GetAll(It.IsAny<Expression<Func<SubmittedEvent, bool>>>()))
             .Throws(new Exception("Sql Query exception"));
@@ -187,7 +184,7 @@ public class SubmissionsEventsGetQueryHandlerTests
     public async Task Handle_ReturnsError_WhenInvalidLastSyncTimeIsProvided()
     {
         // Arrange
-        var query = new SubmissionsEventsGetQuery(submissionId, DateTime.Parse("01-01-9999"));
+        var query = new SubmissionsEventsGetQuery(_submissionId, DateTime.Parse("01-01-9999"));
 
         var submittedEvent = new List<SubmittedEvent>();
 
@@ -211,6 +208,6 @@ public class SubmissionsEventsGetQueryHandlerTests
         var result = await _systemUnderTest.Handle(query, CancellationToken.None);
 
         // Assert
-        result.IsError.Should().BeTrue();
+        result.IsError.Should().BeFalse();
     }
 }

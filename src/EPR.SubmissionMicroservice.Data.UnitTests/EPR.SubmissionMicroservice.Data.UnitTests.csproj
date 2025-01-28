@@ -5,7 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <SonarQubeTestProject>true</SonarQubeTestProject>
-    </PropertyGroup>
+	</PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="coverlet.collector" Version="6.0.2">

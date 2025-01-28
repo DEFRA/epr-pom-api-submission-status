@@ -13,4 +13,6 @@ public class SubmissionCreateRequest
     public DataSourceType DataSourceType { get; set; }
 
     public Guid? ComplianceSchemeId { get; set; }
+
+    public string? AppReferenceNumber { get; set; }
 }

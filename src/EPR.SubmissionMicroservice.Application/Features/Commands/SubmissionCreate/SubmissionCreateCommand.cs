@@ -19,4 +19,6 @@ public class SubmissionCreateCommand : IRequest<ErrorOr<SubmissionCreateResponse
     public Guid? UserId { get; set; }
 
     public Guid? ComplianceSchemeId { get; set; }
+
+    public string? AppReferenceNumber { get; set; }
 }

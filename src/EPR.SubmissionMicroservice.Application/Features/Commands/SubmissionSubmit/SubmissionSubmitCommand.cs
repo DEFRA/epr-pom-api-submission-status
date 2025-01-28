@@ -12,4 +12,6 @@ public class SubmissionSubmitCommand : IRequest<ErrorOr<Unit>>
     public Guid UserId { get; set; }
 
     public string? SubmittedBy { get; set; }
+
+    public string? AppReferenceNumber { get; set; }
 }
