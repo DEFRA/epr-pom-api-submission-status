@@ -1,0 +1,13 @@
+﻿using FluentValidation;
+
+namespace EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
+
+public class GetPackagingResubmissionApplicationDetailsQueryValidatorTests : AbstractValidator<GetPackagingResubmissionApplicationDetailsQuery>
+{
+    public GetPackagingResubmissionApplicationDetailsQueryValidatorTests()
+    {
+        RuleFor(x => x.OrganisationId).NotEmpty().NotEqual(Guid.Empty);
+
+        RuleFor(x => x.SubmissionPeriod).NotEmpty().WithMessage("Please enter a valid submission period");
+    }
+}
