@@ -22,15 +22,15 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             .GetAll(x =>
                 x.OrganisationId == request.OrganisationId &&
                 x.SubmissionType == SubmissionType.Registration &&
-                x.SubmissionPeriod == request.SubmissionPeriod &&
-                x.Created != null);
+                x.SubmissionPeriod == request.SubmissionPeriod);
 
         if (request.ComplianceSchemeId is not null)
         {
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
         }
 
-        var submission = await query.OrderByDescending(x => x.Created).FirstOrDefaultAsync(cancellationToken);
+        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+        var submission = submissions.FirstOrDefault();
 
         if (submission is null)
         {
@@ -44,16 +44,16 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         var submittedEvent = submissionEvents.OfType<SubmittedEvent>()
             .MaxBy(d => d.Created);
 
-        var regulatorRegistrationDecision = submissionEvents.OfType<RegulatorRegistrationDecisionEvent>()
+        var regulatorRegistrationDecisionEvent = submissionEvents.OfType<RegulatorRegistrationDecisionEvent>()
             .MaxBy(d => d.Created);
 
-        var registrationFeePayment = submissionEvents.OfType<RegistrationFeePaymentEvent>()
+        var registrationFeePaymentEvent = submissionEvents.OfType<RegistrationFeePaymentEvent>()
             .Where(s => !string.IsNullOrWhiteSpace(s.ApplicationReferenceNumber))
             .MaxBy(d => d.Created);
 
-        var registrationApplicationSubmitted = submissionEvents.OfType<RegistrationApplicationSubmittedEvent>()
+        var registrationApplicationSubmittedEvents = submissionEvents.OfType<RegistrationApplicationSubmittedEvent>()
             .Where(s => !string.IsNullOrWhiteSpace(s.ApplicationReferenceNumber))
-            .MaxBy(d => d.Created);
+            .ToList();
 
         var errorsCount = 0;
 
@@ -139,59 +139,87 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         var validationPass = isCompanyDetailsFileValid
-                                  && isBrandsFileValid
-                                  && isPartnersFileValid
-                                  && errorsCount == 0;
+                             && isBrandsFileValid
+                             && isPartnersFileValid
+                             && errorsCount == 0;
 
-        var lastUploadedValidFilesCompanyDetailsUploadDatetime =
-            validationPass ? latestCompanyDetailsAntivirusCheckEvent?.Created : null;
+        var latestCompanyDetailsCreatedDatetime = validationPass ? latestCompanyDetailsAntivirusCheckEvent?.Created : null;
+        var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
+        var isLatestSubmittedEventAfterFileUpload = latestSubmittedEventCreatedDatetime > latestCompanyDetailsCreatedDatetime;
+
+        var registrationApplicationSubmittedEvent = registrationApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
+
+        var isLateFeeApplicable = registrationApplicationSubmittedEvents.Count switch
+        {
+            1 => registrationApplicationSubmittedEvents[0].SubmissionDate > request.LateFeeDeadline,
+            > 1 => registrationApplicationSubmittedEvents.MinBy(x => x.SubmissionDate).SubmissionDate > request.LateFeeDeadline,
+            _ => false
+        };
 
         var response = new GetRegistrationApplicationDetailsResponse
         {
             SubmissionId = submission.Id,
             IsSubmitted = submission.IsSubmitted ?? false,
             ApplicationReferenceNumber = submission.AppReferenceNumber,
-            RegistrationFeePaymentMethod = registrationFeePayment?.PaymentMethod,
-            LastSubmittedFile = new LastSubmittedFileDetails
-            {
-                SubmittedDateTime = submittedEvent?.Created,
-                FileId = submittedEvent?.FileId,
-                SubmittedByName = submittedEvent?.SubmittedBy,
-            },
-            RegistrationApplicationSubmittedDate = registrationApplicationSubmitted?.SubmissionDate,
-            RegistrationApplicationSubmittedComment = registrationApplicationSubmitted?.Comments
+            RegistrationFeePaymentMethod = registrationFeePaymentEvent?.PaymentMethod,
+            LastSubmittedFile = isLatestSubmittedEventAfterFileUpload
+                ? new LastSubmittedFileDetails
+                {
+                    SubmittedDateTime = submittedEvent?.Created,
+                    FileId = submittedEvent?.FileId,
+                    SubmittedByName = submittedEvent?.SubmittedBy
+                }
+                : null,
+            IsLateFeeApplicable = isLateFeeApplicable,
+            RegistrationApplicationSubmittedDate = registrationApplicationSubmittedEvent?.SubmissionDate,
+            RegistrationApplicationSubmittedComment = registrationApplicationSubmittedEvent?.Comments,
+            RegistrationReferenceNumber = regulatorRegistrationDecisionEvent?.RegistrationReferenceNumber
         };
 
-        if (!response.IsSubmitted)
+        if (response.IsSubmitted)
         {
-            response.ApplicationStatus = lastUploadedValidFilesCompanyDetailsUploadDatetime != null
-                ? ApplicationStatusType.FileUploaded
-                : ApplicationStatusType.NotStarted;
+            response.ApplicationStatus = isLatestSubmittedEventAfterFileUpload
+                ? ApplicationStatusType.SubmittedToRegulator
+                : ApplicationStatusType.SubmittedAndHasRecentFileUpload;
         }
         else
         {
-            switch (regulatorRegistrationDecision?.Decision.ToString())
+            response.ApplicationStatus = latestCompanyDetailsCreatedDatetime != null
+                ? ApplicationStatusType.FileUploaded
+                : ApplicationStatusType.NotStarted;
+        }
+
+        if (regulatorRegistrationDecisionEvent is not null)
+        {
+            response.ApplicationStatus = regulatorRegistrationDecisionEvent.Decision.ToString() switch
             {
-                case "Accepted":
-                    response.ApplicationStatus = ApplicationStatusType.AcceptedByRegulator;
-                    break;
-                case "Approved":
-                    response.ApplicationStatus = ApplicationStatusType.ApprovedByRegulator;
-                    break;
-                case "Rejected":
-                    response.ApplicationStatus = ApplicationStatusType.RejectedByRegulator;
-                    break;
-                case "Cancelled":
-                    response.ApplicationStatus = ApplicationStatusType.CancelledByRegulator;
-                    break;
-                case "Queried":
-                    response.ApplicationStatus = ApplicationStatusType.QueriedByRegulator;
-                    break;
-                default:
-                    response.ApplicationStatus = lastUploadedValidFilesCompanyDetailsUploadDatetime > response.LastSubmittedFile?.SubmittedDateTime
-                        ? ApplicationStatusType.SubmittedAndHasRecentFileUpload
-                        : ApplicationStatusType.SubmittedToRegulator;
-                    break;
+                "Accepted" => ApplicationStatusType.AcceptedByRegulator,
+                "Approved" => ApplicationStatusType.ApprovedByRegulator,
+                "Rejected" => ApplicationStatusType.RejectedByRegulator,
+                "Cancelled" => ApplicationStatusType.CancelledByRegulator,
+                "Queried" => ApplicationStatusType.QueriedByRegulator
+            };
+        }
+
+        if (response.ApplicationStatus is
+                ApplicationStatusType.CancelledByRegulator
+                or ApplicationStatusType.QueriedByRegulator
+                or ApplicationStatusType.RejectedByRegulator
+            && regulatorRegistrationDecisionEvent.Created < latestCompanyDetailsCreatedDatetime)
+        {
+            response.ApplicationStatus = isLatestSubmittedEventAfterFileUpload
+                ? ApplicationStatusType.SubmittedToRegulator
+                : ApplicationStatusType.SubmittedAndHasRecentFileUpload;
+
+            if (registrationFeePaymentEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            {
+                response.RegistrationFeePaymentMethod = null;
+            }
+
+            if (registrationApplicationSubmittedEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            {
+                response.RegistrationApplicationSubmittedComment = null;
+                response.RegistrationApplicationSubmittedDate = null;
             }
         }
 
