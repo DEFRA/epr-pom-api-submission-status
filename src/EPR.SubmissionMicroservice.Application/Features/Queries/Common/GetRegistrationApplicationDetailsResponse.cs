@@ -36,6 +36,10 @@ public class GetRegistrationApplicationDetailsResponse
 
     public ApplicationStatusType ApplicationStatus { get; set; }
 
+    public string? RegistrationReferenceNumber { get; set; }
+
+    public bool IsLateFeeApplicable { get; set; }
+
     public class LastSubmittedFileDetails
     {
         public Guid? FileId { get; set; }
