@@ -7,16 +7,20 @@ using EPR.SubmissionMicroservice.Data.Enums;
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 public class SubmissionOrganisationDetailsGetQueryHandler
     : IRequestHandler<SubmissionOrganisationDetailsGetQuery, ErrorOr<SubmissionOrganisationDetailsGetResponse>>
 {
     private readonly IQueryRepository<AbstractSubmissionEvent> _submissionEventsQueryRepository;
+    private readonly ILogger<SubmissionOrganisationDetailsGetQueryHandler> _logger;
 
     public SubmissionOrganisationDetailsGetQueryHandler(
-        IQueryRepository<AbstractSubmissionEvent> submissionEventsQueryRepository)
+        IQueryRepository<AbstractSubmissionEvent> submissionEventsQueryRepository,
+        ILogger<SubmissionOrganisationDetailsGetQueryHandler> logger)
     {
         _submissionEventsQueryRepository = submissionEventsQueryRepository;
+        _logger = logger;
     }
 
     public async Task<ErrorOr<SubmissionOrganisationDetailsGetResponse>> Handle(
@@ -44,6 +48,7 @@ public class SubmissionOrganisationDetailsGetQueryHandler
 
         if (antiVirusResultEvent is null)
         {
+            _logger.LogInformation("AntiVirusResultEvent not found for blob {BlobName} in submission {SubmissionId}", request.BlobName, request.SubmissionId);
             return Error.NotFound();
         }
 
@@ -53,6 +58,7 @@ public class SubmissionOrganisationDetailsGetQueryHandler
 
         if (antiVirusCheckEvent is null)
         {
+            _logger.LogInformation("AntiVirusCheckEvent not found for blob {BlobName} with fileId {FileId} in submission {SubmissionId}", request.BlobName, antiVirusResultEvent.FileId, request.SubmissionId);
             return Error.NotFound();
         }
 
@@ -63,6 +69,7 @@ public class SubmissionOrganisationDetailsGetQueryHandler
 
         if (registrationAntiVirusCheckEvent is null)
         {
+            _logger.LogInformation("RegistrationAntiVirusCheckEvent not found for blob {BlobName} with registrationSetId {RegistrationSetId} in submission {SubmissionId}", request.BlobName, antiVirusCheckEvent.RegistrationSetId, request.SubmissionId);
             return Error.NotFound();
         }
 
@@ -73,8 +80,11 @@ public class SubmissionOrganisationDetailsGetQueryHandler
         if (registrationAntiVirusResultEvent is null ||
             registrationAntiVirusResultEvent.BlobName is null)
         {
+            _logger.LogInformation("RegistrationAntiVirusResultEvent not found for blob {BlobName} with fileId {FileId} in submission {SubmissionId}", request.BlobName, registrationAntiVirusCheckEvent.FileId, request.SubmissionId);
             return Error.NotFound();
         }
+
+        _logger.LogInformation("Found RegistrationAntiVirusResultEvent with blob name {BlobName} in submission {SubmissionId}", registrationAntiVirusResultEvent.BlobName, request.SubmissionId);
 
         return new SubmissionOrganisationDetailsGetResponse
         {

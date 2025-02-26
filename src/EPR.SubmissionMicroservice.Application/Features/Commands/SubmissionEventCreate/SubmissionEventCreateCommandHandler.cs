@@ -25,7 +25,8 @@ public class SubmissionEventCreateCommandHandler :
     IRequestHandler<RegistrationFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<RegistrationApplicationSubmittedEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<FileDownloadCheckEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
-    IRequestHandler<PackagingDataResubmissionFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
+    IRequestHandler<PackagingDataResubmissionFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<SubsidiariesBulkUploadCompleteEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
 {
     private readonly ICommandRepository<AbstractSubmissionEvent> _commandRepository;
     private readonly ILoggingService _loggingService;
@@ -127,6 +128,11 @@ public class SubmissionEventCreateCommandHandler :
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingDataResubmissionFeePaymentEventCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(SubsidiariesBulkUploadCompleteEventCreateCommand command, CancellationToken cancellationToken)
     {
         return await AbstractHandle(command, cancellationToken);
     }

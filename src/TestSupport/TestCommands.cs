@@ -249,6 +249,16 @@ public static class TestCommands
             };
         }
 
+        public static SubsidiariesBulkUploadCompleteEventCreateCommand ValidSubsidiariesBulkUploadCompleteEventCreateCommand()
+        {
+            return new SubsidiariesBulkUploadCompleteEventCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                FileName = "SubsidiaryFileName.csv"
+            };
+        }
+
         public static CheckSplitterValidationEventCreateCommand InvalidCheckSplitterValidationEventCreateCommand()
         {
             return new CheckSplitterValidationEventCreateCommand

@@ -120,6 +120,9 @@ public class SubmissionContext : EprCommonContext
 
         modelBuilder.Entity<PackagingDataResubmissionFeePaymentEvent>()
             .HasPartitionKey(x => x.Id);
+
+        modelBuilder.Entity<SubsidiariesBulkUploadCompleteEvent>()
+            .HasPartitionKey(x => x.Id);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -149,7 +152,8 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<SubmittedEvent>(EventType.Submitted)
                 .HasValue<RegistrationFeePaymentEvent>(EventType.RegistrationFeePayment)
                 .HasValue<RegistrationApplicationSubmittedEvent>(EventType.RegistrationApplicationSubmitted)
-                .HasValue<PackagingDataResubmissionFeePaymentEvent>(EventType.PackagingDataResubmissionFeePayment);
+                .HasValue<PackagingDataResubmissionFeePaymentEvent>(EventType.PackagingDataResubmissionFeePayment)
+                .HasValue<SubsidiariesBulkUploadCompleteEvent>(EventType.SubsidiariesBulkUploadComplete);
             x.Property(e => e.Id).ToJsonProperty("SubmissionEventId");
             x.Property(e => e.Type).HasConversion<string>();
         });

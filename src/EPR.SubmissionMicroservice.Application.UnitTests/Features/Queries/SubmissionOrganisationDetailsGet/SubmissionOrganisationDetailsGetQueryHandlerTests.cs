@@ -6,6 +6,7 @@ using Data.Repositories.Queries.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 [TestClass]
@@ -36,7 +37,8 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
         _submissionEventsQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
 
         _systemUnderTest = new SubmissionOrganisationDetailsGetQueryHandler(
-            _submissionEventsQueryRepositoryMock.Object);
+            _submissionEventsQueryRepositoryMock.Object,
+            NullLogger<SubmissionOrganisationDetailsGetQueryHandler>.Instance);
     }
 
     [TestMethod]
