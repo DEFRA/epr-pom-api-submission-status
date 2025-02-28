@@ -14,6 +14,8 @@ public class RegulatorOrganisationRegistrationDecisionGetResponse
 
     public string RegistrationReferenceNumber { get; set; }
 
+    public string FileId { get; set; }
+
     public Guid SubmissionId { get; set; }
 
     public string Type { get; set; }

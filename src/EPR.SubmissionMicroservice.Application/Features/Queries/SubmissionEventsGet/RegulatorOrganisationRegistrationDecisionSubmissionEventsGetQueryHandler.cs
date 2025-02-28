@@ -53,7 +53,8 @@ public class RegulatorOrganisationRegistrationDecisionSubmissionEventsGetQueryHa
                     DecisionDate = regSubmissionEvent.DecisionDate,
                     RegistrationReferenceNumber = regSubmissionEvent.RegistrationReferenceNumber,
                     SubmissionId = regSubmissionEvent.SubmissionId,
-                    Type = regSubmissionEvent.Type.ToString()
+                    Type = regSubmissionEvent.Type.ToString(),
+                    FileId = regSubmissionEvent.FileId.ToString()
                 };
                 regulatorOrganisationRegistrationGetResponses.Add(regulatorOrganisationRegistrationGetResponse);
             }
