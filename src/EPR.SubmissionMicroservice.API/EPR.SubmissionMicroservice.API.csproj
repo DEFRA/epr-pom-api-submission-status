@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <IncludeOpenAPIAnalyzers>true</IncludeOpenAPIAnalyzers>
+        <UserSecretsId>e431d501-86b8-4d96-bc99-a95c3d6c682c</UserSecretsId>
     </PropertyGroup>
     <PropertyGroup>
         <NoWarn>S4792</NoWarn>
