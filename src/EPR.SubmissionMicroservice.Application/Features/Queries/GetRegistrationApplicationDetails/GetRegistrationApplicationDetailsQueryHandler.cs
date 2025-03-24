@@ -147,19 +147,26 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
         var isLatestSubmittedEventAfterFileUpload = latestSubmittedEventCreatedDatetime > latestCompanyDetailsCreatedDatetime;
 
-        var registrationApplicationSubmittedEvent = registrationApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
+        var registrationApplicationSubmittedEvent = registrationApplicationSubmittedEvents.MaxBy(x => x.Created);
 
-        var isLateFeeApplicable = registrationApplicationSubmittedEvents.Count switch
+        var firstApplicationSubmittedEvent = registrationApplicationSubmittedEvents.OrderBy(x => x.Created).FirstOrDefault();
+
+        bool isLateFeeApplicable;
+
+        if (firstApplicationSubmittedEvent is not null)
         {
-            1 => registrationApplicationSubmittedEvents[0].SubmissionDate > request.LateFeeDeadline,
-            > 1 => registrationApplicationSubmittedEvents.MinBy(x => x.SubmissionDate).SubmissionDate > request.LateFeeDeadline,
-            _ => false
-        };
+            isLateFeeApplicable = firstApplicationSubmittedEvent.SubmissionDate > request.LateFeeDeadline;
+        }
+        else
+        {
+            isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+        }
 
         var response = new GetRegistrationApplicationDetailsResponse
         {
             SubmissionId = submission.Id,
             IsSubmitted = submission.IsSubmitted ?? false,
+            IsResubmission = submission.IsResubmission,
             ApplicationReferenceNumber = submission.AppReferenceNumber,
             RegistrationFeePaymentMethod = registrationFeePaymentEvent?.PaymentMethod,
             LastSubmittedFile = isLatestSubmittedEventAfterFileUpload
@@ -199,6 +206,29 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 "Cancelled" => ApplicationStatusType.CancelledByRegulator,
                 "Queried" => ApplicationStatusType.QueriedByRegulator
             };
+        }
+
+        if (response.ApplicationStatus is
+                ApplicationStatusType.ApprovedByRegulator
+                or ApplicationStatusType.AcceptedByRegulator
+            && regulatorRegistrationDecisionEvent.Created < latestCompanyDetailsCreatedDatetime)
+        {
+            response.ApplicationStatus = isLatestSubmittedEventAfterFileUpload
+                ? ApplicationStatusType.SubmittedToRegulator
+                : ApplicationStatusType.SubmittedAndHasRecentFileUpload;
+
+            response.IsResubmission = true;
+
+            if (registrationFeePaymentEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            {
+                response.RegistrationFeePaymentMethod = null;
+            }
+
+            if (registrationApplicationSubmittedEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            {
+                response.RegistrationApplicationSubmittedComment = null;
+                response.RegistrationApplicationSubmittedDate = null;
+            }
         }
 
         if (response.ApplicationStatus is

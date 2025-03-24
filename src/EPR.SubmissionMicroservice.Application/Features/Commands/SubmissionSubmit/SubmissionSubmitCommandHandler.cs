@@ -46,39 +46,21 @@ public class SubmissionSubmitCommandHandler(
                 return Error.Failure();
             }
 
-            var shouldRaiseEvent = true;
+            submission.IsSubmitted = true;
+            submission.IsResubmission = command.IsResubmission;
+            submission.AppReferenceNumber = command.AppReferenceNumber;
+            submissionCommandRepository.Update(submission);
 
-            // Case 1: when command AppReferenceNumber != null it's likely a second submission after file upload and app ref is now set, update submission, DO NOT raise event
-            // Case 2: IsSubmitted = false, first submission, update submission, regardless of AppReferenceNumber raise event
-            // Case 3: submission.IsSubmitted = true && command.AppReferenceNumber == null (re-submission after query\cancel\reject), raise event only
-
-            if (!string.IsNullOrWhiteSpace(command.AppReferenceNumber))
+            var submittedEvent = new SubmittedEvent
             {
-                shouldRaiseEvent = false;
-                submission.AppReferenceNumber = command.AppReferenceNumber;
-                submissionCommandRepository.Update(submission);
-            }
+                SubmissionId = submissionId,
+                FileId = fileId,
+                UserId = userId,
+                SubmittedBy = submittedBy,
+                IsResubmission = command.IsResubmission
+            };
 
-            if (submission.IsSubmitted is not true)
-            {
-                shouldRaiseEvent = true;
-                submission.IsSubmitted = true;
-                submissionCommandRepository.Update(submission);
-            }
-
-            if (shouldRaiseEvent)
-            {
-                var submittedEvent = new SubmittedEvent
-                {
-                    SubmissionId = submissionId,
-                    FileId = fileId,
-                    UserId = userId,
-                    SubmittedBy = submittedBy
-                };
-
-                await submissionEventCommandRepository.AddAsync(submittedEvent);
-            }
-
+            await submissionEventCommandRepository.AddAsync(submittedEvent);
             await submissionContext.SaveChangesAsync(cancellationToken);
             await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
 

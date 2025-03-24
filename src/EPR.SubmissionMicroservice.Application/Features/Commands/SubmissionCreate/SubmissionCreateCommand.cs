@@ -20,5 +20,5 @@ public class SubmissionCreateCommand : IRequest<ErrorOr<SubmissionCreateResponse
 
     public Guid? ComplianceSchemeId { get; set; }
 
-    public string? AppReferenceNumber { get; set; }
+    public bool? IsResubmission { get; set; }
 }

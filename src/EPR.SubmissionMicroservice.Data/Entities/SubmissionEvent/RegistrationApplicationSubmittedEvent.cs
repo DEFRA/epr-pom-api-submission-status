@@ -13,4 +13,6 @@ public class RegistrationApplicationSubmittedEvent : AbstractSubmissionEvent
     public string? ApplicationReferenceNumber { get; set; }
 
     public DateTime? SubmissionDate { get; set; }
+
+    public bool? IsResubmission { get; set; }
 }

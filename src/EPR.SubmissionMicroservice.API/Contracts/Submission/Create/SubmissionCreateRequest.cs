@@ -1,7 +1,9 @@
-﻿namespace EPR.SubmissionMicroservice.API.Contracts.Submission.Create;
+﻿using System.Diagnostics.CodeAnalysis;
+using EPR.SubmissionMicroservice.Data.Enums;
 
-using Data.Enums;
+namespace EPR.SubmissionMicroservice.API.Contracts.Submission.Create;
 
+[ExcludeFromCodeCoverage]
 public class SubmissionCreateRequest
 {
     public Guid Id { get; set; }
@@ -14,5 +16,5 @@ public class SubmissionCreateRequest
 
     public Guid? ComplianceSchemeId { get; set; }
 
-    public string? AppReferenceNumber { get; set; }
+    public bool? IsResubmission { get; set; }
 }

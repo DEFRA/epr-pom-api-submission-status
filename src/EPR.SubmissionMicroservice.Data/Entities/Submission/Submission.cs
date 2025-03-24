@@ -19,6 +19,8 @@ public class Submission : EntityWithId, ICreated
 
     public bool? IsSubmitted { get; set; }
 
+    public bool? IsResubmission { get; set; }
+
     public Guid? ComplianceSchemeId { get; set; }
 
     public string? AppReferenceNumber { get; set; }

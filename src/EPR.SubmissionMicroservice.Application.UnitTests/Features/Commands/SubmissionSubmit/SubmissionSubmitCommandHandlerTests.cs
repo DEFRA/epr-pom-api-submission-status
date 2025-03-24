@@ -106,7 +106,7 @@ public class SubmissionSubmitCommandHandlerTests
 
         // Async
         result.IsError.Should().BeFalse();
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.IsAny<Submission>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.Update(It.IsAny<Submission>()), Times.Once);
         _submissionEventCommandRepositoryMock.Verify(x => x.AddAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
         _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _loggerMock.VerifyLog(x => x.LogInformation("Submission with id {submissionId} submitted by user {userId}.", _submissionId, _userId));
@@ -395,115 +395,7 @@ public class SubmissionSubmitCommandHandlerTests
         await _systemUnderTest.Handle(command, CancellationToken.None);
 
         // Assert
-        _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.IsAny<Submission>()), Times.Never);
-        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<AbstractSubmissionEvent>()), Times.Once);
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionIsNotSubmittedAndBothAppReferenceNumbersAreNotEmpty_ShouldUpdateSubmissionAndRaiseEvent()
-    {
-        // Arrange
-        var command = new SubmissionSubmitCommand
-        {
-            SubmissionId = Guid.NewGuid(),
-            FileId = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
-            SubmittedBy = "test_user",
-            AppReferenceNumber = "COMMAND_APP_REF"
-        };
-
-        var submission = new Submission
-        {
-            Id = command.SubmissionId,
-            IsSubmitted = false,
-            AppReferenceNumber = "SUBMISSION_APP_REF",
-            SubmissionType = SubmissionType.Registration
-        };
-
-        _submissionQueryRepositoryMock
-            .Setup(repo => repo.GetByIdAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(submission);
-
-        _submissionEventValidatorMock.Setup(x => x.IsSubmissionValidAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-
-        // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
-
-        // Assert
-        _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.IsAny<Submission>()), Times.Exactly(2));
-        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.Is<AbstractSubmissionEvent>(e => e.SubmissionId == command.SubmissionId)), Times.Once);
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionIsSubmittedAndAppReferenceNumberInCommandIsNotEmpty_ShouldUpdateSubmissionAndDoesNOTRaiseEvent()
-    {
-        // Arrange
-        var command = new SubmissionSubmitCommand
-        {
-            SubmissionId = Guid.NewGuid(),
-            FileId = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
-            SubmittedBy = "test_user",
-            AppReferenceNumber = "NEW_APP_REF"
-        };
-
-        var submission = new Submission
-        {
-            Id = command.SubmissionId,
-            IsSubmitted = true,
-            AppReferenceNumber = string.Empty,
-            SubmissionType = SubmissionType.Registration
-        };
-
-        _submissionQueryRepositoryMock
-            .Setup(repo => repo.GetByIdAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(submission);
-
-        _submissionEventValidatorMock.Setup(x => x.IsSubmissionValidAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-
-        // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
-
-        // Assert
-        _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.Is<Submission>(s => s.AppReferenceNumber == "NEW_APP_REF")), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<AbstractSubmissionEvent>()), Times.Never);
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionIsSubmittedAndBothAppReferenceNumbersAreNotEmpty_ShouldUpdateSubmissionAndDoesNOTRaiseEvent()
-    {
-        // Arrange
-        var command = new SubmissionSubmitCommand
-        {
-            SubmissionId = Guid.NewGuid(),
-            FileId = Guid.NewGuid(),
-            UserId = Guid.NewGuid(),
-            SubmittedBy = "test_user",
-            AppReferenceNumber = "COMMAND_APP_REF"
-        };
-
-        var submission = new Submission
-        {
-            Id = command.SubmissionId,
-            IsSubmitted = true,
-            AppReferenceNumber = "SUBMISSION_APP_REF",
-            SubmissionType = SubmissionType.Registration
-        };
-
-        _submissionQueryRepositoryMock
-            .Setup(repo => repo.GetByIdAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(submission);
-
-        _submissionEventValidatorMock.Setup(x => x.IsSubmissionValidAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-
-        // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
-
-        // Assert
         _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.IsAny<Submission>()), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.Is<AbstractSubmissionEvent>(e => e.SubmissionId == command.SubmissionId)), Times.Never);
+        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<AbstractSubmissionEvent>()), Times.Once);
     }
 }

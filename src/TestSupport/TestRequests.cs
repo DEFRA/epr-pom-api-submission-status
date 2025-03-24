@@ -15,7 +15,7 @@ public static class TestRequests
                 Id = Guid.NewGuid(),
                 SubmissionType = submissionType,
                 DataSourceType = DataSourceType.File,
-                SubmissionPeriod = "2022",
+                SubmissionPeriod = "2022"
             };
         }
     }
