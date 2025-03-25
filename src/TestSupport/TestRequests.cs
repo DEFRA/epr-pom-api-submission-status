@@ -185,6 +185,33 @@ public static class TestRequests
                 decision = RegulatorDecision.Accepted
             });
         }
+
+        public static JObject ValidPackagingResubmissionReferenceNumberCreatedRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.PackagingResubmissionReferenceNumberCreated,
+                packagingResubmissionReferenceNumber = "test-ref"
+            });
+        }
+
+        public static JObject ValidPackagingResubmissionFeeViewCreatedRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.PackagingResubmissionFeeViewed,
+                PackagingResubmissionFeeViewed = true
+            });
+        }
+
+        public static JObject ValidPackagingResubmissionSubmittedCreatedRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.PackagingResubmissionApplicationSubmitted,
+                IsResubmitted = true
+            });
+        }
     }
 
     public static class ValidationEventError

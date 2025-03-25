@@ -8,6 +8,8 @@ public class PackagingDataResubmissionFeePaymentEvent : AbstractSubmissionEvent
 {
     public override EventType Type => EventType.PackagingDataResubmissionFeePayment;
 
+    public Guid? FileId { get; set; }
+
     public string? ReferenceNumber { get; set; }
 
     public string PaymentMethod { get; set; }

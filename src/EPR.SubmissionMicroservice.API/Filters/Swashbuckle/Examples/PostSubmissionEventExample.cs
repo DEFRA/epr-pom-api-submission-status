@@ -11,6 +11,40 @@ public class PostSubmissionEventExample : IMultipleExamplesProvider<JObject>
     public IEnumerable<SwaggerExample<JObject>> GetExamples()
     {
         yield return SwaggerExample.Create(
+            "Packaging Resubmission ReferenceNumber Event",
+            new JObject
+            {
+                ["type"] = (int)EventType.PackagingResubmissionReferenceNumberCreated,
+                ["packagingResubmissionReferenceNumber"] = "Test-packaging-reference-number"
+            });
+
+        yield return SwaggerExample.Create(
+            "Packaging Resubmission Fee View Event",
+            new JObject
+            {
+                ["type"] = (int)EventType.PackagingResubmissionFeeViewed,
+                ["IsPackagingResubmissionFeeViewed"] = true
+            });
+
+        yield return SwaggerExample.Create(
+            "Packaging Resubmission Payment Method Event",
+            new JObject
+            {
+                ["type"] = (int)EventType.PackagingDataResubmissionFeePayment,
+                ["PaymentMethod"] = "PayByPhone",
+                ["PaymentStatus"] = "null",
+                ["PaidAmount"] = 0
+            });
+
+        yield return SwaggerExample.Create(
+            "Packaging Resubmission Application Submitted Event",
+            new JObject
+            {
+                ["type"] = (int)EventType.PackagingResubmissionApplicationSubmitted,
+                ["IsResubmitted"] = true
+            });
+
+        yield return SwaggerExample.Create(
             "Regulator Organisation Registration Decision Event",
             new JObject
             {

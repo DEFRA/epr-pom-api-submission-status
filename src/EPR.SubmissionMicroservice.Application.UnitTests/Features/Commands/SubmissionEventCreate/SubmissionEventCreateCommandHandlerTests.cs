@@ -616,4 +616,112 @@ public class SubmissionEventCreateCommandHandlerTests
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.Failure);
     }
+
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_GivenValidCommand_ShouldReturnSuccess()
+    {
+        var antivirusEvent = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            antivirusEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_GivenRepositoryError_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand(),
+            default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionFeeViewCreateHandle_GivenValidCommand_ShouldReturnSuccess()
+    {
+        var antivirusEvent = TestCommands.SubmissionEvent.ValidPackagingResubmissionFeeViewCreateCommand();
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            antivirusEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionFeeViewCreateHandle_GivenRepositoryError_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            TestCommands.SubmissionEvent.ValidPackagingResubmissionFeeViewCreateCommand(),
+            default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionSubmittedCreateHandle_GivenValidCommand_ShouldReturnSuccess()
+    {
+        var antivirusEvent = TestCommands.SubmissionEvent.ValidPackagingResubmissionSubmittedCreateCommand();
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            antivirusEvent,
+            CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionSubmittedCreateHandle_GivenRepositoryError_ShouldReturnError()
+    {
+        // Arrange
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _systemUnderTest.Handle(
+            TestCommands.SubmissionEvent.ValidPackagingResubmissionSubmittedCreateCommand(),
+            default);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
 }

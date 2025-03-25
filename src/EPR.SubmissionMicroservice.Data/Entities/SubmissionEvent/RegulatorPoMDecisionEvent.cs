@@ -13,4 +13,6 @@ public class RegulatorPoMDecisionEvent : AbstractSubmissionEvent
     public bool IsResubmissionRequired { get; set; }
 
     public Guid FileId { get; set; }
+
+    public string RegistrationReferenceNumber { get; set; }
 }

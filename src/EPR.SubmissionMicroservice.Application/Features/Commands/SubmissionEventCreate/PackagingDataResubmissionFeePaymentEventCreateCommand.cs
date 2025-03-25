@@ -6,6 +6,8 @@ public class PackagingDataResubmissionFeePaymentEventCreateCommand : AbstractSub
 {
     public override EventType Type => EventType.PackagingDataResubmissionFeePayment;
 
+    public Guid? FileId { get; set; }
+
     public string? ReferenceNumber { get; set; }
 
     public Guid? ComplianceSchemeId { get; set; }

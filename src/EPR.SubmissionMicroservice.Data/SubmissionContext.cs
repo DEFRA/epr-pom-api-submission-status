@@ -123,7 +123,16 @@ public class SubmissionContext : EprCommonContext
 
         modelBuilder.Entity<SubsidiariesBulkUploadCompleteEvent>()
             .HasPartitionKey(x => x.Id);
-    }
+
+        modelBuilder.Entity<PackagingResubmissionReferenceNumberCreatedEvent>()
+            .HasPartitionKey(x => x.Id);
+
+        modelBuilder.Entity<PackagingResubmissionFeeViewCreatedEvent>()
+            .HasPartitionKey(x => x.Id);
+
+        modelBuilder.Entity<PackagingResubmissionApplicationSubmittedCreatedEvent>()
+            .HasPartitionKey(x => x.Id);
+        }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -152,8 +161,11 @@ public class SubmissionContext : EprCommonContext
                 .HasValue<SubmittedEvent>(EventType.Submitted)
                 .HasValue<RegistrationFeePaymentEvent>(EventType.RegistrationFeePayment)
                 .HasValue<RegistrationApplicationSubmittedEvent>(EventType.RegistrationApplicationSubmitted)
+                .HasValue<SubsidiariesBulkUploadCompleteEvent>(EventType.SubsidiariesBulkUploadComplete)
                 .HasValue<PackagingDataResubmissionFeePaymentEvent>(EventType.PackagingDataResubmissionFeePayment)
-                .HasValue<SubsidiariesBulkUploadCompleteEvent>(EventType.SubsidiariesBulkUploadComplete);
+                .HasValue<PackagingResubmissionReferenceNumberCreatedEvent>(EventType.PackagingResubmissionReferenceNumberCreated)
+                .HasValue<PackagingResubmissionFeeViewCreatedEvent>(EventType.PackagingResubmissionFeeViewed)
+                .HasValue<PackagingResubmissionApplicationSubmittedCreatedEvent>(EventType.PackagingResubmissionApplicationSubmitted);
             x.Property(e => e.Id).ToJsonProperty("SubmissionEventId");
             x.Property(e => e.Type).HasConversion<string>();
         });

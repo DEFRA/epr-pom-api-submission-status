@@ -85,6 +85,9 @@ public class SubmissionEventProfile : Profile
         CreateMap<RegistrationFeePaymentEventCreateCommand, RegistrationFeePaymentEvent>();
         CreateMap<RegistrationApplicationSubmittedEventCreateCommand, RegistrationApplicationSubmittedEvent>();
         CreateMap<PackagingDataResubmissionFeePaymentEventCreateCommand, PackagingDataResubmissionFeePaymentEvent>();
+        CreateMap<PackagingResubmissionReferenceNumberCreateCommand, PackagingResubmissionReferenceNumberCreatedEvent>();
+        CreateMap<PackagingResubmissionFeeViewCreateCommand, PackagingResubmissionFeeViewCreatedEvent>();
+        CreateMap<PackagingResubmissionApplicationSubmittedCreateCommand, PackagingResubmissionApplicationSubmittedCreatedEvent>();
         CreateMap<SubsidiariesBulkUploadCompleteEventCreateCommand, SubsidiariesBulkUploadCompleteEvent>();
     }
 }

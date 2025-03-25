@@ -25,8 +25,11 @@ public class SubmissionEventCreateCommandHandler :
     IRequestHandler<RegistrationFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<RegistrationApplicationSubmittedEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<FileDownloadCheckEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<SubsidiariesBulkUploadCompleteEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
     IRequestHandler<PackagingDataResubmissionFeePaymentEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
-    IRequestHandler<SubsidiariesBulkUploadCompleteEventCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
+    IRequestHandler<PackagingResubmissionReferenceNumberCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<PackagingResubmissionFeeViewCreateCommand, ErrorOr<SubmissionEventCreateResponse>>,
+    IRequestHandler<PackagingResubmissionApplicationSubmittedCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
 {
     private readonly ICommandRepository<AbstractSubmissionEvent> _commandRepository;
     private readonly ILoggingService _loggingService;
@@ -43,6 +46,21 @@ public class SubmissionEventCreateCommandHandler :
         _loggingService = loggingService;
         _mapper = mapper;
         _logger = logger;
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingResubmissionReferenceNumberCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingResubmissionFeeViewCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
+    }
+
+    public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingResubmissionApplicationSubmittedCreateCommand command, CancellationToken cancellationToken)
+    {
+        return await AbstractHandle(command, cancellationToken);
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusCheckEventCreateCommand command, CancellationToken cancellationToken)

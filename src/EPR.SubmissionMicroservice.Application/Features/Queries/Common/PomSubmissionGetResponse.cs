@@ -11,6 +11,12 @@ public class PomSubmissionGetResponse : AbstractSubmissionGetResponse
 
     public DateTime? PomFileUploadDateTime { get; set; }
 
+    public string? AppReferenceNumber { get; set; }
+
+    public bool? IsResubmissionInProgress { get; set; }
+
+    public bool? IsResubmissionComplete { get; set; }
+
     public UploadedPomFileInformation? LastUploadedValidFile { get; set; }
 
     public SubmittedPomFileInformation? LastSubmittedFile { get; set; }

@@ -185,4 +185,18 @@ public class SubmissionController : ApiController
                ? NoContent()
                : Ok(result.Value);
     }
+
+    [HttpGet("get-packaging-data-resubmission-application-details", Name = nameof(GetPackagingDataResubmissionApplicationDetails))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionGetResponse))]
+    public async Task<IActionResult> GetPackagingDataResubmissionApplicationDetails([FromQuery] GetPackagingResubmissionApplicationDetailsRequest request)
+    {
+        var query = _mapper.Map<GetPackagingResubmissionApplicationDetailsQuery>(request);
+
+        var result = await Mediator.Send(query);
+
+        return result.Value is null
+               ? NoContent()
+               : Ok(result.Value);
+    }
 }

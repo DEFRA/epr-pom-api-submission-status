@@ -122,6 +122,8 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
                     FileName = submittedFileAntivirusCheckEvent.FileName,
                     FileId = submittedFileAntivirusCheckEvent.FileId
                 };
+
+                await IsResubmissionInProgress(latestValidFile, latestSubmittedEvent, response, cancellationToken);
             }
         }
 
@@ -153,6 +155,50 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         }
 
         return await VerifyBlobNameHasExpectedNumberOfValidProducerValidationEventsAsync(checkSplitterEvent.BlobName, checkSplitterEvent.DataCount, cancellationToken);
+    }
+
+    public async Task<PomSubmissionGetResponse> IsResubmissionInProgress(AntivirusCheckEvent? latestValidFile, SubmittedEvent latestSubmittedEvent, PomSubmissionGetResponse response, CancellationToken cancellationToken)
+    {
+        response.IsResubmissionInProgress = false;
+
+        if (string.IsNullOrEmpty(response.AppReferenceNumber))
+        {
+            return response;
+        }
+
+        response.IsResubmissionInProgress = true;
+
+        if (latestValidFile.Created > latestSubmittedEvent.Created)
+        {
+            return response;
+        }
+
+        var packagingResubmissionApplicationSubmittedResponse = await GetPackagingResubmissionApplicationSubmitted(response.Id, cancellationToken);
+
+        if (packagingResubmissionApplicationSubmittedResponse == null)
+        {
+            return response;
+        }
+
+        if (packagingResubmissionApplicationSubmittedResponse.Created < latestSubmittedEvent.Created)
+        {
+            return response;
+        }
+
+        response.IsResubmissionInProgress = false;
+        response.IsResubmissionComplete = true;
+        return response;
+    }
+
+    private async Task<PackagingResubmissionApplicationSubmittedCreatedEvent?> GetPackagingResubmissionApplicationSubmitted(
+        Guid submissionId,
+        CancellationToken cancellationToken)
+    {
+        return await _submissionEventQueryRepository
+        .GetAll(x => x.SubmissionId == submissionId && x.Type == EventType.PackagingResubmissionApplicationSubmitted)
+        .OrderByDescending(x => x.Created)
+        .Cast<PackagingResubmissionApplicationSubmittedCreatedEvent>()
+        .FirstOrDefaultAsync(cancellationToken);
     }
 
     private async Task<AntivirusCheckEvent?> GetLatestAntivirusCheckEventAsync(

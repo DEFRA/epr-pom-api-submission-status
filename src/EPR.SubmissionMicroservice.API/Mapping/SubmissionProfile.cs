@@ -19,6 +19,8 @@ public class SubmissionProfile : Profile
 {
     public SubmissionProfile()
     {
+        CreateMap<GetPackagingResubmissionApplicationDetailsRequest, GetPackagingResubmissionApplicationDetailsQuery>();
+
         CreateMap<GetRegistrationApplicationDetailsRequest, GetRegistrationApplicationDetailsQuery>();
 
         CreateMap<SubmissionCreateRequest, SubmissionCreateCommand>();

@@ -371,4 +371,36 @@ public class SubmissionControllerTests
         result.Value.Should().Be(response);
         result.Value.Should().BeOfType<SubmissionUploadedFileGetResponse>();
     }
+
+    [TestMethod]
+    public async Task GetPackagingDataResubmissionApplicationDetails_EmptyObject_NullResult()
+    {
+        // Arrange
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<GetPackagingResubmissionApplicationDetailsQuery>(), CancellationToken.None))
+            .ReturnsAsync(new ErrorOr<GetPackagingResubmissionApplicationDetailsResponse>());
+
+        // Act
+        var result = await _systemUnderTest.GetPackagingDataResubmissionApplicationDetails(new GetPackagingResubmissionApplicationDetailsRequest()) as OkObjectResult;
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task GetPackagingDataResubmissionApplicationDetails_ReturnEmptyObject_OkObjectResult()
+    {
+        // Arrange
+        _mockMediator
+            .Setup(x => x.Send(It.IsAny<GetPackagingResubmissionApplicationDetailsQuery>(), CancellationToken.None))
+            .ReturnsAsync(ErrorOrFactory.From(new GetPackagingResubmissionApplicationDetailsResponse()));
+
+        // Act
+        var result = await _systemUnderTest.GetPackagingDataResubmissionApplicationDetails(new GetPackagingResubmissionApplicationDetailsRequest()) as OkObjectResult;
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Value.Should().NotBeNull();
+        result.StatusCode.Should().Be(StatusCodes.Status200OK);
+    }
 }

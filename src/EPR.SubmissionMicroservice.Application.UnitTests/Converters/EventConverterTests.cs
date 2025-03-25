@@ -231,4 +231,43 @@ public class EventConverterTests
         // Assert
         result.Should().BeOfType<FileDownloadCheckEventCreateCommand>();
     }
+
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreatedConverter()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<PackagingResubmissionReferenceNumberCreateCommand>();
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionFeeViewCreatedConverter()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidPackagingResubmissionFeeViewCreatedRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<PackagingResubmissionFeeViewCreateCommand>();
+    }
+
+    [TestMethod]
+    public async Task PackagingResubmissionSubmittedCreatedConverter()
+    {
+        // Arrange
+        var submissionEvent = TestRequests.SubmissionEvent.ValidPackagingResubmissionSubmittedCreatedRequest();
+
+        // Act
+        var result = submissionEvent.ToObject<AbstractSubmissionEventCreateCommand>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<PackagingResubmissionApplicationSubmittedCreateCommand>();
+    }
 }

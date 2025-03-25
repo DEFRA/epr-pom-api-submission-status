@@ -377,5 +377,35 @@ public static class TestCommands
                 BlobContainerName = null,
             };
         }
+
+        public static PackagingResubmissionReferenceNumberCreateCommand ValidPackagingResubmissionReferenceNumberCreatedCommand()
+        {
+            return new PackagingResubmissionReferenceNumberCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                PackagingResubmissionReferenceNumber = "test-ref"
+            };
+        }
+
+        public static PackagingResubmissionFeeViewCreateCommand ValidPackagingResubmissionFeeViewCreateCommand()
+        {
+            return new PackagingResubmissionFeeViewCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                IsPackagingResubmissionFeeViewed = true
+            };
+        }
+
+        public static PackagingResubmissionApplicationSubmittedCreateCommand ValidPackagingResubmissionSubmittedCreateCommand()
+        {
+            return new PackagingResubmissionApplicationSubmittedCreateCommand
+            {
+                SubmissionId = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                IsResubmitted = true
+            };
+        }
     }
 }

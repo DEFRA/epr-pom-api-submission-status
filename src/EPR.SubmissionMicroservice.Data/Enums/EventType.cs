@@ -16,5 +16,8 @@ public enum EventType
     RegistrationFeePayment = 12,
     RegistrationApplicationSubmitted = 13,
     PackagingDataResubmissionFeePayment = 14,
+    PackagingResubmissionApplicationSubmitted = 15,
+    PackagingResubmissionReferenceNumberCreated = 16,
+    PackagingResubmissionFeeViewed = 17,
     SubsidiariesBulkUploadComplete = 18
 }

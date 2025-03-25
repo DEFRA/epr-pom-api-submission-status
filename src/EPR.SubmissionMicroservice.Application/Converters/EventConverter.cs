@@ -35,6 +35,9 @@ public class EventConverter : CustomCreationConverter<AbstractSubmissionEventCre
             EventType.RegistrationApplicationSubmitted => new RegistrationApplicationSubmittedEventCreateCommand(),
             EventType.PackagingDataResubmissionFeePayment => new PackagingDataResubmissionFeePaymentEventCreateCommand(),
             EventType.SubsidiariesBulkUploadComplete => new SubsidiariesBulkUploadCompleteEventCreateCommand(),
+            EventType.PackagingResubmissionReferenceNumberCreated => new PackagingResubmissionReferenceNumberCreateCommand(),
+            EventType.PackagingResubmissionFeeViewed => new PackagingResubmissionFeeViewCreateCommand(),
+            EventType.PackagingResubmissionApplicationSubmitted => new PackagingResubmissionApplicationSubmittedCreateCommand(),
             _ => throw new NotImplementedException()
         };
     }
