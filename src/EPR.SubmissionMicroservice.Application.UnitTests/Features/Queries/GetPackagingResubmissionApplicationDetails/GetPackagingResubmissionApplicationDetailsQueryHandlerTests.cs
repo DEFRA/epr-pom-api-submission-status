@@ -40,7 +40,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST"
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
         };
 
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
@@ -50,7 +50,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
-        result.Value.Should().BeNull();
+        result.Value.Count.Should().Be(0);
     }
 
     [TestMethod]
@@ -60,7 +60,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST"
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
         };
 
         var submission = new Submission
@@ -68,7 +68,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             Id = Guid.NewGuid(),
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Registration,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             AppReferenceNumber = "test"
         };
@@ -84,9 +84,10 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.IsSubmitted.Should().BeFalse();
-        result.Value.ApplicationReferenceNumber.Should().Be("test");
+        result.Value.Count.Should().Be(1);
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().IsSubmitted.Should().BeFalse();
+        result.Value.First().ApplicationReferenceNumber.Should().BeEmpty();
     }
 
     [TestMethod]
@@ -101,7 +102,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
          var query = new GetPackagingResubmissionApplicationDetailsQuery
          {
              OrganisationId = Guid.NewGuid(),
-             SubmissionPeriod = "January - June 2024 - TEST",
+             SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
              ComplianceSchemeId = complianceSchemeId
          };
 
@@ -111,7 +112,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
              ComplianceSchemeId = complianceSchemeId,
              OrganisationId = query.OrganisationId,
              SubmissionType = SubmissionType.Registration,
-             SubmissionPeriod = query.SubmissionPeriod,
+             SubmissionPeriod = query.SubmissionPeriods.First(),
              Created = DateTime.Now,
              IsSubmitted = true,
              AppReferenceNumber = applicationReferenceNumber
@@ -184,7 +185,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
          // Assert
          result.Should().NotBeNull();
-         result.Value.SubmissionId.Should().Be(submission.Id);
+         result.Value.First().SubmissionId.Should().Be(submission.Id);
     }
 
     [TestMethod]
@@ -199,7 +200,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -209,7 +210,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Registration,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = applicationReferenceNumber
@@ -281,8 +282,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("FileUploaded");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("FileUploaded");
     }
 
     [TestMethod]
@@ -297,7 +298,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -307,7 +308,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Registration,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = applicationReferenceNumber
@@ -388,8 +389,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("FileUploaded");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("FileUploaded");
     }
 
     [TestMethod]
@@ -403,7 +404,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -413,7 +414,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -450,8 +451,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -465,7 +466,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -475,7 +476,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -511,8 +512,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -526,7 +527,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -536,7 +537,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -573,8 +574,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -588,7 +589,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -598,7 +599,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -684,11 +685,11 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var result = await _handler.Handle(query, CancellationToken.None);
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ResubmissionFeePaymentMethod.Should().Be(null);
-        result.Value.ResubmissionApplicationSubmittedComment.Should().BeNull();
-        result.Value.ResubmissionApplicationSubmittedDate.Should().BeNull();
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ResubmissionFeePaymentMethod.Should().Be(null);
+        result.Value.First().ResubmissionApplicationSubmittedComment.Should().BeNull();
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -702,7 +703,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -712,7 +713,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -779,8 +780,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -794,7 +795,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -804,7 +805,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -878,8 +879,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -893,7 +894,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -903,7 +904,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -970,8 +971,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -985,7 +986,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -995,7 +996,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef"
@@ -1069,8 +1070,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
     }
 
     [TestMethod]
@@ -1084,7 +1085,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "January - June 2024 - TEST",
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
             ComplianceSchemeId = complianceSchemeId
         };
 
@@ -1094,7 +1095,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             ComplianceSchemeId = complianceSchemeId,
             OrganisationId = query.OrganisationId,
             SubmissionType = SubmissionType.Producer,
-            SubmissionPeriod = query.SubmissionPeriod,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
             Created = DateTime.Now,
             IsSubmitted = true,
             AppReferenceNumber = "TestRef",
@@ -1176,8 +1177,125 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("FileUploaded");
-        result.Value.ResubmissionFeePaymentMethod!.Should().Be("PayByPhone");
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("FileUploaded");
+        result.Value.First().ResubmissionFeePaymentMethod!.Should().Be("PayByPhone");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnApplicationStatusOfNotStarted_WhenCheckSplitterContainsErrorsAndResubmissionApplicationSubmitted()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Producer,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
+            Created = DateTime.Now,
+            IsSubmitted = true,
+            AppReferenceNumber = "TestRef",
+        };
+
+        var submittedEvent = new SubmittedEvent
+        {
+            SubmissionId = submissionId,
+            FileId = fileId,
+            Created = DateTime.Now.AddMinutes(-10)
+        };
+
+        var antivirusCheckEvent = new AntivirusCheckEvent
+        {
+            SubmissionId = submissionId,
+            FileId = fileId,
+            FileType = FileType.Pom,
+            Created = DateTime.Now
+        };
+
+        var antivirusResultEvent = new AntivirusResultEvent
+        {
+            SubmissionId = submissionId,
+            FileId = fileId,
+            Created = DateTime.Now
+        };
+
+        var regulatorPoMDecisionEvent = new RegulatorPoMDecisionEvent
+        {
+            Decision = RegulatorDecision.Queried,
+            IsResubmissionRequired = true,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var checkSplitterValidationEvent = new CheckSplitterValidationEvent
+        {
+            Created = DateTime.Now.AddMinutes(-5),
+            IsValid = true,
+            DataCount = 1,
+            Errors = new List<string>() { "new error" },
+            ErrorCount = 1,
+        };
+
+        var producerValidationEvent = new ProducerValidationEvent
+        {
+            Created = DateTime.Now.AddMinutes(-5),
+            IsValid = true
+        };
+
+        var packagingDataResubmissionFeePaymentEvent = new PackagingDataResubmissionFeePaymentEvent
+        {
+            SubmissionId = submissionId,
+            PaymentMethod = "PayByPhone",
+            ReferenceNumber = "Test",
+            Created = DateTime.Now
+        };
+
+        var packagingResubmissionReferenceNumberCreatedEvent = new PackagingResubmissionReferenceNumberCreatedEvent
+        {
+            SubmissionId = submissionId,
+            PackagingResubmissionReferenceNumber = "Test",
+            Created = DateTime.Now.AddMinutes(-20)
+        };
+
+        var packagingResubmissionApplicationSubmittedCreatedEvent = new PackagingResubmissionApplicationSubmittedCreatedEvent
+        {
+            IsResubmitted = true,
+            SubmissionDate = DateTime.Now.AddDays(-99),
+            Created = DateTime.Now
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[] { submittedEvent, antivirusCheckEvent, antivirusResultEvent, checkSplitterValidationEvent, producerValidationEvent, packagingDataResubmissionFeePaymentEvent, regulatorPoMDecisionEvent, packagingResubmissionReferenceNumberCreatedEvent, packagingResubmissionApplicationSubmittedCreatedEvent }.BuildMock());
+
+        _validationErrorQueryRepositoryMock
+           .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
+           .Returns(new List<AbstractValidationError>().BuildMock);
+
+        _validationWarningRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
+            .Returns(new List<AbstractValidationWarning>().BuildMock);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
+        result.Value.First().ResubmissionFeePaymentMethod.Should().BeNull();
     }
 }

@@ -166,6 +166,11 @@ public class PomSubmissionEventHelperTests
                 Decision = RegulatorDecision.Rejected,
                 Comments = Comments,
                 IsResubmissionRequired = true
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = _fileOneCreatedDateTime.AddMinutes(-2)
             }
         };
 
@@ -221,7 +226,6 @@ public class PomSubmissionEventHelperTests
             PomDataComplete = true,
             ValidationPass = false,
             HasWarnings = true,
-            IsResubmissionInProgress = false
         });
     }
 
@@ -409,6 +413,11 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 Created = _fileOneSubmittedDateTime,
                 UserId = _userId
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = _fileOneCreatedDateTime.AddMinutes(-2)
             }
         };
 
@@ -442,7 +451,6 @@ public class PomSubmissionEventHelperTests
             PomDataComplete = true,
             ValidationPass = true,
             HasWarnings = false,
-            IsResubmissionInProgress = false
         });
     }
 
@@ -512,14 +520,17 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 Created = _fileOneSubmittedDateTime,
                 UserId = _userId
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = _fileOneCreatedDateTime.AddMinutes(-2)
             }
         };
 
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
-
-        _pomSubmissionGetResponse.AppReferenceNumber = "test Ref";
 
         // Act
         await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
@@ -547,8 +558,6 @@ public class PomSubmissionEventHelperTests
             PomDataComplete = true,
             ValidationPass = true,
             HasWarnings = false,
-            IsResubmissionInProgress = true,
-            AppReferenceNumber = "test Ref"
         });
     }
 
@@ -556,7 +565,7 @@ public class PomSubmissionEventHelperTests
     public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_WhenLatestValidFileIsNotTheSameAsTheLatestSubmittedFile_AppReferenceNumberExists_SubmitEventCreated()
     {
         // Arrange
-        var sumbittedEventTime = DateTime.Now.AddMinutes(2);
+        var submittedEventTime = DateTime.Now.AddMinutes(2);
         var events = new List<AbstractSubmissionEvent>
         {
             new AntivirusCheckEvent
@@ -617,16 +626,19 @@ public class PomSubmissionEventHelperTests
             {
                 SubmissionId = _submissionId,
                 FileId = _fileOneFileId,
-                Created = sumbittedEventTime,
+                Created = submittedEventTime,
                 UserId = _userId
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = submittedEventTime.AddMinutes(-2)
             }
         };
 
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
-
-        _pomSubmissionGetResponse.AppReferenceNumber = "test Ref";
 
         // Act
         await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
@@ -649,13 +661,11 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 FileName = FileOneName,
                 SubmittedBy = _userId,
-                SubmittedDateTime = sumbittedEventTime
+                SubmittedDateTime = submittedEventTime
             },
             PomDataComplete = true,
             ValidationPass = true,
             HasWarnings = false,
-            IsResubmissionInProgress = true,
-            AppReferenceNumber = "test Ref"
         });
     }
 
@@ -663,7 +673,7 @@ public class PomSubmissionEventHelperTests
     public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_WhenLatestValidFileIsNotTheSameAsTheLatestSubmittedFile_AppReferenceNumberExists_SubmitEventCreated_SubmittedResponse_NotNull()
     {
         // Arrange
-        var sumbittedEventTime = DateTime.Now.AddMinutes(2);
+        var submittedEventTime = DateTime.Now.AddMinutes(2);
         var events = new List<AbstractSubmissionEvent>
         {
             new AntivirusCheckEvent
@@ -724,21 +734,24 @@ public class PomSubmissionEventHelperTests
             {
                 SubmissionId = _submissionId,
                 FileId = _fileOneFileId,
-                Created = sumbittedEventTime,
+                Created = submittedEventTime,
                 UserId = _userId
             },
             new PackagingResubmissionApplicationSubmittedCreatedEvent
             {
                 SubmissionId = _submissionId,
-                Created = sumbittedEventTime.AddMinutes(-1),
+                Created = submittedEventTime.AddMinutes(-1),
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = submittedEventTime.AddMinutes(-2)
             }
         };
 
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
-
-        _pomSubmissionGetResponse.AppReferenceNumber = "test Ref";
 
         // Act
         await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
@@ -761,13 +774,11 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 FileName = FileOneName,
                 SubmittedBy = _userId,
-                SubmittedDateTime = sumbittedEventTime
+                SubmittedDateTime = submittedEventTime
             },
             PomDataComplete = true,
             ValidationPass = true,
             HasWarnings = false,
-            IsResubmissionInProgress = true,
-            AppReferenceNumber = "test Ref"
         });
     }
 
@@ -775,7 +786,7 @@ public class PomSubmissionEventHelperTests
     public async Task SetValidationEventsAsync_SetsPropertiesCorrectly_WhenLatestValidFileIsNotTheSameAsTheLatestSubmittedFile_AppReferenceNumberExists_SubmitEventCreated_SubmittedResponseCreated_NotLessThan_SubmittedEvent()
     {
         // Arrange
-        var sumbittedEventTime = DateTime.Now.AddMinutes(2);
+        var submittedEventTime = DateTime.Now.AddMinutes(2);
         var events = new List<AbstractSubmissionEvent>
         {
             new AntivirusCheckEvent
@@ -836,21 +847,24 @@ public class PomSubmissionEventHelperTests
             {
                 SubmissionId = _submissionId,
                 FileId = _fileOneFileId,
-                Created = sumbittedEventTime,
+                Created = submittedEventTime,
                 UserId = _userId
             },
             new PackagingResubmissionApplicationSubmittedCreatedEvent
             {
                 SubmissionId = _submissionId,
-                Created = sumbittedEventTime,
+                Created = submittedEventTime,
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = submittedEventTime.AddMinutes(-2)
             }
         };
 
         _submissionEventsRepositoryMock
             .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
-
-        _pomSubmissionGetResponse.AppReferenceNumber = "test Ref";
 
         // Act
         await _systemUnderTest.SetValidationEventsAsync(_pomSubmissionGetResponse, true, CancellationToken.None);
@@ -873,246 +887,12 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 FileName = FileOneName,
                 SubmittedBy = _userId,
-                SubmittedDateTime = sumbittedEventTime
+                SubmittedDateTime = submittedEventTime
             },
             PomDataComplete = true,
             ValidationPass = true,
             HasWarnings = false,
-            IsResubmissionInProgress = false,
-            IsResubmissionComplete = true,
-            AppReferenceNumber = "test Ref"
         });
-    }
-
-    [TestMethod]
-    public async Task IsResubmissionInProgress_ShouldReturnResponse_WhenAppReferenceNumberIsNull()
-    {
-        // Arrange
-        var response = new PomSubmissionGetResponse { AppReferenceNumber = null };
-        var cancellationToken = CancellationToken.None;
-
-        // Act
-        var result = await _systemUnderTest.IsResubmissionInProgress(null, new SubmittedEvent(), response, cancellationToken);
-
-        // Assert
-        result.IsResubmissionComplete.Should().NotBeTrue();
-    }
-
-    [TestMethod]
-    public async Task IsResubmissionInProgress_ShouldReturnInProgress_WhenAppReferenceNumberExists()
-    {
-        // Arrange
-        var response = new PomSubmissionGetResponse { AppReferenceNumber = "APP123" };
-        var latestValidFile = new AntivirusCheckEvent { Created = DateTime.UtcNow.AddMinutes(-5) };
-        var latestSubmittedEvent = new SubmittedEvent { Created = DateTime.UtcNow.AddMinutes(-10) };
-        var cancellationToken = CancellationToken.None;
-
-        // Act
-        var result = await _systemUnderTest.IsResubmissionInProgress(latestValidFile, latestSubmittedEvent, response, cancellationToken);
-
-        // Assert
-        result.IsResubmissionInProgress.Should().BeTrue();
-    }
-
-    [TestMethod]
-    public async Task IsResubmissionInProgress_ShouldReturnResponse_WhenLatestValidFileIsAfterSubmitted()
-    {
-        // Arrange
-        var response = new PomSubmissionGetResponse { AppReferenceNumber = "APP123" };
-        var latestValidFile = new AntivirusCheckEvent { Created = DateTime.UtcNow };
-        var latestSubmittedEvent = new SubmittedEvent { Created = DateTime.UtcNow.AddMinutes(-5) };
-        var cancellationToken = CancellationToken.None;
-
-        // Act
-        var result = await _systemUnderTest.IsResubmissionInProgress(latestValidFile, latestSubmittedEvent, response, cancellationToken);
-
-        // Assert
-        result.IsResubmissionInProgress.Should().BeTrue();
-    }
-
-    [TestMethod]
-    public async Task IsResubmissionInProgress_ShouldReturnResponse_WhenNoPackagingResubmissionApplicationSubmitted()
-    {
-        // Arrange
-        var sumbittedEventTime = DateTime.Now.AddMinutes(2);
-        var events = new List<AbstractSubmissionEvent>
-        {
-            new AntivirusCheckEvent
-            {
-                SubmissionId = _submissionId,
-                FileName = FileOneName,
-                Created = _fileOneCreatedDateTime,
-                FileId = _fileOneFileId,
-                UserId = _userId
-            },
-            new AntivirusCheckEvent
-            {
-                SubmissionId = _submissionId,
-                FileName = FileTwoName,
-                Created = _fileTwoCreatedDateTime,
-                FileId = _fileTwoFileId,
-                UserId = _userId
-            },
-            new AntivirusResultEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileOneBlobName,
-                FileId = _fileOneFileId
-            },
-            new AntivirusResultEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileTwoBlobName,
-                FileId = _fileTwoFileId
-            },
-            new CheckSplitterValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileOneBlobName,
-                DataCount = 1,
-                Created = DateTime.Now.AddHours(-2)
-            },
-            new CheckSplitterValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileTwoBlobName,
-                DataCount = 1,
-                Created = DateTime.Now
-            },
-            new ProducerValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileOneBlobName,
-                IsValid = true
-            },
-            new ProducerValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileTwoBlobName,
-                IsValid = true
-            },
-            new SubmittedEvent
-            {
-                SubmissionId = _submissionId,
-                FileId = _fileOneFileId,
-                Created = sumbittedEventTime,
-                UserId = _userId
-            },
-            new PackagingResubmissionApplicationSubmittedCreatedEvent
-            {
-                SubmissionId = _submissionId,
-                Created = sumbittedEventTime,
-            }
-        };
-        var response = new PomSubmissionGetResponse { AppReferenceNumber = "APP123", Id = Guid.NewGuid() };
-        var latestValidFile = new AntivirusCheckEvent { Created = DateTime.UtcNow.AddMinutes(-10) };
-        var latestSubmittedEvent = new SubmittedEvent { Created = DateTime.UtcNow.AddMinutes(-15) };
-        var cancellationToken = CancellationToken.None;
-
-        _submissionEventsRepositoryMock
-            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
-
-        // Act
-        var result = await _systemUnderTest.IsResubmissionInProgress(latestValidFile, latestSubmittedEvent, response, cancellationToken);
-
-        // Assert
-        result.IsResubmissionInProgress.Should().BeTrue();
-    }
-
-    [TestMethod]
-    public async Task IsResubmissionInProgress_ShouldSetResubmissionComplete_WhenEventIsNewerThanSubmitted()
-    {
-        // Arrange
-        var sumbittedEventTime = DateTime.Now.AddMinutes(2);
-        var events = new List<AbstractSubmissionEvent>
-        {
-            new AntivirusCheckEvent
-            {
-                SubmissionId = _submissionId,
-                FileName = FileOneName,
-                Created = _fileOneCreatedDateTime,
-                FileId = _fileOneFileId,
-                UserId = _userId
-            },
-            new AntivirusCheckEvent
-            {
-                SubmissionId = _submissionId,
-                FileName = FileTwoName,
-                Created = _fileTwoCreatedDateTime,
-                FileId = _fileTwoFileId,
-                UserId = _userId
-            },
-            new AntivirusResultEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileOneBlobName,
-                FileId = _fileOneFileId
-            },
-            new AntivirusResultEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileTwoBlobName,
-                FileId = _fileTwoFileId
-            },
-            new CheckSplitterValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileOneBlobName,
-                DataCount = 1,
-                Created = DateTime.Now.AddHours(-2)
-            },
-            new CheckSplitterValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileTwoBlobName,
-                DataCount = 1,
-                Created = DateTime.Now
-            },
-            new ProducerValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileOneBlobName,
-                IsValid = true
-            },
-            new ProducerValidationEvent
-            {
-                SubmissionId = _submissionId,
-                BlobName = FileTwoBlobName,
-                IsValid = true
-            },
-            new SubmittedEvent
-            {
-                SubmissionId = _submissionId,
-                FileId = _fileOneFileId,
-                Created = sumbittedEventTime,
-                UserId = _userId
-            },
-            new PackagingResubmissionApplicationSubmittedCreatedEvent
-            {
-                SubmissionId = _submissionId,
-                Created = sumbittedEventTime,
-            }
-        };
-
-        _submissionEventsRepositoryMock
-            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
-
-        _pomSubmissionGetResponse.AppReferenceNumber = "test Ref";
-        var response = new PomSubmissionGetResponse { AppReferenceNumber = "APP123", Id = Guid.NewGuid() };
-        var latestValidFile = new AntivirusCheckEvent { Created = DateTime.UtcNow.AddMinutes(-20) };
-        var latestSubmittedEvent = new SubmittedEvent { Created = DateTime.UtcNow.AddMinutes(-15) };
-        var packagingEvent = new PackagingResubmissionApplicationSubmittedCreatedEvent { Created = DateTime.UtcNow.AddMinutes(-10) };
-
-        var cancellationToken = CancellationToken.None;
-
-        // Act
-        var result = await _systemUnderTest.IsResubmissionInProgress(latestValidFile, latestSubmittedEvent, _pomSubmissionGetResponse, cancellationToken);
-
-        // Assert
-        result.IsResubmissionInProgress.Should().NotBeTrue();
-        result.IsResubmissionComplete.Should().BeTrue();
     }
 
     [TestMethod]
@@ -1148,6 +928,11 @@ public class PomSubmissionEventHelperTests
                 FileId = _fileOneFileId,
                 Created = _fileOneSubmittedDateTime,
                 UserId = _userId
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = _submissionId,
+                Created = _fileOneCreatedDateTime.AddMinutes(-2)
             }
         };
 
@@ -1175,7 +960,6 @@ public class PomSubmissionEventHelperTests
             PomDataComplete = false,
             ValidationPass = false,
             HasWarnings = false,
-            IsResubmissionInProgress = false,
         });
     }
 

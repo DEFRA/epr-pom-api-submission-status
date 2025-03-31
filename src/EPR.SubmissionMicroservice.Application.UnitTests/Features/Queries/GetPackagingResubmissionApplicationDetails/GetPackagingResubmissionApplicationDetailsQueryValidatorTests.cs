@@ -18,7 +18,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryValidatorTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.Empty,
-            SubmissionPeriod = "Jan - Jun 2024"
+            SubmissionPeriods = new List<string> { "Jan - Jun 2024" }
         };
 
         // Act
@@ -34,8 +34,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryValidatorTests
         // Arrange
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
-            OrganisationId = Guid.Empty,
-            SubmissionPeriod = null
+            OrganisationId = Guid.Empty
         };
 
         // Act
@@ -52,7 +51,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryValidatorTests
         var query = new GetPackagingResubmissionApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
-            SubmissionPeriod = "Jan - Jun 2024"
+            SubmissionPeriods = new List<string> { "Jan - Jun 2024" }
         };
 
         // Act

@@ -8,6 +8,6 @@ public class GetPackagingResubmissionApplicationDetailsQueryValidator : Abstract
     {
         RuleFor(x => x.OrganisationId).NotEmpty().NotEqual(Guid.Empty);
 
-        RuleFor(x => x.SubmissionPeriod).NotEmpty().WithMessage("Please enter a valid submission period");
+        RuleFor(x => x.SubmissionPeriods).NotEmpty().WithMessage("Please enter at least one valid submission period");
     }
 }

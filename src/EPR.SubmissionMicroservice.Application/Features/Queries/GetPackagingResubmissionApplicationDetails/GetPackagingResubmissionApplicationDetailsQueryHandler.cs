@@ -18,15 +18,72 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
         IQueryRepository<AbstractValidationError> validationErrorQueryRepository,
         IQueryRepository<AbstractValidationWarning> validationWarningQueryRepository)
-        : IRequestHandler<GetPackagingResubmissionApplicationDetailsQuery, ErrorOr<GetPackagingResubmissionApplicationDetailsResponse>>
+        : IRequestHandler<GetPackagingResubmissionApplicationDetailsQuery, ErrorOr<List<GetPackagingResubmissionApplicationDetailsResponse>>>
 {
-    public async Task<ErrorOr<GetPackagingResubmissionApplicationDetailsResponse>> Handle(GetPackagingResubmissionApplicationDetailsQuery request, CancellationToken cancellationToken)
+    public async Task<ErrorOr<List<GetPackagingResubmissionApplicationDetailsResponse>>> Handle(GetPackagingResubmissionApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
-        var query = GetSubmissionQuery(request);
+        var responses = new List<GetPackagingResubmissionApplicationDetailsResponse>();
 
-        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
-        var submission = submissions.Find(x => !string.IsNullOrEmpty(x.AppReferenceNumber));
+        var query = submissionQueryRepository
+         .GetAll(x =>
+             x.OrganisationId == request.OrganisationId &&
+             x.SubmissionType == SubmissionType.Producer &&
+             request.SubmissionPeriods.Contains(x.SubmissionPeriod) &&
+            (request.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId));
 
+        foreach (var submissionPeriod in request.SubmissionPeriods)
+        {
+            var submissions = await query.Where(x => x.SubmissionPeriod == submissionPeriod).OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+            var response = await HandleHelper(submissions.FirstOrDefault(), cancellationToken);
+            if (response != null)
+            {
+                responses.Add(response);
+            }
+        }
+
+        return responses;
+    }
+
+    private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(Submission? submission, DateTime? latestPackagingDetailsCreatedDatetime, bool isFileUploadedButNotSubmittedYet, bool isRegulatorDecisionAfterSubmission, bool isApplicationSubmittedAfterSubmission, GetPackagingResubmissionApplicationDetailsResponse response, string packagingResubmissionReferenceNumber)
+    {
+        if (isFileUploadedButNotSubmittedYet)
+        {
+            response.ApplicationStatus = latestPackagingDetailsCreatedDatetime != null
+                ? ApplicationStatusType.FileUploaded
+                : ApplicationStatusType.NotStarted;
+        }
+        else
+        {
+            response.ApplicationStatus = ApplicationStatusType.SubmittedToRegulator;
+        }
+
+        if (!isRegulatorDecisionAfterSubmission && isApplicationSubmittedAfterSubmission)
+        {
+            response = new GetPackagingResubmissionApplicationDetailsResponse();
+            response.SubmissionId = submission.Id;
+            response.IsSubmitted = submission.IsSubmitted ?? false;
+            response.ApplicationReferenceNumber = packagingResubmissionReferenceNumber;
+            response.ApplicationStatus = ApplicationStatusType.NotStarted;
+        }
+
+        return response;
+    }
+
+    private static List<AbstractValidationEvent> GetValidationEvents(List<CheckSplitterValidationEvent> checkSplitterValidationEvents, List<ProducerValidationEvent> producerValidationEvents, CheckSplitterValidationEvent latestUploadCheckSplitterEvent)
+    {
+        var latestValidationEvents = new List<AbstractValidationEvent>();
+
+        var checkSplitterValidationEventsList = checkSplitterValidationEvents.Where(x => x.BlobName == latestUploadCheckSplitterEvent.BlobName).ToList();
+        var producerValidationEventsList = producerValidationEvents.Where(x => x.BlobName == latestUploadCheckSplitterEvent.BlobName).ToList();
+
+        latestValidationEvents.AddRange(checkSplitterValidationEventsList);
+        latestValidationEvents.AddRange(producerValidationEventsList);
+
+        return latestValidationEvents;
+    }
+
+    private async Task<GetPackagingResubmissionApplicationDetailsResponse> HandleHelper(Submission? submission, CancellationToken cancellationToken)
+    {
         if (submission is null)
         {
             return default;
@@ -71,7 +128,6 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             {
                 SubmissionId = submission.Id,
                 IsSubmitted = submission?.IsSubmitted ?? false,
-                ApplicationReferenceNumber = submission.AppReferenceNumber
             };
         }
 
@@ -81,7 +137,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             {
                 SubmissionId = submission.Id,
                 IsSubmitted = submission?.IsSubmitted ?? false,
-                ApplicationReferenceNumber = submission.AppReferenceNumber
+                ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber
             };
         }
 
@@ -100,7 +156,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         {
             SubmissionId = submission.Id,
             IsSubmitted = submission.IsSubmitted ?? false,
-            ApplicationReferenceNumber = submission.AppReferenceNumber,
+            ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
             ResubmissionFeePaymentMethod = isPackagingFeePaymentEventAfterSubmission ? packagingFeePaymentEvent?.PaymentMethod : null,
             LastSubmittedFile = !isFileUploadedButNotSubmittedYet
                 ? new LastSubmittedFileDetails
@@ -117,45 +173,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
 
-        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isApplicationSubmittedAfterSubmission, response);
-    }
-
-    private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(Submission? submission, DateTime? latestPackagingDetailsCreatedDatetime, bool isFileUploadedButNotSubmittedYet, bool isRegulatorDecisionAfterSubmission, bool isApplicationSubmittedAfterSubmission, GetPackagingResubmissionApplicationDetailsResponse response)
-    {
-        if (isFileUploadedButNotSubmittedYet)
-        {
-            response.ApplicationStatus = latestPackagingDetailsCreatedDatetime != null
-                ? ApplicationStatusType.FileUploaded
-                : ApplicationStatusType.NotStarted;
-        }
-        else
-        {
-            response.ApplicationStatus = ApplicationStatusType.SubmittedToRegulator;
-        }
-
-        if (!isRegulatorDecisionAfterSubmission && isApplicationSubmittedAfterSubmission)
-        {
-            response = new GetPackagingResubmissionApplicationDetailsResponse();
-            response.SubmissionId = submission.Id;
-            response.IsSubmitted = submission.IsSubmitted ?? false;
-            response.ApplicationReferenceNumber = submission.AppReferenceNumber;
-            response.ApplicationStatus = ApplicationStatusType.NotStarted;
-        }
-
-        return response;
-    }
-
-    private static List<AbstractValidationEvent> GetValidationEvents(List<CheckSplitterValidationEvent> checkSplitterValidationEvents, List<ProducerValidationEvent> producerValidationEvents, CheckSplitterValidationEvent latestUploadCheckSplitterEvent)
-    {
-        var latestValidationEvents = new List<AbstractValidationEvent>();
-
-        var checkSplitterValidationEventsList = checkSplitterValidationEvents.Where(x => x.BlobName == latestUploadCheckSplitterEvent.BlobName).ToList();
-        var producerValidationEventsList = producerValidationEvents.Where(x => x.BlobName == latestUploadCheckSplitterEvent.BlobName).ToList();
-
-        latestValidationEvents.AddRange(checkSplitterValidationEventsList);
-        latestValidationEvents.AddRange(producerValidationEventsList);
-
-        return latestValidationEvents;
+        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isApplicationSubmittedAfterSubmission, response, packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber);
     }
 
     private async Task<bool> IsValidationPass(List<AbstractSubmissionEvent> submissionEvents, AntivirusCheckEvent? latestPackagingDetailsAntivirusCheckEvent, List<CheckSplitterValidationEvent> checkSplitterValidationEvents, List<ProducerValidationEvent> producerValidationEvents, CancellationToken cancellationToken)
@@ -188,16 +206,6 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
 
         var validationPass = isProcessingComplete && islatestUploadValid;
         return validationPass;
-    }
-
-    private IQueryable<Submission> GetSubmissionQuery(GetPackagingResubmissionApplicationDetailsQuery request)
-    {
-        return submissionQueryRepository
-          .GetAll(x =>
-              x.OrganisationId == request.OrganisationId &&
-              x.SubmissionType == SubmissionType.Producer &&
-              x.SubmissionPeriod == request.SubmissionPeriod &&
-             (request.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId));
     }
 
     private async Task<bool> IsProcessingComplete(bool latestUploadHasAllExpectedValidationEvents, List<AbstractValidationEvent> latestValidationEvents, CheckSplitterValidationEvent latestUploadCheckSplitterEvent, CancellationToken cancellationToken)

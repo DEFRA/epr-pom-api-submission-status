@@ -378,7 +378,7 @@ public class SubmissionControllerTests
         // Arrange
         _mockMediator
             .Setup(x => x.Send(It.IsAny<GetPackagingResubmissionApplicationDetailsQuery>(), CancellationToken.None))
-            .ReturnsAsync(new ErrorOr<GetPackagingResubmissionApplicationDetailsResponse>());
+            .ReturnsAsync(new ErrorOr<List<GetPackagingResubmissionApplicationDetailsResponse>>());
 
         // Act
         var result = await _systemUnderTest.GetPackagingDataResubmissionApplicationDetails(new GetPackagingResubmissionApplicationDetailsRequest()) as OkObjectResult;
@@ -393,7 +393,7 @@ public class SubmissionControllerTests
         // Arrange
         _mockMediator
             .Setup(x => x.Send(It.IsAny<GetPackagingResubmissionApplicationDetailsQuery>(), CancellationToken.None))
-            .ReturnsAsync(ErrorOrFactory.From(new GetPackagingResubmissionApplicationDetailsResponse()));
+            .ReturnsAsync(ErrorOrFactory.From(new List<GetPackagingResubmissionApplicationDetailsResponse>()));
 
         // Act
         var result = await _systemUnderTest.GetPackagingDataResubmissionApplicationDetails(new GetPackagingResubmissionApplicationDetailsRequest()) as OkObjectResult;
