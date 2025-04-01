@@ -91,6 +91,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
             if (requiresBrandsFile)
             {
+                isBrandsFileValid = false;
                 var latestBrandsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
                     .Where(x => x.FileType == FileType.Brands && (submittedRegistrationSetId is null || x.RegistrationSetId == submittedRegistrationSetId))
                     .MaxBy(x => x.Created);
@@ -115,6 +116,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
             if (requiresPartnershipsFile)
             {
+                isPartnersFileValid = false;
                 var latestPartnershipsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
                     .Where(x => x.FileType == FileType.Partnerships && (submittedRegistrationSetId is null || x.RegistrationSetId == submittedRegistrationSetId))
                     .MaxBy(x => x.Created);

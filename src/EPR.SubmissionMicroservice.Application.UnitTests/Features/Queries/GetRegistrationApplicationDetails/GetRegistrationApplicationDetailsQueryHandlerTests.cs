@@ -125,8 +125,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now.AddMinutes(-5)
@@ -162,6 +162,468 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.LastSubmittedFile!.SubmittedByName.Should().Be("User1");
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnFileUploaded_WhenBrandFileIsRequired_And_BrandFile_Is_Uploaded()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var regFileId = Guid.NewGuid();
+        var brandFileId = Guid.NewGuid();
+        var partnerFileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriod = "2024-Q1",
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriod,
+            Created = DateTime.Now,
+            IsSubmitted = false,
+            AppReferenceNumber = applicationReferenceNumber
+        };
+
+        var latestCompanyDetailsAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.CompanyDetails,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = regFileId
+        };
+
+        var latestCompanyDetailsAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = regFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var registrationValidationEvent = new RegistrationValidationEvent
+        {
+            ErrorCount = 0,
+            RequiresBrandsFile = true,
+            RequiresPartnershipsFile = true,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var latestBrandAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.Brands,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = brandFileId
+        };
+
+        var latestBranAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = brandFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var brandValidationEvent = new BrandValidationEvent
+        {
+            ErrorCount = 0,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var latestPartnerAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.Partnerships,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = partnerFileId
+        };
+
+        var latestPartnerAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = partnerFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var partnerValidationEvent = new PartnerValidationEvent
+        {
+            ErrorCount = 0,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                registrationValidationEvent,
+                latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent,
+                latestBrandAntivirusCheckEvent,
+                latestBranAntivirusResultEvent,
+                brandValidationEvent,
+                latestPartnerAntivirusCheckEvent,
+                latestPartnerAntivirusResultEvent,
+                partnerValidationEvent
+            }.BuildMock());
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.SubmissionId.Should().Be(submission.Id);
+        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
+        result.Value.ApplicationStatus.ToString().Should().Be("FileUploaded");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnFileUploaded_WhenBrandFileIsRequired_And_BrandFile_Has_validation_Errors()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var regFileId = Guid.NewGuid();
+        var brandFileId = Guid.NewGuid();
+        var partnerFileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriod = "2024-Q1",
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriod,
+            Created = DateTime.Now,
+            IsSubmitted = false,
+            AppReferenceNumber = applicationReferenceNumber
+        };
+
+        var latestCompanyDetailsAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.CompanyDetails,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = regFileId
+        };
+
+        var latestCompanyDetailsAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = regFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var registrationValidationEvent = new RegistrationValidationEvent
+        {
+            ErrorCount = 0,
+            RequiresBrandsFile = true,
+            RequiresPartnershipsFile = true,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var latestBrandAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.Brands,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = brandFileId
+        };
+
+        var latestBranAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = brandFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var brandValidationEvent = new BrandValidationEvent
+        {
+            ErrorCount = 2,
+            IsValid = false,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var latestPartnerAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.Partnerships,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = partnerFileId
+        };
+
+        var latestPartnerAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = partnerFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var partnerValidationEvent = new PartnerValidationEvent
+        {
+            ErrorCount = 0,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                registrationValidationEvent,
+                latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent,
+                latestBrandAntivirusCheckEvent,
+                latestBranAntivirusResultEvent,
+                brandValidationEvent,
+                latestPartnerAntivirusCheckEvent,
+                latestPartnerAntivirusResultEvent,
+                partnerValidationEvent
+            }.BuildMock());
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.SubmissionId.Should().Be(submission.Id);
+        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
+        result.Value.ApplicationStatus.ToString().Should().Be("NotStarted");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnFileUploaded_WhenPartnerFileIsRequired_And_PartnerFile_Has_validation_Errors()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var regFileId = Guid.NewGuid();
+        var brandFileId = Guid.NewGuid();
+        var partnerFileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriod = "2024-Q1",
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriod,
+            Created = DateTime.Now,
+            IsSubmitted = false,
+            AppReferenceNumber = applicationReferenceNumber
+        };
+
+        var latestCompanyDetailsAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.CompanyDetails,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = regFileId
+        };
+
+        var latestCompanyDetailsAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = regFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var registrationValidationEvent = new RegistrationValidationEvent
+        {
+            ErrorCount = 0,
+            RequiresBrandsFile = true,
+            RequiresPartnershipsFile = true,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var latestBrandAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.Brands,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = brandFileId
+        };
+
+        var latestBranAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = brandFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var brandValidationEvent = new BrandValidationEvent
+        {
+            ErrorCount = 0,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var latestPartnerAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.Partnerships,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = partnerFileId
+        };
+
+        var latestPartnerAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = partnerFileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var partnerValidationEvent = new PartnerValidationEvent
+        {
+            ErrorCount = 2,
+            IsValid = false,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                registrationValidationEvent,
+                latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent,
+                latestBrandAntivirusCheckEvent,
+                latestBranAntivirusResultEvent,
+                brandValidationEvent,
+                latestPartnerAntivirusCheckEvent,
+                latestPartnerAntivirusResultEvent,
+                partnerValidationEvent
+            }.BuildMock());
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.SubmissionId.Should().Be(submission.Id);
+        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
+        result.Value.ApplicationStatus.ToString().Should().Be("NotStarted");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnNotStarted_WhenBrandFileIsRequired_And_BrandFile_Not_Uploaded()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriod = "2024-Q1",
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriod,
+            Created = DateTime.Now,
+            IsSubmitted = false,
+            AppReferenceNumber = applicationReferenceNumber
+        };
+
+        var latestCompanyDetailsAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.CompanyDetails,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = fileId
+        };
+
+        var latestCompanyDetailsAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = fileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var registrationValidationEvent = new RegistrationValidationEvent
+        {
+            ErrorCount = 0,
+            RequiresBrandsFile = true,
+            RequiresPartnershipsFile = true,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                registrationValidationEvent,
+                latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent
+            }.BuildMock());
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.SubmissionId.Should().Be(submission.Id);
+        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
+        result.Value.ApplicationStatus.ToString().Should().Be("NotStarted");
     }
 
     [TestMethod]
@@ -320,8 +782,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now.AddMinutes(-5)
@@ -627,8 +1089,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now.AddMinutes(-1)
@@ -722,8 +1184,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now.AddMinutes(-1)
@@ -1253,8 +1715,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now
@@ -1371,8 +1833,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now
@@ -1473,14 +1935,14 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         {
             FileId = fileId,
             SubmissionId = submissionId,
-            Created = previousCreated
+            Created = previousCreated,
         };
 
         var registrationValidationEvent1 = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = previousCreated
@@ -1522,8 +1984,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent2 = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = latestCreated
@@ -1665,8 +2127,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent2 = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = latestCreated
@@ -1818,8 +2280,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent2 = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = latestCreated
@@ -1930,8 +2392,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now.AddMinutes(-4)
@@ -1988,8 +2450,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationValidationEvent2 = new RegistrationValidationEvent
         {
             ErrorCount = 0,
-            RequiresBrandsFile = true,
-            RequiresPartnershipsFile = true,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
             IsValid = true,
             SubmissionId = submissionId,
             Created = DateTime.Now.AddMinutes(1)
