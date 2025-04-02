@@ -1,5 +1,6 @@
 ﻿namespace EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
 
+using System;
 using AutoMapper;
 using Common.Logging.Constants;
 using Common.Logging.Models;

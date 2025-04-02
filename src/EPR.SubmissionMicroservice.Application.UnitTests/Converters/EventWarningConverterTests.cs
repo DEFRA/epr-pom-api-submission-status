@@ -51,6 +51,23 @@ public class EventWarningConverterTests
     }
 
     [TestMethod]
+    public async Task RegistrationValidationEventErrorConverter()
+    {
+        // Arrange
+        var request = TestRequests.SubmissionEvent.ValidRegistrationValidationEventCreateRequest();
+        var validationError = new JObject
+        {
+            ["validationWarningType"] = request["type"]
+        };
+
+        // Act
+        var result = validationError.ToObject<AbstractValidationEventCreateCommand.AbstractValidationWarning>(_systemUnderTest);
+
+        // Assert
+        result.Should().BeOfType<RegistrationValidationEventCreateCommand.RegistrationValidationWarning>();
+    }
+
+    [TestMethod]
     public async Task EventConverter_UndefinedEvent()
     {
         // Arrange

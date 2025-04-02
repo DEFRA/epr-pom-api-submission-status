@@ -70,6 +70,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                 response.HasMaxRowErrors = latestRegistrationValidationEvent.HasMaxRowErrors.GetValueOrDefault();
                 response.RowErrorCount = latestRegistrationValidationEvent.RowErrorCount.GetValueOrDefault(0);
                 response.CompanyDetailsFileIsValid = latestRegistrationValidationEvent.IsValid == true;
+                response.HasWarnings = latestRegistrationValidationEvent.WarningCount > 0;
             }
         }
 

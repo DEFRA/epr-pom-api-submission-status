@@ -25,6 +25,8 @@ public class EventWarningConverter : CustomCreationConverter<AbstractValidationE
                 new CheckSplitterValidationEventCreateCommand.CheckSplitterValidationWarning(),
             ValidationType.ProducerValidation =>
                 new ProducerValidationEventCreateCommand.ProducerValidationWarning(),
+            ValidationType.Registration =>
+                new RegistrationValidationEventCreateCommand.RegistrationValidationWarning(),
             _ => throw new NotImplementedException()
         };
     }

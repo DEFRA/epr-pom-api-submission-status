@@ -25,4 +25,13 @@ public class RegistrationValidationEventCreateCommand : AbstractValidationEventC
 
         public string SubsidiaryId { get; set; }
     }
+
+    public class RegistrationValidationWarning : AbstractValidationWarning
+    {
+        public List<ColumnValidationError> ColumnErrors { get; set; }
+
+        public string OrganisationId { get; set; }
+
+        public string SubsidiaryId { get; set; }
+    }
 }

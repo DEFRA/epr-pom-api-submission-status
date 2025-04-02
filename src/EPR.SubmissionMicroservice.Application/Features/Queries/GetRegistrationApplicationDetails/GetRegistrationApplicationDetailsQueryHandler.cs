@@ -18,19 +18,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 {
     public async Task<ErrorOr<GetRegistrationApplicationDetailsResponse>> Handle(GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
-        var query = submissionQueryRepository
-            .GetAll(x =>
-                x.OrganisationId == request.OrganisationId &&
-                x.SubmissionType == SubmissionType.Registration &&
-                x.SubmissionPeriod == request.SubmissionPeriod);
-
-        if (request.ComplianceSchemeId is not null)
-        {
-            query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
-        }
-
-        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
-        var submission = submissions.FirstOrDefault();
+        var submission = await GetSubmission(submissionQueryRepository, request, cancellationToken);
 
         if (submission is null)
         {
@@ -56,6 +44,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             .ToList();
 
         var errorsCount = 0;
+        var warningsCount = 0;
 
         var latestCompanyDetailsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
             .Where(x => x.FileType == FileType.CompanyDetails)
@@ -84,6 +73,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                     .MaxBy(x => x.Created);
 
                 errorsCount += latestRegistrationValidationEvent?.ErrorCount ?? 0;
+                warningsCount += latestRegistrationValidationEvent?.WarningCount ?? 0;
                 requiresBrandsFile = latestRegistrationValidationEvent?.RequiresBrandsFile ?? false;
                 requiresPartnershipsFile = latestRegistrationValidationEvent?.RequiresPartnershipsFile ?? false;
                 isCompanyDetailsFileValid = latestRegistrationValidationEvent?.IsValid ?? false;
@@ -110,6 +100,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
                         isBrandsFileValid = latestBrandValidationEvent?.IsValid == true;
                         errorsCount += latestBrandValidationEvent?.ErrorCount ?? 0;
+                        warningsCount += latestBrandValidationEvent?.WarningCount ?? 0;
                     }
                 }
             }
@@ -135,6 +126,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
                         isPartnersFileValid = latestPartnerValidationEvent?.IsValid == true;
                         errorsCount += latestPartnerValidationEvent?.ErrorCount ?? 0;
+                        warningsCount += latestPartnerValidationEvent.WarningCount ?? 0;
                     }
                 }
             }
@@ -256,5 +248,17 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         return response;
+    }
+
+    private static async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepository, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
+    {
+        var query = submissionQueryRepository
+                    .GetAll(x => x.OrganisationId == request.OrganisationId &&
+                            x.SubmissionType == SubmissionType.Registration &&
+                            x.SubmissionPeriod == request.SubmissionPeriod)
+                    .Where(x => x.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId);
+
+        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+        return submissions.FirstOrDefault();
     }
 }

@@ -352,6 +352,43 @@ public static class TestCommands
             }
         }
 
+        public static RegistrationValidationEventCreateCommand RegistrationValidationEventCreateCommandWithWarnings()
+        {
+            return new RegistrationValidationEventCreateCommand
+            {
+                SubmissionId = Guid.Empty,
+                Type = 0,
+                UserId = null,
+                RequiresBrandsFile = false,
+                RequiresPartnershipsFile = false,
+                BlobName = null,
+                BlobContainerName = null,
+                RowErrorCount = 0,
+                HasMaxRowErrors = false,
+                OrganisationMemberCount = null,
+                ValidationWarnings = new()
+                {
+                    CreateValidationWarning(1)
+                }
+            };
+
+            RegistrationValidationEventCreateCommand.RegistrationValidationWarning CreateValidationWarning(int row)
+            {
+                return new RegistrationValidationEventCreateCommand.RegistrationValidationWarning
+                {
+                    BlobName = $"Blob file {row}",
+                    RowNumber = row,
+                    ValidationWarningType = ValidationType.Registration,
+                    OrganisationId = "123",
+                    SubsidiaryId = "1",
+                    ColumnErrors = new()
+                    {
+                        new ColumnValidationError { ColumnIndex = 0, ColumnName = "organisation_id", ErrorCode = "73" }
+                    }
+                };
+            }
+        }
+
         public static BrandValidationEventCreateCommand InvalidBrandValidationEventCreateCommand(params string[] errorCodes)
         {
             return new BrandValidationEventCreateCommand

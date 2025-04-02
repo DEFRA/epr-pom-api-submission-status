@@ -48,6 +48,11 @@ public class SubmissionEventProfile : Profile
                 {
                     validationError.BlobName = command.BlobName;
                 }
+
+                foreach (var validationWarning in e.ValidationWarnings)
+                {
+                    validationWarning.BlobName = command.BlobName;
+                }
             });
         CreateMap<BrandValidationEventCreateCommand, BrandValidationEvent>()
             .ForMember(
@@ -77,6 +82,7 @@ public class SubmissionEventProfile : Profile
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationError, ProducerValidationError>();
         CreateMap<ProducerValidationEventCreateCommand.ProducerValidationWarning, ProducerValidationWarning>();
         CreateMap<RegistrationValidationEventCreateCommand.RegistrationValidationError, RegistrationValidationError>();
+        CreateMap<RegistrationValidationEventCreateCommand.RegistrationValidationWarning, RegistrationValidationWarning>();
         CreateMap<RegulatorPoMDecisionEvent, RegulatorDecisionGetResponse>();
         CreateMap<RegulatorRegistrationDecisionEvent, RegulatorDecisionGetResponse>()
            .ForMember(o => o.IsResubmissionRequired, m => m.Ignore());

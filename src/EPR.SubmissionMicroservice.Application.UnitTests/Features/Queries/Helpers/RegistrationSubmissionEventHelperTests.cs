@@ -263,6 +263,7 @@ public class RegistrationSubmissionEventHelperTests
             Created = DateTime.Now.AddMinutes(2),
             UserId = userId,
             IsValid = true,
+            WarningCount = 1
         };
         var brandsAntivirusCheckEvent = new AntivirusCheckEvent
         {
@@ -341,6 +342,7 @@ public class RegistrationSubmissionEventHelperTests
             CompanyDetailsUploadedBy = companyDetailsAntivirusCheckEvent.UserId,
             CompanyDetailsUploadedDate = companyDetailsAntivirusCheckEvent.Created,
             CompanyDetailsFileIsValid = true,
+            HasWarnings = true,
             BrandsFileName = brandsAntivirusCheckEvent.FileName,
             BrandsDataComplete = true,
             BrandsDataIsValid = true,

@@ -19,5 +19,6 @@ public class ValidationEventErrorProfile : Profile
             .IncludeAllDerived();
         CreateMap<ProducerValidationWarning, ProducerValidationIssueGetResponse>();
         CreateMap<CheckSplitterValidationWarning, ProducerValidationIssueGetResponse>();
+        CreateMap<RegistrationValidationWarning, RegistrationValidationIssueGetResponse>();
     }
 }
