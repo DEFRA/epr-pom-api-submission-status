@@ -30,4 +30,8 @@ public class CheckSplitterValidationError : AbstractValidationError
     public string? QuantityKg { get; set; }
 
     public string? QuantityUnits { get; set; }
+
+    public string? TransitionalPackagingUnits { get; set; }
+
+    public string? RecyclabilityRating { get; set; }
 }

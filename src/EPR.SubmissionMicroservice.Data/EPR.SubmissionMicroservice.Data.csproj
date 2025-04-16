@@ -34,7 +34,7 @@
     </SonarQubeSetting>
     <SonarQubeSetting Include="sonar.cpd.exclusions">
       <Value>
-        **/CheckSplitterValidationError.cs
+        **/CheckSplitterValidationError.cs,**/CheckSplitterValidationWarning.cs,**/ProducerValidationError.cs,**/ProducerValidationWarning.cs
       </Value>
     </SonarQubeSetting>
   </ItemGroup>

@@ -29,7 +29,7 @@
     </SonarQubeSetting>
     <SonarQubeSetting Include="sonar.cpd.exclusions">
       <Value>
-        **/CheckSplitterValidationEventCreateCommand.cs
+        **/CheckSplitterValidationEventCreateCommand.cs,**/ProducerValidationEventCreateCommand.cs
       </Value>
     </SonarQubeSetting>
   </ItemGroup>

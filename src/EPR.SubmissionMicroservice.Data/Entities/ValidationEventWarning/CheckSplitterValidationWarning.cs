@@ -30,4 +30,8 @@ public class CheckSplitterValidationWarning : AbstractValidationWarning
     public string? QuantityKg { get; set; }
 
     public string? QuantityUnits { get; set; }
+
+    public string? TransitionalPackagingUnits { get; set; }
+
+    public string? RecyclabilityRating { get; set; }
 }

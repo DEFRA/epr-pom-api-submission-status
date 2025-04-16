@@ -253,6 +253,8 @@ public static class TestRequests
                 toHomeNation = "THN",
                 quantityKg = "QKG",
                 quantityUnits = "QU",
+                TransitionalPackagingUnits = "TR",
+                RecyclabilityRating = "DD",
                 ErrorCodes = new List<string>
                 {
                     "99"
@@ -285,6 +287,8 @@ public static class TestRequests
                 toHomeNation = "THN",
                 quantityKg = "QKG",
                 quantityUnits = "QU",
+                TransitionalPackagingUnits = "TR",
+                RecyclabilityRating = "DD",
                 ErrorCodes = new List<string>
                 {
                     "99"

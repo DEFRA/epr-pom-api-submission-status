@@ -35,6 +35,10 @@ public class ProducerValidationEventCreateCommand : AbstractValidationEventCreat
         public string? QuantityKg { get; set; }
 
         public string? QuantityUnits { get; set; }
+
+        public string? TransitionalPackagingUnits { get; set; }
+
+        public string? RecyclabilityRating { get; set; }
     }
 
     public class ProducerValidationWarning : AbstractValidationWarning
@@ -64,5 +68,9 @@ public class ProducerValidationEventCreateCommand : AbstractValidationEventCreat
         public string? QuantityKg { get; set; }
 
         public string? QuantityUnits { get; set; }
+
+        public string? TransitionalPackagingUnits { get; set; }
+
+        public string? RecyclabilityRating { get; set; }
     }
 }

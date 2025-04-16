@@ -112,6 +112,8 @@ public static class TestQueries
                 ToHomeNation = "THN",
                 QuantityKg = "1",
                 QuantityUnits = "1",
+                TransitionalPackagingUnits = "100",
+                RecyclabilityRating = "A",
                 ErrorCodes = new List<string>
                 {
                     "01"
@@ -136,6 +138,8 @@ public static class TestQueries
                 ToHomeNation = "THN",
                 QuantityKg = "1",
                 QuantityUnits = "1",
+                TransitionalPackagingUnits = "100",
+                RecyclabilityRating = "A",
                 ErrorCodes = new List<string>
                 {
                     "01"

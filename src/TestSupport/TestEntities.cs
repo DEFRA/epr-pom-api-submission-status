@@ -156,6 +156,8 @@ public static class TestEntities
                 ToHomeNation = null,
                 QuantityKg = null,
                 QuantityUnits = null,
+                TransitionalPackagingUnits = null,
+                RecyclabilityRating = null,
                 ErrorCodes = null
             };
         }

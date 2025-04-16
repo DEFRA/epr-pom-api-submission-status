@@ -35,6 +35,10 @@ public class CheckSplitterValidationEventCreateCommand : AbstractValidationEvent
         public string? QuantityKg { get; set; }
 
         public string? QuantityUnits { get; set; }
+
+        public string? TransitionalPackagingUnits { get; set; }
+
+        public string? RecyclabilityRating { get; set; }
     }
 
     public class CheckSplitterValidationWarning : AbstractValidationWarning
@@ -64,5 +68,9 @@ public class CheckSplitterValidationEventCreateCommand : AbstractValidationEvent
         public string? QuantityKg { get; set; }
 
         public string? QuantityUnits { get; set; }
+
+        public string? TransitionalPackagingUnits { get; set; }
+
+        public string? RecyclabilityRating { get; set; }
     }
 }
