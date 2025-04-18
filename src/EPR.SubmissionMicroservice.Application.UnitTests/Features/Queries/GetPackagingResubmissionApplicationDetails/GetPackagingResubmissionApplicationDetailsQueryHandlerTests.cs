@@ -93,32 +93,32 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
     [TestMethod]
     public async Task Handle_ShouldReturnSubmission_WhenReferenceNumberEventIsAfterAntivirusCheckEvent()
     {
-         // Arrange
-         var submissionId = Guid.NewGuid();
-         var complianceSchemeId = Guid.NewGuid();
-         var fileId = Guid.NewGuid();
-         var applicationReferenceNumber = "TestRef";
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
 
-         var query = new GetPackagingResubmissionApplicationDetailsQuery
-         {
-             OrganisationId = Guid.NewGuid(),
-             SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
-             ComplianceSchemeId = complianceSchemeId
-         };
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
+            ComplianceSchemeId = complianceSchemeId
+        };
 
-         var submission = new Submission
-         {
-             Id = submissionId,
-             ComplianceSchemeId = complianceSchemeId,
-             OrganisationId = query.OrganisationId,
-             SubmissionType = SubmissionType.Registration,
-             SubmissionPeriod = query.SubmissionPeriods.First(),
-             Created = DateTime.Now,
-             IsSubmitted = true,
-             AppReferenceNumber = applicationReferenceNumber
-         };
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
+            Created = DateTime.Now,
+            IsSubmitted = true,
+            AppReferenceNumber = applicationReferenceNumber
+        };
 
-         var events = new List<AbstractSubmissionEvent>
+        var events = new List<AbstractSubmissionEvent>
          {
             new AntivirusCheckEvent
             {
@@ -166,26 +166,26 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             }
          };
 
-         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
-                 .Returns(new[] { submission }.BuildMock());
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+                .Returns(new[] { submission }.BuildMock());
 
-         _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-                 .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+                .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
 
-         _validationErrorQueryRepositoryMock
-                 .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
-                 .Returns(new List<AbstractValidationError>().BuildMock);
+        _validationErrorQueryRepositoryMock
+                .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
+                .Returns(new List<AbstractValidationError>().BuildMock);
 
-         _validationWarningRepositoryMock
-                 .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
-                 .Returns(new List<AbstractValidationWarning>().BuildMock);
+        _validationWarningRepositoryMock
+                .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
+                .Returns(new List<AbstractValidationWarning>().BuildMock);
 
-         // Act
-         var result = await _handler.Handle(query, CancellationToken.None);
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
 
-         // Assert
-         result.Should().NotBeNull();
-         result.Value.First().SubmissionId.Should().Be(submission.Id);
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
     }
 
     [TestMethod]
@@ -452,7 +452,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().SubmissionId.Should().Be(submission.Id);
-        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
     }
 
     [TestMethod]
@@ -513,11 +513,11 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().SubmissionId.Should().Be(submission.Id);
-        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
     }
 
     [TestMethod]
-    public async Task Handle_ShouldReturnRejectedByRegulator_WhenRegulatorPackagingDecision_EventisRejectedByRegulator()
+    public async Task Handle_ShouldReturnNotStarted_WhenRegulatorPackagingDecision_EventisRejectedByRegulator()
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -575,7 +575,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().SubmissionId.Should().Be(submission.Id);
-        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
     }
 
     [TestMethod]
@@ -947,9 +947,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         var packagingResubmissionReferenceNumberCreatedEvent = new PackagingResubmissionReferenceNumberCreatedEvent
         {
-           SubmissionId = submissionId,
-           PackagingResubmissionReferenceNumber = "Test",
-           Created = DateTime.Now.AddMinutes(-20)
+            SubmissionId = submissionId,
+            PackagingResubmissionReferenceNumber = "Test",
+            Created = DateTime.Now.AddMinutes(-20)
         };
 
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
@@ -1153,9 +1153,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
 
         var packagingResubmissionReferenceNumberCreatedEvent = new PackagingResubmissionReferenceNumberCreatedEvent
         {
-           SubmissionId = submissionId,
-           PackagingResubmissionReferenceNumber = "Test",
-           Created = DateTime.Now.AddMinutes(-20)
+            SubmissionId = submissionId,
+            PackagingResubmissionReferenceNumber = "Test",
+            Created = DateTime.Now.AddMinutes(-20)
         };
 
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
@@ -1297,5 +1297,121 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().SubmissionId.Should().Be(submission.Id);
         result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
         result.Value.First().ResubmissionFeePaymentMethod.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnApplicationStatusOfNotStarted_WhenCheckSplitterContainsErrors()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Producer,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
+            Created = DateTime.Now,
+            IsSubmitted = true,
+            AppReferenceNumber = "TestRef",
+        };
+
+        var submittedEvent = new SubmittedEvent
+        {
+            SubmissionId = submissionId,
+            FileId = fileId,
+            Created = DateTime.Now.AddMinutes(-10)
+        };
+
+        var antivirusCheckEvent = new AntivirusCheckEvent
+        {
+            SubmissionId = submissionId,
+            FileId = fileId,
+            FileType = FileType.Pom,
+            Created = DateTime.Now
+        };
+
+        var antivirusResultEvent = new AntivirusResultEvent
+        {
+            SubmissionId = submissionId,
+            FileId = fileId,
+            Created = DateTime.Now
+        };
+
+        var regulatorPoMDecisionEvent = new RegulatorPoMDecisionEvent
+        {
+            Decision = RegulatorDecision.Queried,
+            IsResubmissionRequired = true,
+            Created = DateTime.Now.AddMinutes(-5)
+        };
+
+        var checkSplitterValidationEvent = new CheckSplitterValidationEvent
+        {
+            Created = DateTime.Now.AddMinutes(-5),
+            IsValid = true,
+            DataCount = 1,
+            Errors = new List<string>() { "new error" },
+            ErrorCount = 1,
+        };
+
+        var producerValidationEvent = new ProducerValidationEvent
+        {
+            Created = DateTime.Now.AddMinutes(-5),
+            IsValid = true
+        };
+
+        var packagingDataResubmissionFeePaymentEvent = new PackagingDataResubmissionFeePaymentEvent
+        {
+            SubmissionId = submissionId,
+            PaymentMethod = "PayByPhone",
+            ReferenceNumber = "Test",
+            Created = DateTime.Now
+        };
+
+        var packagingResubmissionReferenceNumberCreatedEvent = new PackagingResubmissionReferenceNumberCreatedEvent
+        {
+            SubmissionId = submissionId,
+            PackagingResubmissionReferenceNumber = "Test",
+            Created = DateTime.Now.AddMinutes(-20)
+        };
+
+        var packagingResubmissionApplicationSubmittedCreatedEvent = new PackagingResubmissionApplicationSubmittedCreatedEvent
+        {
+            IsResubmitted = true,
+            SubmissionDate = DateTime.Now.AddDays(-99),
+            Created = DateTime.Now
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[] { submittedEvent, antivirusCheckEvent, antivirusResultEvent, checkSplitterValidationEvent, producerValidationEvent, packagingDataResubmissionFeePaymentEvent, regulatorPoMDecisionEvent, packagingResubmissionReferenceNumberCreatedEvent, packagingResubmissionApplicationSubmittedCreatedEvent }.BuildMock());
+
+        _validationErrorQueryRepositoryMock
+           .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
+           .Returns(new List<AbstractValidationError>().BuildMock);
+
+        _validationWarningRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
+            .Returns(new List<AbstractValidationWarning>().BuildMock);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().SubmissionId.Should().Be(submission.Id);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
     }
 }

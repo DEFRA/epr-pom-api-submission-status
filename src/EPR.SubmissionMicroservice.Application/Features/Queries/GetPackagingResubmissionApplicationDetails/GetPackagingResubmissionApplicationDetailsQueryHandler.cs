@@ -44,27 +44,20 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         return responses;
     }
 
-    private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(Submission? submission, DateTime? latestPackagingDetailsCreatedDatetime, bool isFileUploadedButNotSubmittedYet, bool isRegulatorDecisionAfterSubmission, bool isApplicationSubmittedAfterSubmission, GetPackagingResubmissionApplicationDetailsResponse response, string packagingResubmissionReferenceNumber)
+    private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(Submission? submission, DateTime? latestPackagingDetailsCreatedDatetime, bool isFileUploadedButNotSubmittedYet, bool isRegulatorDecisionAfterSubmission, bool isResubmissionDoneAfterSubmission, GetPackagingResubmissionApplicationDetailsResponse response, string packagingResubmissionReferenceNumber)
     {
-        if (isFileUploadedButNotSubmittedYet)
-        {
-            response.ApplicationStatus = latestPackagingDetailsCreatedDatetime != null
-                ? ApplicationStatusType.FileUploaded
-                : ApplicationStatusType.NotStarted;
-        }
-        else
-        {
-            response.ApplicationStatus = ApplicationStatusType.SubmittedToRegulator;
-        }
-
-        if (!isRegulatorDecisionAfterSubmission && isApplicationSubmittedAfterSubmission)
+        if ((latestPackagingDetailsCreatedDatetime == null) ||
+            (!isRegulatorDecisionAfterSubmission && isResubmissionDoneAfterSubmission))
         {
             response = new GetPackagingResubmissionApplicationDetailsResponse();
             response.SubmissionId = submission.Id;
             response.IsSubmitted = submission.IsSubmitted ?? false;
             response.ApplicationReferenceNumber = packagingResubmissionReferenceNumber;
             response.ApplicationStatus = ApplicationStatusType.NotStarted;
+            return response;
         }
+
+        response.ApplicationStatus = isFileUploadedButNotSubmittedYet ? ApplicationStatusType.FileUploaded : ApplicationStatusType.SubmittedToRegulator;
 
         return response;
     }
@@ -144,11 +137,11 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var validationPass = await IsValidationPass(submissionEvents, latestPackagingDetailsAntivirusCheckEvent, checkSplitterValidationEvents, producerValidationEvents, cancellationToken);
         var latestPackagingDetailsCreatedDatetime = validationPass ? latestPackagingDetailsAntivirusCheckEvent?.Created : null;
         var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
-        var packagingApplicationSubmittedEvent = packagingApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
+        var resubmissionEvent = packagingApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
 
         var isFileUploadedButNotSubmittedYet = latestPackagingDetailsCreatedDatetime > latestSubmittedEventCreatedDatetime;
         var isRegulatorDecisionAfterSubmission = latestPackagingDetailsCreatedDatetime > (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue);
-        var isApplicationSubmittedAfterSubmission = packagingApplicationSubmittedEvent?.Created > latestSubmittedEventCreatedDatetime;
+        var isResubmissionDoneAfterSubmission = resubmissionEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
 
@@ -166,14 +159,14 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
                     SubmittedByName = submittedEvent?.SubmittedBy
                 }
                 : null,
-            ResubmissionApplicationSubmittedDate = isApplicationSubmittedAfterSubmission ? packagingApplicationSubmittedEvent?.SubmissionDate : null,
-            ResubmissionApplicationSubmittedComment = isApplicationSubmittedAfterSubmission ? packagingApplicationSubmittedEvent?.Comments : null,
-            IsResubmitted = isApplicationSubmittedAfterSubmission ? packagingApplicationSubmittedEvent?.IsResubmitted : null,
+            ResubmissionApplicationSubmittedDate = isResubmissionDoneAfterSubmission ? resubmissionEvent?.SubmissionDate : null,
+            ResubmissionApplicationSubmittedComment = isResubmissionDoneAfterSubmission ? resubmissionEvent?.Comments : null,
+            IsResubmitted = isResubmissionDoneAfterSubmission ? resubmissionEvent?.IsResubmitted : null,
             IsResubmissionFeeViewed = isPackagingFeeViewEventAfterSubmission ? packagingFeeViewEvent?.IsPackagingResubmissionFeeViewed : null,
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
 
-        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isApplicationSubmittedAfterSubmission, response, packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber);
+        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response, packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber);
     }
 
     private async Task<bool> IsValidationPass(List<AbstractSubmissionEvent> submissionEvents, AntivirusCheckEvent? latestPackagingDetailsAntivirusCheckEvent, List<CheckSplitterValidationEvent> checkSplitterValidationEvents, List<ProducerValidationEvent> producerValidationEvents, CancellationToken cancellationToken)
