@@ -52,7 +52,6 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             response = new GetPackagingResubmissionApplicationDetailsResponse();
             response.SubmissionId = submission.Id;
             response.IsSubmitted = submission.IsSubmitted ?? false;
-            response.ApplicationReferenceNumber = packagingResubmissionReferenceNumber;
             response.ApplicationStatus = ApplicationStatusType.NotStarted;
             return response;
         }
