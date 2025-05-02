@@ -158,6 +158,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
             var submittedRegistrationInformation = new SubmittedRegistrationFilesInformation
             {
+                CompanyDetailsFileId = companyDetailsFileId,
                 CompanyDetailsFileName = companyDetailsFile.FileName,
                 SubmittedDateTime = latestSubmittedEvent.Created,
                 SubmittedBy = latestSubmittedEvent.UserId,

@@ -1971,6 +1971,7 @@ public class RegistrationSubmissionEventHelperTests
             },
             LastSubmittedFiles = new SubmittedRegistrationFilesInformation
             {
+                CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
                 CompanyDetailsFileName = uploadOneCompanyDetailsAntivirusCheckEvent.FileName,
                 BrandsFileName = null,
                 PartnersFileName = null,
@@ -2133,6 +2134,7 @@ public class RegistrationSubmissionEventHelperTests
             },
             LastSubmittedFiles = new SubmittedRegistrationFilesInformation
             {
+                CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
                 CompanyDetailsFileName = uploadOneCompanyDetailsAntivirusCheckEvent.FileName,
                 BrandsFileName = null,
                 PartnersFileName = null,
@@ -2321,6 +2323,7 @@ public class RegistrationSubmissionEventHelperTests
             },
             LastSubmittedFiles = new SubmittedRegistrationFilesInformation
             {
+                CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
                 CompanyDetailsFileName = uploadOneCompanyDetailsAntivirusCheckEvent.FileName,
                 BrandsFileName = uploadOneBrandsAntivirusCheckEvent.FileName,
                 PartnersFileName = null,

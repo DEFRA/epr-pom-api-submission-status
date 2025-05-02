@@ -43,13 +43,57 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             .Where(s => !string.IsNullOrWhiteSpace(s.ApplicationReferenceNumber))
             .ToList();
 
-        var errorsCount = 0;
-
         var latestCompanyDetailsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
             .Where(x => x.FileType == FileType.CompanyDetails)
             .MaxBy(x => x.Created);
 
         var submittedRegistrationSetId = latestCompanyDetailsAntivirusCheckEvent?.RegistrationSetId;
+
+        var validationPass = ValidateFiles(latestCompanyDetailsAntivirusCheckEvent, submissionEvents, submittedRegistrationSetId);
+
+        var latestCompanyDetailsCreatedDatetime = validationPass ? latestCompanyDetailsAntivirusCheckEvent?.Created : null;
+        var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
+        var isLatestSubmittedEventAfterFileUpload = latestSubmittedEventCreatedDatetime > latestCompanyDetailsCreatedDatetime;
+
+        var registrationApplicationSubmittedEvent = registrationApplicationSubmittedEvents.MaxBy(x => x.Created);
+
+        var firstApplicationSubmittedEvent = registrationApplicationSubmittedEvents.OrderBy(x => x.Created).FirstOrDefault();
+
+        var isLateFeeApplicable = IsLateFeeApplicable(request, firstApplicationSubmittedEvent, submissionEvents, isLatestSubmittedEventAfterFileUpload, latestSubmittedEventCreatedDatetime);
+
+        var response = new GetRegistrationApplicationDetailsResponse
+        {
+            SubmissionId = submission.Id,
+            IsSubmitted = submission.IsSubmitted ?? false,
+            IsResubmission = submission.IsResubmission,
+            ApplicationReferenceNumber = submission.AppReferenceNumber,
+            RegistrationFeePaymentMethod = registrationFeePaymentEvent?.PaymentMethod,
+            LastSubmittedFile = isLatestSubmittedEventAfterFileUpload
+                ? new LastSubmittedFileDetails
+                {
+                    SubmittedDateTime = submittedEvent?.Created,
+                    FileId = submittedEvent?.FileId,
+                    SubmittedByName = submittedEvent?.SubmittedBy
+                }
+                : null,
+            IsLateFeeApplicable = isLateFeeApplicable,
+            RegistrationApplicationSubmittedDate = registrationApplicationSubmittedEvent?.SubmissionDate,
+            RegistrationApplicationSubmittedComment = registrationApplicationSubmittedEvent?.Comments,
+            RegistrationReferenceNumber = regulatorRegistrationDecisionEvent?.RegistrationReferenceNumber
+        };
+
+        SetApplicationStatus(response, isLatestSubmittedEventAfterFileUpload, latestCompanyDetailsCreatedDatetime, regulatorRegistrationDecisionEvent);
+
+        SetResubmissionStatus(response, regulatorRegistrationDecisionEvent, latestCompanyDetailsCreatedDatetime, isLatestSubmittedEventAfterFileUpload, registrationFeePaymentEvent, registrationApplicationSubmittedEvent);
+
+        SetQueryCancelRejectStatus(response, regulatorRegistrationDecisionEvent, latestCompanyDetailsCreatedDatetime, isLatestSubmittedEventAfterFileUpload, registrationFeePaymentEvent, registrationApplicationSubmittedEvent);
+
+        return response;
+    }
+
+    private static bool ValidateFiles(AntivirusCheckEvent? latestCompanyDetailsAntivirusCheckEvent, List<AbstractSubmissionEvent> submissionEvents, Guid? submittedRegistrationSetId)
+    {
+        var errorsCount = 0;
 
         var isCompanyDetailsFileValid = false;
 
@@ -77,102 +121,20 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 isCompanyDetailsFileValid = latestRegistrationValidationEvent?.IsValid ?? false;
             }
 
-            if (requiresBrandsFile)
-            {
-                isBrandsFileValid = false;
-                var latestBrandsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
-                    .Where(x => x.FileType == FileType.Brands && (submittedRegistrationSetId is null || x.RegistrationSetId == submittedRegistrationSetId))
-                    .MaxBy(x => x.Created);
+            isBrandsFileValid = IsBrandsFileValid(requiresBrandsFile, isBrandsFileValid, submissionEvents, submittedRegistrationSetId, ref errorsCount);
 
-                if (latestBrandsAntivirusCheckEvent is not null)
-                {
-                    var latestBrandsAntivirusResultEvent = submissionEvents.OfType<AntivirusResultEvent>()
-                        .Where(x => x.FileId == latestBrandsAntivirusCheckEvent.FileId)
-                        .MaxBy(x => x.Created);
-
-                    if (latestBrandsAntivirusResultEvent is not null)
-                    {
-                        var latestBrandValidationEvent = submissionEvents.OfType<BrandValidationEvent>()
-                            .Where(x => x.BlobName == latestBrandsAntivirusResultEvent.BlobName)
-                            .MaxBy(x => x.Created);
-
-                        isBrandsFileValid = latestBrandValidationEvent?.IsValid == true;
-                        errorsCount += latestBrandValidationEvent?.ErrorCount ?? 0;
-                    }
-                }
-            }
-
-            if (requiresPartnershipsFile)
-            {
-                isPartnersFileValid = false;
-                var latestPartnershipsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
-                    .Where(x => x.FileType == FileType.Partnerships && (submittedRegistrationSetId is null || x.RegistrationSetId == submittedRegistrationSetId))
-                    .MaxBy(x => x.Created);
-
-                if (latestPartnershipsAntivirusCheckEvent is not null)
-                {
-                    var latestPartnershipsAntivirusResultEvent = submissionEvents.OfType<AntivirusResultEvent>()
-                        .Where(x => x.FileId == latestPartnershipsAntivirusCheckEvent.FileId)
-                        .MaxBy(x => x.Created);
-
-                    if (latestPartnershipsAntivirusResultEvent is not null)
-                    {
-                        var latestPartnerValidationEvent = submissionEvents.OfType<PartnerValidationEvent>()
-                            .Where(x => x.BlobName == latestPartnershipsAntivirusResultEvent.BlobName)
-                            .MaxBy(x => x.Created);
-
-                        isPartnersFileValid = latestPartnerValidationEvent?.IsValid == true;
-                        errorsCount += latestPartnerValidationEvent?.ErrorCount ?? 0;
-                    }
-                }
-            }
+            isPartnersFileValid = IsPartnersFileValid(requiresPartnershipsFile, isPartnersFileValid, submissionEvents, submittedRegistrationSetId, ref errorsCount);
         }
 
         var validationPass = isCompanyDetailsFileValid
                              && isBrandsFileValid
                              && isPartnersFileValid
                              && errorsCount == 0;
+        return validationPass;
+    }
 
-        var latestCompanyDetailsCreatedDatetime = validationPass ? latestCompanyDetailsAntivirusCheckEvent?.Created : null;
-        var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
-        var isLatestSubmittedEventAfterFileUpload = latestSubmittedEventCreatedDatetime > latestCompanyDetailsCreatedDatetime;
-
-        var registrationApplicationSubmittedEvent = registrationApplicationSubmittedEvents.MaxBy(x => x.Created);
-
-        var firstApplicationSubmittedEvent = registrationApplicationSubmittedEvents.OrderBy(x => x.Created).FirstOrDefault();
-
-        bool isLateFeeApplicable;
-
-        if (firstApplicationSubmittedEvent is not null)
-        {
-            isLateFeeApplicable = firstApplicationSubmittedEvent.SubmissionDate > request.LateFeeDeadline;
-        }
-        else
-        {
-            isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
-        }
-
-        var response = new GetRegistrationApplicationDetailsResponse
-        {
-            SubmissionId = submission.Id,
-            IsSubmitted = submission.IsSubmitted ?? false,
-            IsResubmission = submission.IsResubmission,
-            ApplicationReferenceNumber = submission.AppReferenceNumber,
-            RegistrationFeePaymentMethod = registrationFeePaymentEvent?.PaymentMethod,
-            LastSubmittedFile = isLatestSubmittedEventAfterFileUpload
-                ? new LastSubmittedFileDetails
-                {
-                    SubmittedDateTime = submittedEvent?.Created,
-                    FileId = submittedEvent?.FileId,
-                    SubmittedByName = submittedEvent?.SubmittedBy
-                }
-                : null,
-            IsLateFeeApplicable = isLateFeeApplicable,
-            RegistrationApplicationSubmittedDate = registrationApplicationSubmittedEvent?.SubmissionDate,
-            RegistrationApplicationSubmittedComment = registrationApplicationSubmittedEvent?.Comments,
-            RegistrationReferenceNumber = regulatorRegistrationDecisionEvent?.RegistrationReferenceNumber
-        };
-
+    private static void SetApplicationStatus(GetRegistrationApplicationDetailsResponse response, bool isLatestSubmittedEventAfterFileUpload, DateTime? latestCompanyDetailsCreatedDatetime, RegulatorRegistrationDecisionEvent? regulatorRegistrationDecisionEvent)
+    {
         if (response.IsSubmitted)
         {
             response.ApplicationStatus = isLatestSubmittedEventAfterFileUpload
@@ -194,10 +156,63 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 "Approved" => ApplicationStatusType.ApprovedByRegulator,
                 "Rejected" => ApplicationStatusType.RejectedByRegulator,
                 "Cancelled" => ApplicationStatusType.CancelledByRegulator,
-                "Queried" => ApplicationStatusType.QueriedByRegulator
+                "Queried" => ApplicationStatusType.QueriedByRegulator,
+                _ => throw new InvalidOperationException("Regulator Status Not supported")
             };
         }
+    }
 
+    private static bool IsLateFeeApplicable(GetRegistrationApplicationDetailsQuery request, RegistrationApplicationSubmittedEvent? firstApplicationSubmittedEvent, List<AbstractSubmissionEvent> submissionEvents, bool isLatestSubmittedEventAfterFileUpload, DateTime? latestSubmittedEventCreatedDatetime)
+    {
+        bool isLateFeeApplicable;
+
+        if (firstApplicationSubmittedEvent is not null)
+        {
+            var hasAnyApprovedRegulatorDecision = submissionEvents
+                .OfType<RegulatorRegistrationDecisionEvent>()
+                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved);
+
+            //if there is a previous-approved decision then the late fee applies after that dete otherwise it applies from first submission event
+
+            isLateFeeApplicable = hasAnyApprovedRegulatorDecision && isLatestSubmittedEventAfterFileUpload
+                ? latestSubmittedEventCreatedDatetime > request.LateFeeDeadline
+                : firstApplicationSubmittedEvent.SubmissionDate > request.LateFeeDeadline;
+        }
+        else
+        {
+            isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+        }
+
+        return isLateFeeApplicable;
+    }
+
+    private static void SetQueryCancelRejectStatus(GetRegistrationApplicationDetailsResponse response, RegulatorRegistrationDecisionEvent? regulatorRegistrationDecisionEvent, DateTime? latestCompanyDetailsCreatedDatetime, bool isLatestSubmittedEventAfterFileUpload, RegistrationFeePaymentEvent? registrationFeePaymentEvent, RegistrationApplicationSubmittedEvent? registrationApplicationSubmittedEvent)
+    {
+        if (response.ApplicationStatus is
+                ApplicationStatusType.CancelledByRegulator
+                or ApplicationStatusType.QueriedByRegulator
+                or ApplicationStatusType.RejectedByRegulator
+            && regulatorRegistrationDecisionEvent.Created < latestCompanyDetailsCreatedDatetime)
+        {
+            response.ApplicationStatus = isLatestSubmittedEventAfterFileUpload
+                ? ApplicationStatusType.SubmittedToRegulator
+                : ApplicationStatusType.SubmittedAndHasRecentFileUpload;
+
+            if (registrationFeePaymentEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            {
+                response.RegistrationFeePaymentMethod = null;
+            }
+
+            if (registrationApplicationSubmittedEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            {
+                response.RegistrationApplicationSubmittedComment = null;
+                response.RegistrationApplicationSubmittedDate = null;
+            }
+        }
+    }
+
+    private static void SetResubmissionStatus(GetRegistrationApplicationDetailsResponse response, RegulatorRegistrationDecisionEvent? regulatorRegistrationDecisionEvent, DateTime? latestCompanyDetailsCreatedDatetime, bool isLatestSubmittedEventAfterFileUpload, RegistrationFeePaymentEvent? registrationFeePaymentEvent, RegistrationApplicationSubmittedEvent? registrationApplicationSubmittedEvent)
+    {
         if (response.ApplicationStatus is
                 ApplicationStatusType.ApprovedByRegulator
                 or ApplicationStatusType.AcceptedByRegulator
@@ -220,30 +235,66 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 response.RegistrationApplicationSubmittedDate = null;
             }
         }
+    }
 
-        if (response.ApplicationStatus is
-                ApplicationStatusType.CancelledByRegulator
-                or ApplicationStatusType.QueriedByRegulator
-                or ApplicationStatusType.RejectedByRegulator
-            && regulatorRegistrationDecisionEvent.Created < latestCompanyDetailsCreatedDatetime)
+    private static bool IsPartnersFileValid(bool requiresPartnershipsFile, bool isPartnersFileValid, List<AbstractSubmissionEvent> submissionEvents, Guid? submittedRegistrationSetId, ref int errorsCount)
+    {
+        if (requiresPartnershipsFile)
         {
-            response.ApplicationStatus = isLatestSubmittedEventAfterFileUpload
-                ? ApplicationStatusType.SubmittedToRegulator
-                : ApplicationStatusType.SubmittedAndHasRecentFileUpload;
+            isPartnersFileValid = false;
+            var latestPartnershipsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
+                .Where(x => x.FileType == FileType.Partnerships && (submittedRegistrationSetId is null || x.RegistrationSetId == submittedRegistrationSetId))
+                .MaxBy(x => x.Created);
 
-            if (registrationFeePaymentEvent?.Created < regulatorRegistrationDecisionEvent.Created)
+            if (latestPartnershipsAntivirusCheckEvent is not null)
             {
-                response.RegistrationFeePaymentMethod = null;
-            }
+                var latestPartnershipsAntivirusResultEvent = submissionEvents.OfType<AntivirusResultEvent>()
+                    .Where(x => x.FileId == latestPartnershipsAntivirusCheckEvent.FileId)
+                    .MaxBy(x => x.Created);
 
-            if (registrationApplicationSubmittedEvent?.Created < regulatorRegistrationDecisionEvent.Created)
-            {
-                response.RegistrationApplicationSubmittedComment = null;
-                response.RegistrationApplicationSubmittedDate = null;
+                if (latestPartnershipsAntivirusResultEvent is not null)
+                {
+                    var latestPartnerValidationEvent = submissionEvents.OfType<PartnerValidationEvent>()
+                        .Where(x => x.BlobName == latestPartnershipsAntivirusResultEvent.BlobName)
+                        .MaxBy(x => x.Created);
+
+                    isPartnersFileValid = latestPartnerValidationEvent?.IsValid == true;
+                    errorsCount += latestPartnerValidationEvent?.ErrorCount ?? 0;
+                }
             }
         }
 
-        return response;
+        return isPartnersFileValid;
+    }
+
+    private static bool IsBrandsFileValid(bool requiresBrandsFile, bool isBrandsFileValid, List<AbstractSubmissionEvent> submissionEvents, Guid? submittedRegistrationSetId, ref int errorsCount)
+    {
+        if (requiresBrandsFile)
+        {
+            isBrandsFileValid = false;
+            var latestBrandsAntivirusCheckEvent = submissionEvents.OfType<AntivirusCheckEvent>()
+                .Where(x => x.FileType == FileType.Brands && (submittedRegistrationSetId is null || x.RegistrationSetId == submittedRegistrationSetId))
+                .MaxBy(x => x.Created);
+
+            if (latestBrandsAntivirusCheckEvent is not null)
+            {
+                var latestBrandsAntivirusResultEvent = submissionEvents.OfType<AntivirusResultEvent>()
+                    .Where(x => x.FileId == latestBrandsAntivirusCheckEvent.FileId)
+                    .MaxBy(x => x.Created);
+
+                if (latestBrandsAntivirusResultEvent is not null)
+                {
+                    var latestBrandValidationEvent = submissionEvents.OfType<BrandValidationEvent>()
+                        .Where(x => x.BlobName == latestBrandsAntivirusResultEvent.BlobName)
+                        .MaxBy(x => x.Created);
+
+                    isBrandsFileValid = latestBrandValidationEvent?.IsValid == true;
+                    errorsCount += latestBrandValidationEvent?.ErrorCount ?? 0;
+                }
+            }
+        }
+
+        return isBrandsFileValid;
     }
 
     private static async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepository, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
@@ -254,7 +305,8 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                             x.SubmissionPeriod == request.SubmissionPeriod)
                     .Where(x => x.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId);
 
-        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
-        return submissions.FirstOrDefault();
+        var submission = await query.OrderByDescending(x => x.Created).FirstOrDefaultAsync(cancellationToken);
+
+        return submission;
     }
 }
