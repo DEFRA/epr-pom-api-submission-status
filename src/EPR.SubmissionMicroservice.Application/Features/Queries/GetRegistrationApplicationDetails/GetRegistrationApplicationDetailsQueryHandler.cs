@@ -166,21 +166,38 @@ public class GetRegistrationApplicationDetailsQueryHandler(
     {
         bool isLateFeeApplicable;
 
-        if (firstApplicationSubmittedEvent is not null)
+        //CSO logic
+        if (request.ComplianceSchemeId is not null)
         {
             var hasAnyApprovedRegulatorDecision = submissionEvents
                 .OfType<RegulatorRegistrationDecisionEvent>()
                 .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved);
 
             //if there is a previous-approved decision then the late fee applies after that dete otherwise it applies from first submission event
-
-            isLateFeeApplicable = hasAnyApprovedRegulatorDecision && isLatestSubmittedEventAfterFileUpload
-                ? latestSubmittedEventCreatedDatetime > request.LateFeeDeadline
-                : firstApplicationSubmittedEvent.SubmissionDate > request.LateFeeDeadline;
+            if (hasAnyApprovedRegulatorDecision && isLatestSubmittedEventAfterFileUpload)
+            {
+                isLateFeeApplicable = latestSubmittedEventCreatedDatetime > request.LateFeeDeadline;
+            }
+            else if (firstApplicationSubmittedEvent is not null)
+            {
+                isLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+            }
+            else
+            {
+                isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+            }
         }
         else
         {
-            isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+            //Producer Logic
+            if (firstApplicationSubmittedEvent is not null)
+            {
+                isLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+            }
+            else
+            {
+                isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+            }
         }
 
         return isLateFeeApplicable;
@@ -300,10 +317,10 @@ public class GetRegistrationApplicationDetailsQueryHandler(
     private static async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepository, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
         var query = submissionQueryRepository
-                    .GetAll(x => x.OrganisationId == request.OrganisationId &&
-                            x.SubmissionType == SubmissionType.Registration &&
-                            x.SubmissionPeriod == request.SubmissionPeriod)
-                    .Where(x => x.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId);
+            .GetAll(x => x.OrganisationId == request.OrganisationId &&
+                         x.SubmissionType == SubmissionType.Registration &&
+                         x.SubmissionPeriod == request.SubmissionPeriod)
+            .Where(x => x.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId);
 
         var submission = await query.OrderByDescending(x => x.Created).FirstOrDefaultAsync(cancellationToken);
 
