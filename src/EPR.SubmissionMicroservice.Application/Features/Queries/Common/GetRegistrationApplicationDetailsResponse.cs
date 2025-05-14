@@ -42,6 +42,8 @@ public class GetRegistrationApplicationDetailsResponse
 
     public bool IsLateFeeApplicable { get; set; }
 
+    public bool IsOriginalCsoSubmissionLate { get; set; }
+
     public class LastSubmittedFileDetails
     {
         public Guid? FileId { get; set; }

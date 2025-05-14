@@ -59,8 +59,6 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
         var firstApplicationSubmittedEvent = registrationApplicationSubmittedEvents.OrderBy(x => x.Created).FirstOrDefault();
 
-        var isLateFeeApplicable = IsLateFeeApplicable(request, firstApplicationSubmittedEvent, submissionEvents, isLatestSubmittedEventAfterFileUpload, latestSubmittedEventCreatedDatetime);
-
         var response = new GetRegistrationApplicationDetailsResponse
         {
             SubmissionId = submission.Id,
@@ -76,11 +74,12 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                     SubmittedByName = submittedEvent?.SubmittedBy
                 }
                 : null,
-            IsLateFeeApplicable = isLateFeeApplicable,
             RegistrationApplicationSubmittedDate = registrationApplicationSubmittedEvent?.SubmissionDate,
             RegistrationApplicationSubmittedComment = registrationApplicationSubmittedEvent?.Comments,
             RegistrationReferenceNumber = regulatorRegistrationDecisionEvent?.RegistrationReferenceNumber
         };
+
+        IsLateFeeApplicable(response, request, firstApplicationSubmittedEvent, submissionEvents, isLatestSubmittedEventAfterFileUpload, latestSubmittedEventCreatedDatetime);
 
         SetApplicationStatus(response, isLatestSubmittedEventAfterFileUpload, latestCompanyDetailsCreatedDatetime, regulatorRegistrationDecisionEvent);
 
@@ -162,9 +161,10 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
     }
 
-    private static bool IsLateFeeApplicable(GetRegistrationApplicationDetailsQuery request, RegistrationApplicationSubmittedEvent? firstApplicationSubmittedEvent, List<AbstractSubmissionEvent> submissionEvents, bool isLatestSubmittedEventAfterFileUpload, DateTime? latestSubmittedEventCreatedDatetime)
+    private static void IsLateFeeApplicable(GetRegistrationApplicationDetailsResponse response, GetRegistrationApplicationDetailsQuery request, RegistrationApplicationSubmittedEvent? firstApplicationSubmittedEvent, List<AbstractSubmissionEvent> submissionEvents, bool isLatestSubmittedEventAfterFileUpload, DateTime? latestSubmittedEventCreatedDatetime)
     {
-        bool isLateFeeApplicable;
+        response.IsLateFeeApplicable = false;
+        response.IsOriginalCsoSubmissionLate = false;
 
         //CSO logic
         if (request.ComplianceSchemeId is not null)
@@ -173,18 +173,22 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 .OfType<RegulatorRegistrationDecisionEvent>()
                 .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved);
 
-            //if there is a previous-approved decision then the late fee applies after that dete otherwise it applies from first submission event
             if (hasAnyApprovedRegulatorDecision && isLatestSubmittedEventAfterFileUpload)
             {
-                isLateFeeApplicable = latestSubmittedEventCreatedDatetime > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = latestSubmittedEventCreatedDatetime > request.LateFeeDeadline;
             }
             else if (firstApplicationSubmittedEvent is not null)
             {
-                isLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
             }
             else
             {
-                isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+            }
+
+            if (firstApplicationSubmittedEvent is not null)
+            {
+                response.IsOriginalCsoSubmissionLate = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
             }
         }
         else
@@ -192,15 +196,13 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             //Producer Logic
             if (firstApplicationSubmittedEvent is not null)
             {
-                isLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
             }
             else
             {
-                isLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = DateTime.Today > request.LateFeeDeadline;
             }
         }
-
-        return isLateFeeApplicable;
     }
 
     private static void SetQueryCancelRejectStatus(GetRegistrationApplicationDetailsResponse response, RegulatorRegistrationDecisionEvent? regulatorRegistrationDecisionEvent, DateTime? latestCompanyDetailsCreatedDatetime, bool isLatestSubmittedEventAfterFileUpload, RegistrationFeePaymentEvent? registrationFeePaymentEvent, RegistrationApplicationSubmittedEvent? registrationApplicationSubmittedEvent)

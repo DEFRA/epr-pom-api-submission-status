@@ -2392,6 +2392,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("ApprovedByRegulator");
         result.Value.IsLateFeeApplicable.Should().BeFalse();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -2505,6 +2506,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("ApprovedByRegulator");
         result.Value.IsLateFeeApplicable.Should().BeTrue();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -2659,6 +2661,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.RegistrationApplicationSubmittedComment.Should().BeNull();
         result.Value.RegistrationApplicationSubmittedDate.Should().BeNull();
         result.Value.IsLateFeeApplicable.Should().BeFalse();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -2813,6 +2816,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.RegistrationApplicationSubmittedComment.Should().BeNull();
         result.Value.RegistrationApplicationSubmittedDate.Should().BeNull();
         result.Value.IsLateFeeApplicable.Should().BeTrue();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -2968,6 +2972,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.RegistrationApplicationSubmittedComment.Should().BeNull();
         result.Value.RegistrationApplicationSubmittedDate.Should().BeNull();
         result.Value.IsLateFeeApplicable.Should().BeTrue();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -3053,6 +3058,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedAndHasRecentFileUpload");
         result.Value.IsLateFeeApplicable.Should().BeTrue();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -3165,6 +3171,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("ApprovedByRegulator");
         result.Value.IsLateFeeApplicable.Should().BeTrue();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeTrue();
     }
 
     [TestMethod]
@@ -3318,6 +3325,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
         result.Value.IsLateFeeApplicable.Should().BeTrue();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeTrue();
     }
 
     [TestMethod]
@@ -3403,6 +3411,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedAndHasRecentFileUpload");
         result.Value.IsLateFeeApplicable.Should().BeFalse();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -3515,6 +3524,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("ApprovedByRegulator");
         result.Value.IsLateFeeApplicable.Should().BeFalse();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
@@ -3668,6 +3678,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.SubmissionId.Should().Be(submission.Id);
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
         result.Value.IsLateFeeApplicable.Should().BeFalse();
+        result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
 
     [TestMethod]
