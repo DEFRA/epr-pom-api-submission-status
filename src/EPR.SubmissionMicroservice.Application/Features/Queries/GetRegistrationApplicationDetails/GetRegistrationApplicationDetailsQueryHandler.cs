@@ -175,11 +175,11 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
             if (hasAnyApprovedRegulatorDecision && isLatestSubmittedEventAfterFileUpload)
             {
-                response.IsLateFeeApplicable = latestSubmittedEventCreatedDatetime > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = latestSubmittedEventCreatedDatetime.Value.Date > request.LateFeeDeadline;
             }
             else if (firstApplicationSubmittedEvent is not null)
             {
-                response.IsLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = firstApplicationSubmittedEvent.Created.Date > request.LateFeeDeadline;
             }
             else
             {
@@ -188,7 +188,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
             if (firstApplicationSubmittedEvent is not null)
             {
-                response.IsOriginalCsoSubmissionLate = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+                response.IsOriginalCsoSubmissionLate = firstApplicationSubmittedEvent.Created.Date > request.LateFeeDeadline;
             }
         }
         else
@@ -196,7 +196,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             //Producer Logic
             if (firstApplicationSubmittedEvent is not null)
             {
-                response.IsLateFeeApplicable = firstApplicationSubmittedEvent.Created > request.LateFeeDeadline;
+                response.IsLateFeeApplicable = firstApplicationSubmittedEvent.Created.Date > request.LateFeeDeadline;
             }
             else
             {

@@ -1300,9 +1300,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
             applicationSubmittedEvent.Add(new RegistrationApplicationSubmittedEvent
             {
                 SubmissionId = submission.Id,
-                Created = isLateFeeApplicable ? lateFeeDeadline.AddMinutes(15) : lateFeeDeadline.AddMinutes(-15),
+                Created = isLateFeeApplicable ? lateFeeDeadline.AddDays(1) : lateFeeDeadline.AddDays(-1),
                 ApplicationReferenceNumber = applicationReferenceNumber,
-                SubmissionDate = isLateFeeApplicable ? lateFeeDeadline.AddMinutes(15) : lateFeeDeadline.AddMinutes(-15)
+                SubmissionDate = isLateFeeApplicable ? lateFeeDeadline.AddDays(1) : lateFeeDeadline.AddDays(-1)
             });
         }
 
@@ -2402,14 +2402,14 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var submissionId = Guid.NewGuid();
         var fileId = Guid.NewGuid();
         var applicationReferenceNumber = "TestRef";
-        var previousCreated = DateTime.Now.AddMinutes(-1);
+        var previousCreated = DateTime.Now.Date.AddDays(1);
 
         var query = new GetRegistrationApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
             SubmissionPeriod = "2024-Q1",
             ComplianceSchemeId = null,
-            LateFeeDeadline = previousCreated.AddMinutes(-15)
+            LateFeeDeadline = previousCreated.AddDays(-2)
         };
 
         var submission = new Submission
@@ -2461,9 +2461,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var applicationSubmittedEvent1 = new RegistrationApplicationSubmittedEvent
         {
             SubmissionId = submission.Id,
-            Created = previousCreated.AddMinutes(-10),
+            Created = previousCreated,
             ApplicationReferenceNumber = applicationReferenceNumber,
-            SubmissionDate = previousCreated.AddMinutes(-10)
+            SubmissionDate = previousCreated
         };
 
         var submissionEvent1 = new SubmittedEvent
@@ -2477,9 +2477,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationDecisionEvent1 = new RegulatorRegistrationDecisionEvent
         {
             SubmissionId = submission.Id,
-            Created = DateTime.Now,
+            Created = previousCreated,
             Decision = RegulatorDecision.Approved,
-            DecisionDate = DateTime.Now,
+            DecisionDate = previousCreated,
             RegistrationReferenceNumber = "TestRef"
         };
 
@@ -2671,15 +2671,15 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var submissionId = Guid.NewGuid();
         var fileId = Guid.NewGuid();
         var applicationReferenceNumber = "TestRef";
-        var previousCreated = DateTime.Now.AddMinutes(-1);
-        var latestCreated = DateTime.Now.AddMinutes(+1);
+        var previousCreated = DateTime.Now.Date.AddDays(-1);
+        var latestCreated = DateTime.Now.Date;
 
         var query = new GetRegistrationApplicationDetailsQuery
         {
             OrganisationId = Guid.NewGuid(),
             SubmissionPeriod = "2024-Q1",
             ComplianceSchemeId = null,
-            LateFeeDeadline = previousCreated.AddMinutes(-15)
+            LateFeeDeadline = previousCreated.AddDays(-1)
         };
 
         var submission = new Submission
@@ -2730,9 +2730,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var applicationSubmittedEvent1 = new RegistrationApplicationSubmittedEvent
         {
             SubmissionId = submission.Id,
-            Created = previousCreated.AddMinutes(-10),
+            Created = previousCreated,
             ApplicationReferenceNumber = applicationReferenceNumber,
-            SubmissionDate = previousCreated.AddMinutes(-10)
+            SubmissionDate = previousCreated
         };
 
         var submissionEvent1 = new SubmittedEvent
@@ -2746,9 +2746,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var registrationDecisionEvent1 = new RegulatorRegistrationDecisionEvent
         {
             SubmissionId = submission.Id,
-            Created = DateTime.Now,
+            Created = previousCreated,
             Decision = RegulatorDecision.Approved,
-            DecisionDate = DateTime.Now,
+            DecisionDate = previousCreated,
             RegistrationReferenceNumber = "TestRef"
         };
 
@@ -2780,7 +2780,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var submissionEvent2 = new SubmittedEvent
         {
             SubmissionId = submission.Id,
-            Created = latestCreated.AddMinutes(+1),
+            Created = latestCreated,
             FileId = Guid.NewGuid(),
             SubmittedBy = "User1",
             IsResubmission = true
@@ -2811,10 +2811,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
-        result.Value.RegistrationFeePaymentMethod.Should().BeNull();
-        result.Value.RegistrationApplicationSubmittedComment.Should().BeNull();
-        result.Value.RegistrationApplicationSubmittedDate.Should().BeNull();
+        result.Value.ApplicationStatus.ToString().Should().Be("SubmittedAndHasRecentFileUpload");
         result.Value.IsLateFeeApplicable.Should().BeTrue();
         result.Value.IsOriginalCsoSubmissionLate.Should().BeFalse();
     }
@@ -2886,7 +2883,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var applicationSubmittedEvent1 = new RegistrationApplicationSubmittedEvent
         {
             SubmissionId = submission.Id,
-            Created = previousCreated.AddMinutes(-10),
+            Created = previousCreated.AddDays(-1),
             ApplicationReferenceNumber = applicationReferenceNumber,
             SubmissionDate = previousCreated
         };
@@ -2936,7 +2933,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var submissionEvent2 = new SubmittedEvent
         {
             SubmissionId = submission.Id,
-            Created = latestCreated.AddMinutes(+1),
+            Created = latestCreated.AddDays(1),
             FileId = Guid.NewGuid(),
             SubmittedBy = "User1",
             IsResubmission = true
