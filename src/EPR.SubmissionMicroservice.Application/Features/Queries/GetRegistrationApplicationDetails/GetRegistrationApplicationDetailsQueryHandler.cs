@@ -32,8 +32,8 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         var submittedEvent = submissionEvents.OfType<SubmittedEvent>()
             .MaxBy(d => d.Created);
 
-        var regulatorRegistrationDecisionEvent = submissionEvents.OfType<RegulatorRegistrationDecisionEvent>()
-            .MaxBy(d => d.Created);
+        var regulatorRegistrationDecisionEvents = submissionEvents.OfType<RegulatorRegistrationDecisionEvent>().OrderBy(x => x.Created).ToList();
+        var regulatorRegistrationDecisionEvent = regulatorRegistrationDecisionEvents.MaxBy(d => d.Created);
 
         var registrationFeePaymentEvent = submissionEvents.OfType<RegistrationFeePaymentEvent>()
             .Where(s => !string.IsNullOrWhiteSpace(s.ApplicationReferenceNumber))
@@ -76,7 +76,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 : null,
             RegistrationApplicationSubmittedDate = registrationApplicationSubmittedEvent?.SubmissionDate,
             RegistrationApplicationSubmittedComment = registrationApplicationSubmittedEvent?.Comments,
-            RegistrationReferenceNumber = regulatorRegistrationDecisionEvent?.RegistrationReferenceNumber
+            RegistrationReferenceNumber = regulatorRegistrationDecisionEvents.Find(x => !string.IsNullOrWhiteSpace(x.RegistrationReferenceNumber) && x.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved)?.RegistrationReferenceNumber
         };
 
         IsLateFeeApplicable(response, request, firstApplicationSubmittedEvent, submissionEvents, isLatestSubmittedEventAfterFileUpload, latestSubmittedEventCreatedDatetime);
