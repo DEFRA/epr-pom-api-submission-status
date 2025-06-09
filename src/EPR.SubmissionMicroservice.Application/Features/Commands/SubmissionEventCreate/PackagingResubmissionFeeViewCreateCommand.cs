@@ -6,5 +6,7 @@ public class PackagingResubmissionFeeViewCreateCommand : AbstractSubmissionEvent
 {
     public override EventType Type => EventType.PackagingResubmissionFeeViewed;
 
+    public Guid? FileId { get; set; }
+
     public bool? IsPackagingResubmissionFeeViewed { get; set; }
 }
