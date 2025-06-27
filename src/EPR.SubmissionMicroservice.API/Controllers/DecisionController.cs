@@ -3,6 +3,7 @@ using AutoMapper;
 using EPR.SubmissionMicroservice.API.Contracts.Decisions.Get;
 using EPR.SubmissionMicroservice.API.Filters.Swashbuckle;
 using EPR.SubmissionMicroservice.API.Services.Interfaces;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +25,7 @@ public class DecisionController : ApiController
 
     [HttpGet(Name = nameof(GetDecisions))]
     [Produces("application/json")]
+    [ProducesResponseType(typeof(List<AbstractSubmissionEventGetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetDecisions([FromQuery] DecisionGetRequest request)
     {

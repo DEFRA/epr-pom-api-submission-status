@@ -6,6 +6,7 @@ using EPR.SubmissionMicroservice.API.Filters.Swashbuckle.Examples;
 using EPR.SubmissionMicroservice.API.Services.Interfaces;
 using EPR.SubmissionMicroservice.Application.Converters;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionEventsGet;
 using ErrorOr;
 using Microsoft.AspNetCore.Mvc;
@@ -97,8 +98,8 @@ public class SubmissionEventController : ApiController
 
     [HttpGet("events/get-regulator-pom-decision", Name = nameof(GetSubmissionEventsByType))]
     [Produces("application/json")]
+    [ProducesResponseType(typeof(List<AbstractSubmissionEventGetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesDefaultResponseType]
     public async Task<IActionResult> GetSubmissionEventsByType([FromQuery] RegulatorPoMDecisionSubmissionEventsGetRequest request)
     {
@@ -112,8 +113,8 @@ public class SubmissionEventController : ApiController
 
     [HttpGet("events/get-regulator-registration-decision", Name = nameof(GetRegulatorRegistrationSubmissionEvents))]
     [Produces("application/json")]
+    [ProducesResponseType(typeof(List<RegulatorRegistrationDecisionGetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesDefaultResponseType]
     public async Task<IActionResult> GetRegulatorRegistrationSubmissionEvents([FromQuery] RegulatorRegistrationDecisionSubmissionEventsGetRequest request)
     {
@@ -127,8 +128,8 @@ public class SubmissionEventController : ApiController
 
     [HttpGet("events/organisation-registration", Name = nameof(GetOrganisationRegistrationSubmissionEvents))]
     [Produces("application/json")]
+    [ProducesResponseType(typeof(List<RegulatorOrganisationRegistrationDecisionGetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesDefaultResponseType]
     public async Task<IActionResult> GetOrganisationRegistrationSubmissionEvents([FromQuery] RegulatorOrganisationRegistrationDecisionSubmissionEventsGetRequest request)
     {

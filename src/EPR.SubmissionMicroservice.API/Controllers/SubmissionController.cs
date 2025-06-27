@@ -76,6 +76,7 @@ public class SubmissionController : ApiController
 
     [HttpGet(Name = nameof(GetSubmissions))]
     [Produces("application/json")]
+    [ProducesResponseType(typeof(List<AbstractSubmissionGetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetSubmissions([FromQuery] SubmissionsGetRequest request)
     {
@@ -175,6 +176,7 @@ public class SubmissionController : ApiController
     [HttpGet("get-registration-application-details", Name = nameof(GetRegistrationApplicationDetails))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionGetResponse))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> GetRegistrationApplicationDetails([FromQuery] GetRegistrationApplicationDetailsRequest request)
     {
         var query = _mapper.Map<GetRegistrationApplicationDetailsQuery>(request);
@@ -189,6 +191,7 @@ public class SubmissionController : ApiController
     [HttpGet("get-packaging-data-resubmission-application-details", Name = nameof(GetPackagingDataResubmissionApplicationDetails))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubmissionGetResponse))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> GetPackagingDataResubmissionApplicationDetails([FromQuery] GetPackagingResubmissionApplicationDetailsRequest request)
     {
         var query = _mapper.Map<GetPackagingResubmissionApplicationDetailsQuery>(request);
