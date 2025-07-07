@@ -34,6 +34,7 @@ public static class ConfigureServices
             .AddScoped<IRegistrationSubmissionEventHelper, RegistrationSubmissionEventHelper>()
             .AddScoped<ISubsidiarySubmissionEventHelper, SubsidiarySubmissionEventHelper>()
             .AddScoped<ICompaniesHouseSubmissionEventHelper, CompaniesHouseSubmissionEventHelper>()
+            .AddScoped<IAccreditationSubmissionEventHelper, AccreditationSubmissionEventHelper>()
             .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();

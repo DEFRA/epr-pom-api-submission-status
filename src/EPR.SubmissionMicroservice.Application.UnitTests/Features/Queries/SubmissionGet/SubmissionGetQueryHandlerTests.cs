@@ -24,6 +24,7 @@ public class SubmissionGetQueryHandlerTests
     private Mock<IRegistrationSubmissionEventHelper> _registrationSubmissionEventHelperMock;
     private Mock<ISubsidiarySubmissionEventHelper> _subsidiarySubmissionEventHelperMock;
     private Mock<ICompaniesHouseSubmissionEventHelper> _companiesHouseSubmissionEventHelperMock;
+    private Mock<IAccreditationSubmissionEventHelper> _accreditationSubmissionEventHelperMock;
     private SubmissionGetQueryHandler _systemUnderTest;
 
     [TestInitialize]
@@ -34,12 +35,15 @@ public class SubmissionGetQueryHandlerTests
         _subsidiarySubmissionEventHelperMock = new Mock<ISubsidiarySubmissionEventHelper>();
         _companiesHouseSubmissionEventHelperMock = new Mock<ICompaniesHouseSubmissionEventHelper>();
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
+        _accreditationSubmissionEventHelperMock = new Mock<IAccreditationSubmissionEventHelper>();
+
         _systemUnderTest = new SubmissionGetQueryHandler(
             _submissionQueryRepositoryMock.Object,
             _pomSubmissionEventHelperMock.Object,
             _registrationSubmissionEventHelperMock.Object,
             _subsidiarySubmissionEventHelperMock.Object,
             _companiesHouseSubmissionEventHelperMock.Object,
+            _accreditationSubmissionEventHelperMock.Object,
             _mapper);
     }
 
@@ -367,5 +371,40 @@ public class SubmissionGetQueryHandlerTests
         _companiesHouseSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<CompaniesHouseSubmissionGetResponse>(), CancellationToken.None), Times.Once);
         _pomSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<PomSubmissionGetResponse>(), true, CancellationToken.None), Times.Never);
         _registrationSubmissionEventHelperMock.Verify(x => x.SetValidationEvents(It.IsAny<RegistrationSubmissionGetResponse>(), It.IsAny<bool>(), CancellationToken.None), Times.Never);
+    }
+
+    [TestMethod]
+    public async Task Handle_ReturnsExpectedGetResponse_ForAccreditationSubmission()
+    {
+        // Arrange
+        var submissionGetQuery = new SubmissionGetQuery(_submissionId, _organisationId);
+
+        var accreditationSubmission = new Submission
+        {
+            Id = Guid.NewGuid(),
+            OrganisationId = _organisationId,
+            SubmissionType = SubmissionType.Accreditation
+        };
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), CancellationToken.None))
+            .ReturnsAsync(accreditationSubmission);
+
+        // Act
+        var result = await _systemUnderTest.Handle(submissionGetQuery, CancellationToken.None);
+
+        // Assert
+        var expectedResult = new AccreditationSubmissionGetResponse
+        {
+            Id = accreditationSubmission.Id,
+            SubmissionType = SubmissionType.Accreditation,
+            OrganisationId = _organisationId
+        };
+        result.Value.Should().BeEquivalentTo(expectedResult);
+        _accreditationSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<AccreditationSubmissionGetResponse>(), false, CancellationToken.None), Times.Once);
+        _registrationSubmissionEventHelperMock.Verify(x => x.SetValidationEvents(It.IsAny<RegistrationSubmissionGetResponse>(), It.IsAny<bool>(), CancellationToken.None), Times.Never);
+        _pomSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<PomSubmissionGetResponse>(), It.IsAny<bool>(), CancellationToken.None), Times.Never);
+        _subsidiarySubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<SubsidiarySubmissionGetResponse>(), true, CancellationToken.None), Times.Never);
+        _companiesHouseSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<CompaniesHouseSubmissionGetResponse>(), CancellationToken.None), Times.Never);
     }
 }

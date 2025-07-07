@@ -17,6 +17,7 @@ public class SubmissionProfile : Profile
         CreateMap<Submission, RegistrationSubmissionGetResponse>();
         CreateMap<Submission, SubsidiarySubmissionGetResponse>();
         CreateMap<Submission, CompaniesHouseSubmissionGetResponse>();
+        CreateMap<Submission, AccreditationSubmissionGetResponse>();
 
         CreateMap<Submission, SubmissionGetResponse>()
             .ForMember(dest => dest.SubmissionId, opt => opt.MapFrom(src => src.Id))

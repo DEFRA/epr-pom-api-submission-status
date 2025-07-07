@@ -18,6 +18,7 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
     private readonly IRegistrationSubmissionEventHelper _registrationSubmissionEventHelper;
     private readonly ISubsidiarySubmissionEventHelper _subsidiarySubmissionEventHelper;
     private readonly ICompaniesHouseSubmissionEventHelper _companiesHouseSubmissionEventHelper;
+    private readonly IAccreditationSubmissionEventHelper _accreditationSubmissionEventHelper;
     private readonly IMapper _mapper;
 
     public SubmissionGetQueryHandler(
@@ -26,6 +27,7 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
         IRegistrationSubmissionEventHelper registrationSubmissionEventHelper,
         ISubsidiarySubmissionEventHelper subsidiarySubmissionEventHelper,
         ICompaniesHouseSubmissionEventHelper companiesHouseSubmissionEventHelper,
+        IAccreditationSubmissionEventHelper accreditationSubmissionEventHelper,
         IMapper mapper)
     {
         _submissionQueryRepository = submissionQueryRepository;
@@ -34,6 +36,7 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
         _registrationSubmissionEventHelper = registrationSubmissionEventHelper;
         _subsidiarySubmissionEventHelper = subsidiarySubmissionEventHelper;
         _companiesHouseSubmissionEventHelper = companiesHouseSubmissionEventHelper;
+        _accreditationSubmissionEventHelper = accreditationSubmissionEventHelper;
     }
 
     public async Task<ErrorOr<AbstractSubmissionGetResponse>> Handle(
@@ -73,6 +76,11 @@ public class SubmissionGetQueryHandler : IRequestHandler<SubmissionGetQuery, Err
                 var companiesHouseResponse = _mapper.Map<CompaniesHouseSubmissionGetResponse>(submission);
                 await _companiesHouseSubmissionEventHelper.SetValidationEventsAsync(companiesHouseResponse, cancellationToken);
                 return companiesHouseResponse;
+
+            case SubmissionType.Accreditation:
+                var accreditationResponse = _mapper.Map<AccreditationSubmissionGetResponse>(submission);
+                await _accreditationSubmissionEventHelper.SetValidationEventsAsync(accreditationResponse, submission is { IsSubmitted: true }, cancellationToken);
+                return accreditationResponse;
 
             default:
                 throw new BadRequestException("Undefined submission type");

@@ -56,6 +56,7 @@ public class SubmissionControllerTests
     [TestMethod]
     [DataRow(SubmissionType.Producer)]
     [DataRow(SubmissionType.Registration)]
+    [DataRow(SubmissionType.Accreditation)]
     public async Task CreateSubmission_ReturnsCreated(SubmissionType submissionType)
     {
         // Arrange

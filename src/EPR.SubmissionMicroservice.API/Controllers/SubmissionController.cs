@@ -63,6 +63,7 @@ public class SubmissionController : ApiController
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(RegistrationSubmissionGetResponse))]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SubsidiarySubmissionGetResponse))]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CompaniesHouseSubmissionGetResponse))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AccreditationSubmissionGetResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSubmission([FromRoute] Guid submissionId, [FromHeader] Guid organisationId)

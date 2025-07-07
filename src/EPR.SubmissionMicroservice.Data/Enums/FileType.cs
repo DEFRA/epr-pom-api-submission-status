@@ -7,5 +7,6 @@ public enum FileType
     Brands = 3,
     Partnerships = 4,
     Subsidiaries = 5,
-    CompaniesHouse = 6
+    CompaniesHouse = 6,
+    Accreditation = 7
 }
