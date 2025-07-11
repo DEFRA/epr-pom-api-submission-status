@@ -3,6 +3,7 @@
 using Data.Entities.SubmissionEvent;
 using Data.Repositories.Queries.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Enums;
 using ErrorOr;
 using MediatR;
@@ -13,13 +14,16 @@ public class SubmissionOrganisationDetailsGetQueryHandler
     : IRequestHandler<SubmissionOrganisationDetailsGetQuery, ErrorOr<SubmissionOrganisationDetailsGetResponse>>
 {
     private readonly IQueryRepository<AbstractSubmissionEvent> _submissionEventsQueryRepository;
+    private readonly IQueryRepository<Submission> _submissionQueryRepository;
     private readonly ILogger<SubmissionOrganisationDetailsGetQueryHandler> _logger;
 
     public SubmissionOrganisationDetailsGetQueryHandler(
         IQueryRepository<AbstractSubmissionEvent> submissionEventsQueryRepository,
+        IQueryRepository<Submission> submissionQueryRepository,
         ILogger<SubmissionOrganisationDetailsGetQueryHandler> logger)
     {
         _submissionEventsQueryRepository = submissionEventsQueryRepository;
+        _submissionQueryRepository = submissionQueryRepository;
         _logger = logger;
     }
 
@@ -42,6 +46,7 @@ public class SubmissionOrganisationDetailsGetQueryHandler
             .OrderByDescending(x => x.Created)
             .ToListAsync(cancellationToken);
 
+        var submission = await _submissionQueryRepository.GetByIdAsync(request.SubmissionId);
         var antiVirusResultEvent = submissionEvents
             .OfType<AntivirusResultEvent>()
             .FirstOrDefault(x => x.BlobName == request.BlobName);
@@ -89,6 +94,7 @@ public class SubmissionOrganisationDetailsGetQueryHandler
         return new SubmissionOrganisationDetailsGetResponse
         {
             BlobName = registrationAntiVirusResultEvent.BlobName,
+            SubmissionPeriod = submission.SubmissionPeriod
         };
     }
 }

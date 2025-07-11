@@ -4,6 +4,7 @@ using Application.Features.Queries.SubmissionOrganisationDetailsGet;
 using Data.Enums;
 using Data.Repositories.Queries.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,15 +30,18 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
     private readonly Guid _submissionId = Guid.NewGuid();
     private readonly Guid _registrationSetId = Guid.NewGuid();
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventsQueryRepositoryMock;
+    private Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
     private SubmissionOrganisationDetailsGetQueryHandler _systemUnderTest;
 
     [TestInitialize]
     public void SetUp()
     {
         _submissionEventsQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
+        _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
 
         _systemUnderTest = new SubmissionOrganisationDetailsGetQueryHandler(
             _submissionEventsQueryRepositoryMock.Object,
+            _submissionQueryRepositoryMock.Object,
             NullLogger<SubmissionOrganisationDetailsGetQueryHandler>.Instance);
     }
 
@@ -59,13 +63,18 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Setup(x => x.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(events.BuildMock);
 
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), new CancellationToken()))
+            .ReturnsAsync(new Submission { SubmissionPeriod = SubmissionPeriod });
+
         // Act
         var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         var expectedResult = new SubmissionOrganisationDetailsGetResponse
         {
-            BlobName = RegistrationBlobName
+            BlobName = RegistrationBlobName,
+            SubmissionPeriod = SubmissionPeriod
         };
         result.Value.Should().BeEquivalentTo(expectedResult);
 
@@ -93,13 +102,18 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Setup(x => x.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(events.BuildMock);
 
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), new CancellationToken()))
+            .ReturnsAsync(new Submission { SubmissionPeriod = SubmissionPeriod });
+
         // Act
         var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         var expectedResult = new SubmissionOrganisationDetailsGetResponse
         {
-            BlobName = RegistrationBlobName
+            BlobName = RegistrationBlobName,
+            SubmissionPeriod = SubmissionPeriod
         };
         result.Value.Should().BeEquivalentTo(expectedResult);
 

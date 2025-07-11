@@ -3,4 +3,6 @@
 public class SubmissionOrganisationDetailsGetResponse
 {
     public string BlobName { get; set; }
+
+    public string SubmissionPeriod { get; set; }
 }
