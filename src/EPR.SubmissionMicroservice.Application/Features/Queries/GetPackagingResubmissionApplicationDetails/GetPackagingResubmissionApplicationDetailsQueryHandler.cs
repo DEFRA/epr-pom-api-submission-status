@@ -102,6 +102,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             .MaxBy(d => d.Created);
 
         var packagingFeePaymentEvent = submissionEvents.OfType<PackagingDataResubmissionFeePaymentEvent>()
+            .Where(p => p.PaymentMethod != "Offline")
             .MaxBy(d => d.Created);
 
         var packagingFeeViewEvent = submissionEvents.OfType<PackagingResubmissionFeeViewCreatedEvent>()
