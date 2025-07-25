@@ -40,9 +40,13 @@ public class GetRegistrationApplicationDetailsResponse
 
     public string? RegistrationReferenceNumber { get; set; }
 
-    public bool IsLateFeeApplicable { get; set; }
+    public bool HasAnyApprovedOrQueriedRegulatorDecision { get; set; }
 
-    public bool IsOriginalCsoSubmissionLate { get; set; }
+    public bool IsLatestSubmittedEventAfterFileUpload { get; set; }
+
+    public DateTime? LatestSubmittedEventCreatedDatetime { get; set; }
+
+    public DateTime? FirstApplicationSubmittedEventCreatedDatetime { get; set; }
 
     public class LastSubmittedFileDetails
     {

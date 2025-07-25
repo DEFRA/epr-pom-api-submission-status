@@ -13,6 +13,4 @@ public class GetRegistrationApplicationDetailsQuery : IRequest<ErrorOr<GetRegist
     public Guid? ComplianceSchemeId { get; set; }
 
     public string SubmissionPeriod { get; set; } = null!;
-
-    public DateTime LateFeeDeadline { get; set; }
 }
