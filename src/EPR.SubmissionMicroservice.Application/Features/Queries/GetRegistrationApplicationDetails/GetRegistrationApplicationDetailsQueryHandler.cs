@@ -79,7 +79,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             RegistrationReferenceNumber = regulatorRegistrationDecisionEvents.Find(x => !string.IsNullOrWhiteSpace(x.RegistrationReferenceNumber) && x.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved)?.RegistrationReferenceNumber,
             HasAnyApprovedOrQueriedRegulatorDecision = submissionEvents
                 .OfType<RegulatorRegistrationDecisionEvent>()
-                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved or RegulatorDecision.Queried),
+                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved),
             IsLatestSubmittedEventAfterFileUpload = isLatestSubmittedEventAfterFileUpload,
             LatestSubmittedEventCreatedDatetime = latestSubmittedEventCreatedDatetime,
             FirstApplicationSubmittedEventCreatedDatetime = firstApplicationSubmittedEvent?.Created.Date
