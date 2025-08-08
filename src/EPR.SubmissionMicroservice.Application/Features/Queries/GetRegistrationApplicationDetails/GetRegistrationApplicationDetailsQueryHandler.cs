@@ -280,12 +280,15 @@ public class GetRegistrationApplicationDetailsQueryHandler(
     {
         var query = submissionQueryRepository
             .GetAll(x => x.OrganisationId == request.OrganisationId &&
-                         x.SubmissionType == SubmissionType.Registration &&
-                         x.SubmissionPeriod == request.SubmissionPeriod)
-            .Where(x => x.ComplianceSchemeId == null || x.ComplianceSchemeId == request.ComplianceSchemeId);
+                    x.SubmissionType == SubmissionType.Registration &&
+                    x.SubmissionPeriod == request.SubmissionPeriod);
 
-        var submission = await query.OrderByDescending(x => x.Created).FirstOrDefaultAsync(cancellationToken);
+        if (request.ComplianceSchemeId is not null)
+        {
+            query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
+        }
 
-        return submission;
+        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+        return submissions.FirstOrDefault();
     }
 }
