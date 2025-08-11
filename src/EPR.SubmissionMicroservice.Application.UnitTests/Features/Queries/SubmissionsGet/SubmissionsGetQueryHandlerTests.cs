@@ -50,12 +50,14 @@ public class SubmissionsGetQueryHandlerTests
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
+                SubmissionPeriod = "January to June 2024",
                 SubmissionType = SubmissionType.Registration
             },
             new()
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
+                SubmissionPeriod = "July to December 2024",
                 SubmissionType = SubmissionType.Producer
             }
         };
@@ -519,12 +521,14 @@ public class SubmissionsGetQueryHandlerTests
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
+                SubmissionPeriod = "January to June 2024",
                 SubmissionType = SubmissionType.Registration,
             },
             new()
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
+                SubmissionPeriod = "July to December 2024",
                 SubmissionType = SubmissionType.Producer,
             }
         };
@@ -604,12 +608,14 @@ public class SubmissionsGetQueryHandlerTests
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
+                SubmissionPeriod = "January to June 2024",
                 SubmissionType = SubmissionType.Registration,
             },
             new()
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
+                SubmissionPeriod = "July to December 2024",
                 SubmissionType = SubmissionType.Producer,
             }
         };
@@ -666,6 +672,62 @@ public class SubmissionsGetQueryHandlerTests
         // Assert
         result.Value.Should().HaveCount(1);
         result.Value[0].Id.Should().Be(submissions[0].Id);
+
+        _submissionQueryRepositoryMock.Verify(x => x.GetAll(e => e.OrganisationId == query.OrganisationId), Times.Once);
+    }
+
+    [TestMethod]
+    public async Task Handle_ReturnsExpectedGetResponsesGroupedBySubmissionPeriod()
+    {
+        // Arrange
+        var submissions = new List<Submission>
+        {
+             new()
+            {
+                Id = Guid.NewGuid(),
+                OrganisationId = _organisationId,
+                SubmissionPeriod = "January to June 2024",
+                SubmissionType = SubmissionType.Registration,
+            },
+             new()
+            {
+                Id = Guid.NewGuid(),
+                OrganisationId = _organisationId,
+                SubmissionPeriod = "January to June 2024",
+                SubmissionType = SubmissionType.Registration,
+            },
+             new()
+            {
+                Id = Guid.NewGuid(),
+                OrganisationId = _organisationId,
+                SubmissionPeriod = "July to December 2024",
+                SubmissionType = SubmissionType.Producer,
+            },
+             new()
+            {
+                Id = Guid.NewGuid(),
+                OrganisationId = _organisationId,
+                SubmissionPeriod = "July to December 2024",
+                SubmissionType = SubmissionType.Producer,
+            }
+        };
+
+        var query = new SubmissionsGetQuery
+        {
+            OrganisationId = _organisationId,
+        };
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns<Expression<Func<Submission, bool>>>(expr => submissions.Where(expr.Compile()).BuildMock());
+
+        // Act
+        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.Should().HaveCount(2);
+        result.Value[0].Id.Should().Be(submissions[0].Id);
+        result.Value[1].Id.Should().Be(submissions[2].Id);
 
         _submissionQueryRepositoryMock.Verify(x => x.GetAll(e => e.OrganisationId == query.OrganisationId), Times.Once);
     }

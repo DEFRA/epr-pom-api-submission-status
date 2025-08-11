@@ -289,7 +289,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.ApplicationStatus.ToString().Should().Be("FileUploaded");
     }
@@ -418,7 +418,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.ApplicationStatus.ToString().Should().Be("NotStarted");
     }
@@ -547,7 +547,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.ApplicationStatus.ToString().Should().Be("NotStarted");
     }
@@ -622,7 +622,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.ApplicationStatus.ToString().Should().Be("NotStarted");
     }
@@ -698,7 +698,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedAndHasRecentFileUpload");
     }
@@ -1638,7 +1641,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task Handle_ShouldNotSetLastSubmittedFileDetails_WhenLatestFileIsNotSubmitted(RegulatorDecision decision)
+    public async Task Handle_ShouldSetLastSubmittedFileDetails_WhenLatestFileIsNotSubmitted_And_Previous_Decision_Exists(RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -1745,7 +1748,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent.Created);
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent.FileId);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().BeNull();
         result.Value.RegistrationApplicationSubmitted.Should().BeFalse();
@@ -3157,7 +3163,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent2.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent2.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent2.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().NotBeNull();
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
@@ -3285,7 +3294,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent2.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent2.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent2.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().NotBeNull();
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
@@ -3413,7 +3425,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent2.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent2.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent2.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().NotBeNull();
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
@@ -3541,7 +3556,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent2.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent2.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent2.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().NotBeNull();
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
@@ -3669,7 +3687,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent2.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent2.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent2.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().NotBeNull();
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
@@ -3999,8 +4020,10 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.LastSubmittedFile.Should().BeNull();
-        result.Value.LastSubmittedFile!.Should().BeNull();
+        result.Value.LastSubmittedFile.Should().NotBeNull();
+        result.Value.LastSubmittedFile.FileId.Should().Be(submissionEvent.FileId);
+        result.Value.LastSubmittedFile.SubmittedByName.Should().Be(submissionEvent.SubmittedBy);
+        result.Value.LastSubmittedFile.SubmittedDateTime.Should().Be(submissionEvent.Created);
         result.Value.ApplicationReferenceNumber!.Should().Be(applicationReferenceNumber);
         result.Value.RegistrationFeePaymentMethod!.Should().Be("PayByPhone");
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
@@ -4079,7 +4102,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
             IsSubmitted = false,
             IsResubmission = null,
             ApplicationReferenceNumber = applicationReferenceNumber,
-            LastSubmittedFile = null,
+            LastSubmittedFile = new GetRegistrationApplicationDetailsResponse.LastSubmittedFileDetails { SubmittedByName = null },
             RegistrationApplicationSubmittedDate = null,
             RegistrationApplicationSubmittedComment = null,
             RegistrationReferenceNumber = null,

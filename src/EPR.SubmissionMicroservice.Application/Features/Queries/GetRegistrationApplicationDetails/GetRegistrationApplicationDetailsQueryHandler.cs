@@ -53,6 +53,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
         var latestCompanyDetailsCreatedDatetime = validationPass ? latestCompanyDetailsAntivirusCheckEvent?.Created : null;
         var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
+
         var isLatestSubmittedEventAfterFileUpload = latestSubmittedEventCreatedDatetime > latestCompanyDetailsCreatedDatetime;
 
         var registrationApplicationSubmittedEvent = registrationApplicationSubmittedEvents.MaxBy(x => x.Created);
@@ -66,14 +67,13 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             IsResubmission = submission.IsResubmission,
             ApplicationReferenceNumber = submission.AppReferenceNumber,
             RegistrationFeePaymentMethod = registrationFeePaymentEvent?.PaymentMethod,
-            LastSubmittedFile = isLatestSubmittedEventAfterFileUpload
-                ? new LastSubmittedFileDetails
-                {
-                    SubmittedDateTime = submittedEvent?.Created,
-                    FileId = submittedEvent?.FileId,
-                    SubmittedByName = submittedEvent?.SubmittedBy
-                }
-                : null,
+            //always return LastSubmittedFileDetails based on the latest submittedEvent then check on the frontEnd if the file has reached synapse or not
+            LastSubmittedFile = new LastSubmittedFileDetails
+            {
+                SubmittedDateTime = submittedEvent?.Created,
+                FileId = submittedEvent?.FileId,
+                SubmittedByName = submittedEvent?.SubmittedBy
+            },
             RegistrationApplicationSubmittedDate = registrationApplicationSubmittedEvent?.SubmissionDate,
             RegistrationApplicationSubmittedComment = registrationApplicationSubmittedEvent?.Comments,
             RegistrationReferenceNumber = regulatorRegistrationDecisionEvents.Find(x => !string.IsNullOrWhiteSpace(x.RegistrationReferenceNumber) && x.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved)?.RegistrationReferenceNumber,

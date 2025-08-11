@@ -81,11 +81,14 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
             query = query.Where(x => x.SubmissionType == request.Type);
         }
 
+        var data = await query.ToListAsync();
+        var groupedQuery = data.GroupBy(x => x.SubmissionPeriod).Select(g => g.OrderByDescending(x => x.Created).FirstOrDefault());
+
         if (request.Limit is > 0)
         {
-            query = query.Take(request.Limit.Value);
+            groupedQuery = groupedQuery.Take(request.Limit.Value);
         }
 
-        return await query.ToListAsync(cancellationToken);
+        return groupedQuery.ToList();
     }
 }
