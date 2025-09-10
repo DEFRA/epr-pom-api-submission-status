@@ -56,7 +56,6 @@ public static class ConfigureServices
                                 databaseOptions.MaxRetryCount,
                                 TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds)));
                     });
-                options.EnableSensitiveDataLogging();
             });
     }
 

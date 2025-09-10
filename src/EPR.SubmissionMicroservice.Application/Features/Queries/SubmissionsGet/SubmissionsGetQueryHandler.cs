@@ -31,7 +31,7 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
 
     public async Task<ErrorOr<List<AbstractSubmissionGetResponse>>> Handle(SubmissionsGetQuery request, CancellationToken cancellationToken)
     {
-        var submissions = await GetSubmissionsAsync(request, cancellationToken);
+        var submissions = await GetSubmissionsAsync(request);
 
         var submissionsWithEvents = new List<AbstractSubmissionGetResponse>();
 
@@ -58,8 +58,7 @@ public class SubmissionsGetQueryHandler : IRequestHandler<SubmissionsGetQuery, E
     }
 
     private async Task<List<Submission>> GetSubmissionsAsync(
-        SubmissionsGetQuery request,
-        CancellationToken cancellationToken)
+        SubmissionsGetQuery request)
     {
         var query = _submissionQueryRepository
             .GetAll(x => x.OrganisationId == request.OrganisationId)
