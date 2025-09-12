@@ -44,7 +44,13 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         return responses;
     }
 
-    private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(Submission? submission, DateTime? latestPackagingDetailsCreatedDatetime, bool isFileUploadedButNotSubmittedYet, bool isRegulatorDecisionAfterSubmission, bool isResubmissionDoneAfterSubmission, GetPackagingResubmissionApplicationDetailsResponse response, string packagingResubmissionReferenceNumber)
+    private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(
+        Submission? submission,
+        DateTime? latestPackagingDetailsCreatedDatetime,
+        bool isFileUploadedButNotSubmittedYet,
+        bool isRegulatorDecisionAfterSubmission,
+        bool isResubmissionDoneAfterSubmission,
+        GetPackagingResubmissionApplicationDetailsResponse response)
     {
         if ((latestPackagingDetailsCreatedDatetime == null) ||
             (!isRegulatorDecisionAfterSubmission && isResubmissionDoneAfterSubmission))
@@ -166,7 +172,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
 
-        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response, packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber);
+        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response);
     }
 
     private async Task<bool> IsValidationPass(List<AbstractSubmissionEvent> submissionEvents, AntivirusCheckEvent? latestPackagingDetailsAntivirusCheckEvent, List<CheckSplitterValidationEvent> checkSplitterValidationEvents, List<ProducerValidationEvent> producerValidationEvents, CancellationToken cancellationToken)

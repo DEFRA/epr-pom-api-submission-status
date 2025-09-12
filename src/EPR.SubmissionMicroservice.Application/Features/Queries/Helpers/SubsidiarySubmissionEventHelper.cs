@@ -45,7 +45,7 @@ public class SubsidiarySubmissionEventHelper : ISubsidiarySubmissionEventHelper
             processingComplete = true;
         }
 
-        if (antivirusResultEvent is not null && antivirusResultEvent.Errors.Count > 0)
+        if (antivirusResultEvent?.Errors.Count > 0)
         {
             fileUploadErrors.AddRange(antivirusResultEvent.Errors);
         }

@@ -46,7 +46,7 @@ public class SubmissionOrganisationDetailsGetQueryHandler
             .OrderByDescending(x => x.Created)
             .ToListAsync(cancellationToken);
 
-        var submission = await _submissionQueryRepository.GetByIdAsync(request.SubmissionId);
+        var submission = await _submissionQueryRepository.GetByIdAsync(request.SubmissionId, cancellationToken);
         var antiVirusResultEvent = submissionEvents
             .OfType<AntivirusResultEvent>()
             .FirstOrDefault(x => x.BlobName == request.BlobName);
