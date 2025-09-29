@@ -1,5 +1,6 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
+using EPR.SubmissionMicroservice.Application.Options;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
@@ -17,11 +18,13 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
 
     public GetRegistrationApplicationDetailsQueryHandlerTests()
     {
+        var featureFlagOption = new FeatureFlagOptions { IsQueryLateFeeEnabled = true };
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
         _submissionEventQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
         _handler = new GetRegistrationApplicationDetailsQueryHandler(
             _submissionQueryRepositoryMock.Object,
-            _submissionEventQueryRepositoryMock.Object);
+            _submissionEventQueryRepositoryMock.Object,
+            Microsoft.Extensions.Options.Options.Create(featureFlagOption));
     }
 
     [TestMethod]
@@ -4208,5 +4211,249 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
 
         // Assert
         action.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [TestMethod]
+    [DataRow(RegulatorDecision.Cancelled, false)]
+    [DataRow(RegulatorDecision.Rejected, false)]
+    [DataRow(RegulatorDecision.Approved, true)]
+    [DataRow(RegulatorDecision.Queried, true)]
+    [DataRow(RegulatorDecision.Accepted, true)]
+    public async Task Handle_ShouldSetHasAnyApprovedOrQueriedRegulatorDecision_Correctly_AsPer_LatestDecision(RegulatorDecision decision, bool expectedHasAnyApprovedOrQueriedRegulatorDecision)
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriod = "Jan to Jun 2026",
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriod,
+            Created = DateTime.Now,
+            IsSubmitted = true,
+            AppReferenceNumber = applicationReferenceNumber
+        };
+
+        var feePaymentEvent = new RegistrationFeePaymentEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            ApplicationReferenceNumber = applicationReferenceNumber,
+            PaymentMethod = "PayByPhone"
+        };
+
+        var applicationSubmittedEvent = new RegistrationApplicationSubmittedEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            ApplicationReferenceNumber = applicationReferenceNumber,
+            SubmissionDate = DateTime.Now.AddMinutes(-5)
+        };
+
+        var registrationDecisionEvent = new RegulatorRegistrationDecisionEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            Decision = decision,
+            DecisionDate = DateTime.Now.AddMinutes(-5),
+            RegistrationReferenceNumber = "TestRef"
+        };
+
+        var submissionEvent = new SubmittedEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = Guid.NewGuid(),
+            SubmittedBy = "User1"
+        };
+
+        var registrationValidationEvent = new RegistrationValidationEvent
+        {
+            ErrorCount = 0,
+            WarningCount = 0,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now
+        };
+
+        var latestCompanyDetailsAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.CompanyDetails,
+            SubmissionId = submissionId,
+            Created = DateTime.Now,
+            FileId = fileId,
+        };
+
+        var latestCompanyDetailsAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = fileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now
+        };
+
+        var submissionEvent2 = new SubmittedEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(1),
+            FileId = fileId,
+            SubmittedBy = "User1"
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                submissionEvent,
+                registrationValidationEvent,
+                latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent,
+                registrationDecisionEvent,
+                feePaymentEvent,
+                applicationSubmittedEvent,
+                submissionEvent2
+            }.BuildMock());
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should().Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
+    }
+
+    [TestMethod]
+    [DataRow(RegulatorDecision.Queried, false)]
+    public async Task Handle_ShouldSetHasAnyApprovedOrQueriedRegulatorDecision_Correctly_AsPer_LatestDecision2025(RegulatorDecision decision, bool expectedHasAnyApprovedOrQueriedRegulatorDecision)
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+        var applicationReferenceNumber = "TestRef";
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriod = "Jan to Jun 2025",
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = new Submission
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Registration,
+            SubmissionPeriod = query.SubmissionPeriod,
+            Created = DateTime.Now,
+            IsSubmitted = true,
+            AppReferenceNumber = applicationReferenceNumber
+        };
+
+        var feePaymentEvent = new RegistrationFeePaymentEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            ApplicationReferenceNumber = applicationReferenceNumber,
+            PaymentMethod = "PayByPhone"
+        };
+
+        var applicationSubmittedEvent = new RegistrationApplicationSubmittedEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            ApplicationReferenceNumber = applicationReferenceNumber,
+            SubmissionDate = DateTime.Now.AddMinutes(-5)
+        };
+
+        var registrationDecisionEvent = new RegulatorRegistrationDecisionEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            Decision = decision,
+            DecisionDate = DateTime.Now.AddMinutes(-5),
+            RegistrationReferenceNumber = "TestRef"
+        };
+
+        var submissionEvent = new SubmittedEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(-5),
+            FileId = Guid.NewGuid(),
+            SubmittedBy = "User1"
+        };
+
+        var registrationValidationEvent = new RegistrationValidationEvent
+        {
+            ErrorCount = 0,
+            WarningCount = 0,
+            RequiresBrandsFile = false,
+            RequiresPartnershipsFile = false,
+            IsValid = true,
+            SubmissionId = submissionId,
+            Created = DateTime.Now
+        };
+
+        var latestCompanyDetailsAntivirusCheckEvent = new AntivirusCheckEvent
+        {
+            FileType = FileType.CompanyDetails,
+            SubmissionId = submissionId,
+            Created = DateTime.Now,
+            FileId = fileId,
+        };
+
+        var latestCompanyDetailsAntivirusResultEvent = new AntivirusResultEvent
+        {
+            FileId = fileId,
+            SubmissionId = submissionId,
+            Created = DateTime.Now
+        };
+
+        var submissionEvent2 = new SubmittedEvent
+        {
+            SubmissionId = submission.Id,
+            Created = DateTime.Now.AddMinutes(1),
+            FileId = fileId,
+            SubmittedBy = "User1"
+        };
+
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                submissionEvent,
+                registrationValidationEvent,
+                latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent,
+                registrationDecisionEvent,
+                feePaymentEvent,
+                applicationSubmittedEvent,
+                submissionEvent2
+            }.BuildMock());
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should().Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
     }
 }

@@ -24,6 +24,7 @@ public static class ConfigureServices
     private static void ConfigureOptions(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ValidationOptions>(configuration.GetSection(ValidationOptions.ConfigSection));
+        services.Configure<FeatureFlagOptions>(configuration.GetSection(FeatureFlagOptions.ConfigSection));
     }
 
     private static IServiceCollection AddBaseServices(this IServiceCollection services) =>

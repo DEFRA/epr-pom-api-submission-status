@@ -1,4 +1,5 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Options;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
@@ -7,13 +8,15 @@ using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using static EPR.SubmissionMicroservice.Application.Features.Queries.Common.GetRegistrationApplicationDetailsResponse;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
 
 public class GetRegistrationApplicationDetailsQueryHandler(
     IQueryRepository<Submission> submissionQueryRepository,
-    IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository)
+    IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
+    IOptions<FeatureFlagOptions> featureFlagOptions)
     : IRequestHandler<GetRegistrationApplicationDetailsQuery, ErrorOr<GetRegistrationApplicationDetailsResponse>>
 {
     public async Task<ErrorOr<GetRegistrationApplicationDetailsResponse>> Handle(GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
@@ -79,7 +82,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             RegistrationReferenceNumber = regulatorRegistrationDecisionEvents.Find(x => !string.IsNullOrWhiteSpace(x.RegistrationReferenceNumber) && x.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved)?.RegistrationReferenceNumber,
             HasAnyApprovedOrQueriedRegulatorDecision = submissionEvents
                 .OfType<RegulatorRegistrationDecisionEvent>()
-                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved),
+                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved || (featureFlagOptions.Value.IsQueryLateFeeEnabled && submission.SubmissionPeriod.Contains("2026") && d.Decision == RegulatorDecision.Queried)),
             IsLatestSubmittedEventAfterFileUpload = isLatestSubmittedEventAfterFileUpload,
             LatestSubmittedEventCreatedDatetime = latestSubmittedEventCreatedDatetime,
             FirstApplicationSubmittedEventCreatedDatetime = firstApplicationSubmittedEvent?.Created.Date
