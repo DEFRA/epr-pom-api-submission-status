@@ -55,43 +55,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
                 ? checkSplitterEvents.Find(x => x.BlobName == latestAntivirusResultEvent.BlobName)
                 : null;
 
-            if (latestUploadCheckSplitterEvent is not null)
-            {
-                if (latestUploadCheckSplitterEvent.Errors.Count > 0)
-                {
-                    latestFileUploadErrors.AddRange(latestUploadCheckSplitterEvent.Errors);
-                }
-
-                var latestValidationEvents =
-                    await GetValidationEventsByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
-                var latestProducerValidationCount = latestValidationEvents
-                    .Count(x => x.Type == EventType.ProducerValidation);
-                var latestValidationEventErrors = latestValidationEvents
-                    .Where(x => x.IsValid == false)
-                    .ToList();
-                var latestUploadHasAllExpectedValidationEvents =
-                    latestUploadCheckSplitterEvent.DataCount == latestProducerValidationCount;
-
-                var currentErrorCount = await GetProducerValidationErrorsCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
-                var currentWarningCount = await GetProducerValidationWarningsCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
-
-                var errorCountSum = latestValidationEvents.Sum(x => x.ErrorCount);
-                var warningCountSum = latestValidationEvents.Sum(x => x.WarningCount);
-
-                hasWarningsInFile = warningCountSum > 0;
-
-                var hasEqualErrorCounts = currentErrorCount == errorCountSum;
-                var hasEqualWarningCounts = currentWarningCount == warningCountSum;
-
-                latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && latestValidationEventErrors.Count == 0 && latestFileUploadErrors.Count == 0;
-                processingComplete = latestUploadHasAllExpectedValidationEvents && hasEqualErrorCounts && hasEqualWarningCounts;
-                validationPass = processingComplete && latestUploadIsValid;
-
-                if (latestValidationEventErrors.Count > 0)
-                {
-                    latestFileUploadErrors.AddRange(latestValidationEventErrors.SelectMany(x => x.Errors));
-                }
-            }
+            (hasWarningsInFile, latestUploadIsValid, processingComplete, validationPass) = await HandleLatestUploadCheckSplitterEvent(latestUploadCheckSplitterEvent, latestFileUploadErrors, hasWarningsInFile, latestUploadIsValid, processingComplete, validationPass, cancellationToken);
 
             var latestValidFile = latestUploadIsValid
                 ? await GetAntivirusCheckEventByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken)
@@ -108,21 +72,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
                 };
             }
 
-            if (isSubmitted)
-            {
-                var latestSubmittedEvent = await GetLatestSubmittedEventAsync(submissionId, cancellationToken);
-                var submittedFileAntivirusCheckEvent = latestSubmittedEvent.FileId == latestValidFile?.FileId
-                    ? latestValidFile
-                    : await GetAntivirusCheckEventByFileIdAsync(submissionId, latestSubmittedEvent.FileId, cancellationToken);
-
-                response.LastSubmittedFile = new SubmittedPomFileInformation
-                {
-                    SubmittedDateTime = latestSubmittedEvent.Created,
-                    SubmittedBy = latestSubmittedEvent.UserId,
-                    FileName = submittedFileAntivirusCheckEvent.FileName,
-                    FileId = submittedFileAntivirusCheckEvent.FileId
-                };
-            }
+            await HandleIfFileIsSubmitted(response, isSubmitted, submissionId, latestValidFile, cancellationToken);
         }
 
         response.PomFileName = latestAntivirusCheckEvent.FileName;
@@ -153,6 +103,68 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         }
 
         return await VerifyBlobNameHasExpectedNumberOfValidProducerValidationEventsAsync(checkSplitterEvent.BlobName, checkSplitterEvent.DataCount, cancellationToken);
+    }
+
+    private async Task HandleIfFileIsSubmitted(PomSubmissionGetResponse response, bool isSubmitted, Guid submissionId, AntivirusCheckEvent? latestValidFile, CancellationToken cancellationToken)
+    {
+        if (isSubmitted)
+        {
+            var latestSubmittedEvent = await GetLatestSubmittedEventAsync(submissionId, cancellationToken);
+            var submittedFileAntivirusCheckEvent = latestSubmittedEvent.FileId == latestValidFile?.FileId
+                ? latestValidFile
+                : await GetAntivirusCheckEventByFileIdAsync(submissionId, latestSubmittedEvent.FileId, cancellationToken);
+
+            response.LastSubmittedFile = new SubmittedPomFileInformation
+            {
+                SubmittedDateTime = latestSubmittedEvent.Created,
+                SubmittedBy = latestSubmittedEvent.UserId,
+                FileName = submittedFileAntivirusCheckEvent.FileName,
+                FileId = submittedFileAntivirusCheckEvent.FileId
+            };
+        }
+    }
+
+    private async Task<(bool HasWarningsInFile, bool LatestUploadIsValid, bool ProcessingComplete, bool ValidationPass)> HandleLatestUploadCheckSplitterEvent(CheckSplitterValidationEvent? latestUploadCheckSplitterEvent, List<string> latestFileUploadErrors, bool hasWarningsInFile, bool latestUploadIsValid, bool processingComplete, bool validationPass, CancellationToken cancellationToken)
+    {
+        if (latestUploadCheckSplitterEvent is not null)
+        {
+            if (latestUploadCheckSplitterEvent.Errors.Count > 0)
+            {
+                latestFileUploadErrors.AddRange(latestUploadCheckSplitterEvent.Errors);
+            }
+
+            var latestValidationEvents =
+                await GetValidationEventsByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+            var latestProducerValidationCount = latestValidationEvents
+                .Count(x => x.Type == EventType.ProducerValidation);
+            var latestValidationEventErrors = latestValidationEvents
+                .Where(x => x.IsValid == false)
+                .ToList();
+            var latestUploadHasAllExpectedValidationEvents =
+                latestUploadCheckSplitterEvent.DataCount == latestProducerValidationCount;
+
+            var currentErrorCount = await GetProducerValidationErrorsCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+            var currentWarningCount = await GetProducerValidationWarningsCountByBlobNameAsync(latestUploadCheckSplitterEvent.BlobName, cancellationToken);
+
+            var errorCountSum = latestValidationEvents.Sum(x => x.ErrorCount);
+            var warningCountSum = latestValidationEvents.Sum(x => x.WarningCount);
+
+            hasWarningsInFile = warningCountSum > 0;
+
+            var hasEqualErrorCounts = currentErrorCount == errorCountSum;
+            var hasEqualWarningCounts = currentWarningCount == warningCountSum;
+
+            latestUploadIsValid = latestUploadHasAllExpectedValidationEvents && latestValidationEventErrors.Count == 0 && latestFileUploadErrors.Count == 0;
+            processingComplete = latestUploadHasAllExpectedValidationEvents && hasEqualErrorCounts && hasEqualWarningCounts;
+            validationPass = processingComplete && latestUploadIsValid;
+
+            if (latestValidationEventErrors.Count > 0)
+            {
+                latestFileUploadErrors.AddRange(latestValidationEventErrors.SelectMany(x => x.Errors));
+            }
+        }
+
+        return (hasWarningsInFile, latestUploadIsValid, processingComplete, validationPass);
     }
 
     private async Task<AntivirusCheckEvent?> GetLatestAntivirusCheckEventAsync(
