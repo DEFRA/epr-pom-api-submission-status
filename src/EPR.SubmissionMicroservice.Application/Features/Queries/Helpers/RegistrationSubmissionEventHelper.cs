@@ -146,7 +146,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         }
     }
 
+#pragma warning disable S107
     private static void HandleEventsForBrandsAndPartnerships(RegistrationSubmissionGetResponse response, bool requiresBrandsFile, Guid? registrationSetId, List<AntivirusCheckEvent> antivirusCheckEvents, List<string> latestFileUploadErrors, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events, bool requiresPartnershipsFile)
+#pragma warning restore S107
     {
         if (requiresBrandsFile)
         {
