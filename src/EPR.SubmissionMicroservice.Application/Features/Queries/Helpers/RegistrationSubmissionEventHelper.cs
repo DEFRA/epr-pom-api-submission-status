@@ -233,7 +233,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         }
     }
 
+#pragma warning disable S107
     private static bool HandleWhenBrandAndPartnershipIsValid(RegistrationSubmissionGetResponse response, RegistrationValidationEvent registrationEvent, AntivirusCheckEvent? brandsAntivirusCheckEvent, AntivirusResultEvent? brandsAntivirusResultEvent, BrandValidationEvent? brandValidationEvent, AntivirusCheckEvent? partnershipsAntivirusCheckEvent, AntivirusResultEvent? partnershipsAntivirusResultEvent, PartnerValidationEvent? partnerValidationEvent, AntivirusCheckEvent companyDetailsEvent)
+#pragma warning restore S107
     {
         var brandsIsValid = registrationEvent.RequiresBrandsFile ? brandsAntivirusCheckEvent is not null && IsEventValid(brandsAntivirusResultEvent.RequiresRowValidation, brandValidationEvent) : brandsAntivirusCheckEvent is null;
         var partnershipsIsValid = registrationEvent.RequiresPartnershipsFile ? partnershipsAntivirusCheckEvent is not null && IsEventValid(partnershipsAntivirusResultEvent.RequiresRowValidation, partnerValidationEvent) : partnershipsAntivirusCheckEvent is null;
@@ -260,7 +262,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         return false;
     }
 
+#pragma warning disable S107
     private static AntivirusResultEvent? HandleCompanyDetailsEventIfEventRequiresPartnershipFile(RegistrationValidationEvent registrationEvent, AntivirusCheckEvent companyDetailsEvent, List<AntivirusCheckEvent> antivirusCheckEvents, AntivirusResultEvent? partnershipsAntivirusResultEvent, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events, ref AntivirusCheckEvent? partnershipsAntivirusCheckEvent, ref PartnerValidationEvent? partnerValidationEvent)
+#pragma warning restore S107
     {
         if (registrationEvent is { RequiresPartnershipsFile: true })
         {
@@ -290,7 +294,9 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         return partnershipsAntivirusResultEvent;
     }
 
+#pragma warning disable S107
     private static AntivirusResultEvent? HandleCompanyDetailsEventIfEventRequiresBrandFile(RegistrationValidationEvent registrationEvent, AntivirusCheckEvent companyDetailsEvent, List<AntivirusCheckEvent> antivirusCheckEvents, AntivirusResultEvent? brandsAntivirusResultEvent, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events, ref AntivirusCheckEvent? brandsAntivirusCheckEvent, ref BrandValidationEvent? brandValidationEvent)
+#pragma warning restore S107
     {
         if (registrationEvent is { RequiresBrandsFile: true })
         {
