@@ -79,21 +79,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         response.CompanyDetailsUploadedDate = latestCompanyDetailsAntivirusCheckEvent.Created;
         response.CompanyDetailsFileName = latestCompanyDetailsAntivirusCheckEvent.FileName;
 
-        if (requiresBrandsFile)
-        {
-            response.RequiresBrandsFile = true;
-            var latestBrandsAntivirusCheckEvent = RetrieveCorrectAntiVirusCheckEvent(registrationSetId, antivirusCheckEvents, FileType.Brands);
-
-            ProcessBrandsAntiVirusCheckEventIfPresent(response, latestBrandsAntivirusCheckEvent, latestFileUploadErrors, antivirusResultEvents, events);
-        }
-
-        if (requiresPartnershipsFile)
-        {
-            response.RequiresPartnershipsFile = true;
-            var latestPartnershipsAntivirusCheckEvent = RetrieveCorrectAntiVirusCheckEvent(registrationSetId, antivirusCheckEvents, FileType.Partnerships);
-
-            ProcessPartnershipsAntiVirusCheckEventIfPresent(response, latestPartnershipsAntivirusCheckEvent, latestFileUploadErrors, antivirusResultEvents, events);
-        }
+        HandleEventsForBrandsAndPartnerships(response, requiresBrandsFile, registrationSetId, antivirusCheckEvents, latestFileUploadErrors, antivirusResultEvents, events, requiresPartnershipsFile);
 
         if (isSubmitted)
         {
@@ -112,21 +98,8 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                 SubmittedBy = latestSubmittedEvent.UserId,
             };
 
-            if (registrationEvent.RequiresBrandsFile)
-            {
-                var brandsAntivirusCheckEvent = submittedRegistrationSetId is null
-                    ? GetLatestAntivirusCheckEventByFileTypeWhereRegistrationSetIdIsNull(antivirusCheckEvents, FileType.Brands)
-                    : GetAntivirusCheckEventByFileTypeAndRegistrationSetId(antivirusCheckEvents, submittedRegistrationSetId.Value, FileType.Brands);
-                submittedRegistrationInformation.BrandsFileName = brandsAntivirusCheckEvent.FileName;
-            }
-
-            if (registrationEvent.RequiresPartnershipsFile)
-            {
-                var partnershipsAntivirusCheckEvent = submittedRegistrationSetId is null
-                    ? GetLatestAntivirusCheckEventByFileTypeWhereRegistrationSetIdIsNull(antivirusCheckEvents, FileType.Partnerships)
-                    : GetAntivirusCheckEventByFileTypeAndRegistrationSetId(antivirusCheckEvents, submittedRegistrationSetId.Value, FileType.Partnerships);
-                submittedRegistrationInformation.PartnersFileName = partnershipsAntivirusCheckEvent.FileName;
-            }
+            HandleIfEventRequiresBrandsFileIsTrue(registrationEvent, submittedRegistrationSetId, antivirusCheckEvents, submittedRegistrationInformation);
+            HandleIfEventRequiresPartnershipsFileIsTrue(registrationEvent, submittedRegistrationSetId, antivirusCheckEvents, submittedRegistrationInformation);
 
             response.LastSubmittedFiles = submittedRegistrationInformation;
         }
@@ -138,22 +111,8 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                                   && IsPartnersFileValid(response)
                                   && response.Errors.Count == 0;
 
-        if (response.ValidationPass)
+        if (HandleIfValidationPassed(response, latestCompanyDetailsAntivirusCheckEvent))
         {
-            response.LastUploadedValidFiles = new UploadedRegistrationFilesInformation
-            {
-                CompanyDetailsFileId = latestCompanyDetailsAntivirusCheckEvent.FileId,
-                CompanyDetailsFileName = response.CompanyDetailsFileName,
-                CompanyDetailsUploadDatetime = response.CompanyDetailsUploadedDate.Value,
-                CompanyDetailsUploadedBy = response.CompanyDetailsUploadedBy.Value,
-                BrandsFileName = response.BrandsFileName,
-                BrandsUploadDatetime = response.BrandsUploadedDate,
-                BrandsUploadedBy = response.BrandsUploadedBy,
-                PartnershipsFileName = response.PartnershipsFileName,
-                PartnershipsUploadDatetime = response.PartnershipsUploadedDate,
-                PartnershipsUploadedBy = response.PartnershipsUploadedBy
-            };
-
             return;
         }
 
@@ -164,16 +123,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
         foreach (var companyDetailsEvent in antivirusCheckCompanyDetailsEvents)
         {
-            var antivirusResultEvent = GetAntivirusResultEventByFileId(antivirusResultEvents, companyDetailsEvent.FileId);
-
-            if (antivirusResultEvent is not { AntivirusScanResult: AntivirusScanResult.Success })
-            {
-                continue;
-            }
-
-            var registrationEvent = GetRegistrationValidationEventByBlobName(registrationValidationEvents, antivirusResultEvent.BlobName);
-
-            if (registrationEvent?.IsValid != true)
+            if (ShouldContinue(antivirusResultEvents, companyDetailsEvent, registrationValidationEvents, out var registrationEvent))
             {
                 continue;
             }
@@ -193,6 +143,91 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
             {
                 break;
             }
+        }
+    }
+
+    private static void HandleEventsForBrandsAndPartnerships(RegistrationSubmissionGetResponse response, bool requiresBrandsFile, Guid? registrationSetId, List<AntivirusCheckEvent> antivirusCheckEvents, List<string> latestFileUploadErrors, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events, bool requiresPartnershipsFile)
+    {
+        if (requiresBrandsFile)
+        {
+            response.RequiresBrandsFile = true;
+            var latestBrandsAntivirusCheckEvent = RetrieveCorrectAntiVirusCheckEvent(registrationSetId, antivirusCheckEvents, FileType.Brands);
+
+            ProcessBrandsAntiVirusCheckEventIfPresent(response, latestBrandsAntivirusCheckEvent, latestFileUploadErrors, antivirusResultEvents, events);
+        }
+
+        if (requiresPartnershipsFile)
+        {
+            response.RequiresPartnershipsFile = true;
+            var latestPartnershipsAntivirusCheckEvent = RetrieveCorrectAntiVirusCheckEvent(registrationSetId, antivirusCheckEvents, FileType.Partnerships);
+
+            ProcessPartnershipsAntiVirusCheckEventIfPresent(response, latestPartnershipsAntivirusCheckEvent, latestFileUploadErrors, antivirusResultEvents, events);
+        }
+    }
+
+    private static bool HandleIfValidationPassed(RegistrationSubmissionGetResponse response, AntivirusCheckEvent latestCompanyDetailsAntivirusCheckEvent)
+    {
+        if (response.ValidationPass)
+        {
+            response.LastUploadedValidFiles = new UploadedRegistrationFilesInformation
+            {
+                CompanyDetailsFileId = latestCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsFileName = response.CompanyDetailsFileName,
+                CompanyDetailsUploadDatetime = response.CompanyDetailsUploadedDate.Value,
+                CompanyDetailsUploadedBy = response.CompanyDetailsUploadedBy.Value,
+                BrandsFileName = response.BrandsFileName,
+                BrandsUploadDatetime = response.BrandsUploadedDate,
+                BrandsUploadedBy = response.BrandsUploadedBy,
+                PartnershipsFileName = response.PartnershipsFileName,
+                PartnershipsUploadDatetime = response.PartnershipsUploadedDate,
+                PartnershipsUploadedBy = response.PartnershipsUploadedBy
+            };
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool ShouldContinue(List<AntivirusResultEvent> antivirusResultEvents, AntivirusCheckEvent companyDetailsEvent, List<RegistrationValidationEvent> registrationValidationEvents, out RegistrationValidationEvent? registrationEvent)
+    {
+        var antivirusResultEvent = GetAntivirusResultEventByFileId(antivirusResultEvents, companyDetailsEvent.FileId);
+
+        if (antivirusResultEvent is not { AntivirusScanResult: AntivirusScanResult.Success })
+        {
+            registrationEvent = null;
+            return true;
+        }
+
+        registrationEvent = GetRegistrationValidationEventByBlobName(registrationValidationEvents, antivirusResultEvent.BlobName);
+
+        if (registrationEvent?.IsValid != true)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void HandleIfEventRequiresPartnershipsFileIsTrue(RegistrationValidationEvent? registrationEvent, Guid? submittedRegistrationSetId, List<AntivirusCheckEvent> antivirusCheckEvents, SubmittedRegistrationFilesInformation submittedRegistrationInformation)
+    {
+        if (registrationEvent.RequiresPartnershipsFile)
+        {
+            var partnershipsAntivirusCheckEvent = submittedRegistrationSetId is null
+                ? GetLatestAntivirusCheckEventByFileTypeWhereRegistrationSetIdIsNull(antivirusCheckEvents, FileType.Partnerships)
+                : GetAntivirusCheckEventByFileTypeAndRegistrationSetId(antivirusCheckEvents, submittedRegistrationSetId.Value, FileType.Partnerships);
+            submittedRegistrationInformation.PartnersFileName = partnershipsAntivirusCheckEvent.FileName;
+        }
+    }
+
+    private static void HandleIfEventRequiresBrandsFileIsTrue(RegistrationValidationEvent? registrationEvent, Guid? submittedRegistrationSetId, List<AntivirusCheckEvent> antivirusCheckEvents,        SubmittedRegistrationFilesInformation submittedRegistrationInformation)
+    {
+        if (registrationEvent.RequiresBrandsFile)
+        {
+            var brandsAntivirusCheckEvent = submittedRegistrationSetId is null
+                ? GetLatestAntivirusCheckEventByFileTypeWhereRegistrationSetIdIsNull(antivirusCheckEvents, FileType.Brands)
+                : GetAntivirusCheckEventByFileTypeAndRegistrationSetId(antivirusCheckEvents, submittedRegistrationSetId.Value, FileType.Brands);
+            submittedRegistrationInformation.BrandsFileName = brandsAntivirusCheckEvent.FileName;
         }
     }
 
