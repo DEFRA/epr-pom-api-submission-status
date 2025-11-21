@@ -189,27 +189,17 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
 
             partnershipsAntivirusResultEvent = HandleCompanyDetailsEventIfEventRequiresPartnershipFile(registrationEvent, companyDetailsEvent, antivirusCheckEvents, partnershipsAntivirusResultEvent, antivirusResultEvents, events, ref partnershipsAntivirusCheckEvent, ref partnerValidationEvent);
 
-            if (HandleWhenBrandAndPartnershipIsValid(response, registrationEvent, brandsAntivirusCheckEvent,
-                    brandsAntivirusResultEvent, brandValidationEvent, partnershipsAntivirusCheckEvent,
-                    partnershipsAntivirusResultEvent, partnerValidationEvent, companyDetailsEvent))
+            if (HandleWhenBrandAndPartnershipIsValid(response, registrationEvent, brandsAntivirusCheckEvent, brandsAntivirusResultEvent, brandValidationEvent, partnershipsAntivirusCheckEvent, partnershipsAntivirusResultEvent, partnerValidationEvent, companyDetailsEvent))
             {
                 break;
             }
         }
     }
 
-    private static bool HandleWhenBrandAndPartnershipIsValid(RegistrationSubmissionGetResponse response,
-        RegistrationValidationEvent registrationEvent, AntivirusCheckEvent? brandsAntivirusCheckEvent,
-        AntivirusResultEvent? brandsAntivirusResultEvent, BrandValidationEvent? brandValidationEvent,
-        AntivirusCheckEvent? partnershipsAntivirusCheckEvent, AntivirusResultEvent? partnershipsAntivirusResultEvent,
-        PartnerValidationEvent? partnerValidationEvent, AntivirusCheckEvent companyDetailsEvent)
+    private static bool HandleWhenBrandAndPartnershipIsValid(RegistrationSubmissionGetResponse response, RegistrationValidationEvent registrationEvent, AntivirusCheckEvent? brandsAntivirusCheckEvent, AntivirusResultEvent? brandsAntivirusResultEvent, BrandValidationEvent? brandValidationEvent, AntivirusCheckEvent? partnershipsAntivirusCheckEvent, AntivirusResultEvent? partnershipsAntivirusResultEvent, PartnerValidationEvent? partnerValidationEvent, AntivirusCheckEvent companyDetailsEvent)
     {
-        var brandsIsValid = registrationEvent.RequiresBrandsFile
-            ? brandsAntivirusCheckEvent is not null && IsEventValid(brandsAntivirusResultEvent.RequiresRowValidation, brandValidationEvent)
-            : brandsAntivirusCheckEvent is null;
-        var partnershipsIsValid = registrationEvent.RequiresPartnershipsFile
-            ? partnershipsAntivirusCheckEvent is not null && IsEventValid(partnershipsAntivirusResultEvent.RequiresRowValidation, partnerValidationEvent)
-            : partnershipsAntivirusCheckEvent is null;
+        var brandsIsValid = registrationEvent.RequiresBrandsFile ? brandsAntivirusCheckEvent is not null && IsEventValid(brandsAntivirusResultEvent.RequiresRowValidation, brandValidationEvent) : brandsAntivirusCheckEvent is null;
+        var partnershipsIsValid = registrationEvent.RequiresPartnershipsFile ? partnershipsAntivirusCheckEvent is not null && IsEventValid(partnershipsAntivirusResultEvent.RequiresRowValidation, partnerValidationEvent) : partnershipsAntivirusCheckEvent is null;
 
         if (brandsIsValid && partnershipsIsValid)
         {
