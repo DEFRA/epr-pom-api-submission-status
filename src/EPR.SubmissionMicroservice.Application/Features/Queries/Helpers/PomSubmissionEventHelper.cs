@@ -83,8 +83,29 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         response.HasWarnings = hasWarningsInFile;
     }
 
-    private async Task HandleIfFileIsSubmitted(PomSubmissionGetResponse response, bool isSubmitted,
-        CancellationToken cancellationToken, Guid submissionId, AntivirusCheckEvent? latestValidFile)
+    public async Task<bool> VerifyFileIdIsForValidFileAsync(Guid submissionId, Guid fileId, CancellationToken cancellationToken)
+    {
+        var antivirusResultEvent = await GetAntivirusResultEventByFileIdAsync(fileId, cancellationToken);
+
+        if (antivirusResultEvent is null)
+        {
+            return false;
+        }
+
+        var checkSplitterEvent = await _submissionEventQueryRepository
+            .GetAll(x => x.SubmissionId == submissionId && x.Type == EventType.CheckSplitter && x.BlobName == antivirusResultEvent.BlobName)
+            .Cast<CheckSplitterValidationEvent>()
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (checkSplitterEvent is null)
+        {
+            return false;
+        }
+
+        return await VerifyBlobNameHasExpectedNumberOfValidProducerValidationEventsAsync(checkSplitterEvent.BlobName, checkSplitterEvent.DataCount, cancellationToken);
+    }
+
+    private async Task HandleIfFileIsSubmitted(PomSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken, Guid submissionId, AntivirusCheckEvent? latestValidFile)
     {
         if (isSubmitted)
         {
@@ -103,9 +124,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         }
     }
 
-    private async Task<(bool hasWarningsInFile, bool latestUploadIsValid, bool processingComplete, bool validationPass)> HandleLatestUploadCheckSplitterEvent(CancellationToken cancellationToken,
-        CheckSplitterValidationEvent? latestUploadCheckSplitterEvent, List<string> latestFileUploadErrors, bool hasWarningsInFile,
-        bool latestUploadIsValid, bool processingComplete, bool validationPass)
+    private async Task<(bool HasWarningsInFile, bool LatestUploadIsValid, bool ProcessingComplete, bool ValidationPass)> HandleLatestUploadCheckSplitterEvent(CancellationToken cancellationToken, CheckSplitterValidationEvent? latestUploadCheckSplitterEvent, List<string> latestFileUploadErrors, bool hasWarningsInFile, bool latestUploadIsValid, bool processingComplete, bool validationPass)
     {
         if (latestUploadCheckSplitterEvent is not null)
         {
@@ -146,28 +165,6 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         }
 
         return (hasWarningsInFile, latestUploadIsValid, processingComplete, validationPass);
-    }
-
-    public async Task<bool> VerifyFileIdIsForValidFileAsync(Guid submissionId, Guid fileId, CancellationToken cancellationToken)
-    {
-        var antivirusResultEvent = await GetAntivirusResultEventByFileIdAsync(fileId, cancellationToken);
-
-        if (antivirusResultEvent is null)
-        {
-            return false;
-        }
-
-        var checkSplitterEvent = await _submissionEventQueryRepository
-            .GetAll(x => x.SubmissionId == submissionId && x.Type == EventType.CheckSplitter && x.BlobName == antivirusResultEvent.BlobName)
-            .Cast<CheckSplitterValidationEvent>()
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (checkSplitterEvent is null)
-        {
-            return false;
-        }
-
-        return await VerifyBlobNameHasExpectedNumberOfValidProducerValidationEventsAsync(checkSplitterEvent.BlobName, checkSplitterEvent.DataCount, cancellationToken);
     }
 
     private async Task<AntivirusCheckEvent?> GetLatestAntivirusCheckEventAsync(

@@ -233,10 +233,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         return false;
     }
 
-    private static AntivirusResultEvent? HandleCompanyDetailsEventIfEventRequiresPartnershipFile(
-        RegistrationValidationEvent registrationEvent, AntivirusCheckEvent companyDetailsEvent, List<AntivirusCheckEvent> antivirusCheckEvents,
-        AntivirusResultEvent? partnershipsAntivirusResultEvent, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events,
-        ref AntivirusCheckEvent? partnershipsAntivirusCheckEvent, ref PartnerValidationEvent? partnerValidationEvent)
+    private static AntivirusResultEvent? HandleCompanyDetailsEventIfEventRequiresPartnershipFile(RegistrationValidationEvent registrationEvent, AntivirusCheckEvent companyDetailsEvent, List<AntivirusCheckEvent> antivirusCheckEvents, AntivirusResultEvent? partnershipsAntivirusResultEvent, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events, ref AntivirusCheckEvent? partnershipsAntivirusCheckEvent, ref PartnerValidationEvent? partnerValidationEvent)
     {
         if (registrationEvent is { RequiresPartnershipsFile: true })
         {
@@ -266,10 +263,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         return partnershipsAntivirusResultEvent;
     }
 
-    private static AntivirusResultEvent? HandleCompanyDetailsEventIfEventRequiresBrandFile(
-        RegistrationValidationEvent registrationEvent, AntivirusCheckEvent companyDetailsEvent, List<AntivirusCheckEvent> antivirusCheckEvents,
-        AntivirusResultEvent? brandsAntivirusResultEvent, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events,
-        ref AntivirusCheckEvent? brandsAntivirusCheckEvent, ref BrandValidationEvent? brandValidationEvent)
+    private static AntivirusResultEvent? HandleCompanyDetailsEventIfEventRequiresBrandFile(RegistrationValidationEvent registrationEvent, AntivirusCheckEvent companyDetailsEvent, List<AntivirusCheckEvent> antivirusCheckEvents, AntivirusResultEvent? brandsAntivirusResultEvent, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events, ref AntivirusCheckEvent? brandsAntivirusCheckEvent, ref BrandValidationEvent? brandValidationEvent)
     {
         if (registrationEvent is { RequiresBrandsFile: true })
         {
@@ -306,9 +300,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
             : GetAntivirusCheckEventByFileTypeAndRegistrationSetId(antivirusCheckEvents, registrationSetId.Value, fileType);
     }
 
-    private static void ProcessPartnershipsAntiVirusCheckEventIfPresent(RegistrationSubmissionGetResponse response,
-        AntivirusCheckEvent? latestPartnershipsAntivirusCheckEvent, List<string> latestFileUploadErrors, List<AntivirusResultEvent> antivirusResultEvents,
-        List<AbstractSubmissionEvent> events)
+    private static void ProcessPartnershipsAntiVirusCheckEventIfPresent(RegistrationSubmissionGetResponse response, AntivirusCheckEvent? latestPartnershipsAntivirusCheckEvent, List<string> latestFileUploadErrors, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events)
     {
         if (latestPartnershipsAntivirusCheckEvent is not null)
         {
@@ -337,9 +329,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         }
     }
 
-    private static void ProcessBrandsAntiVirusCheckEventIfPresent(RegistrationSubmissionGetResponse response,
-        AntivirusCheckEvent? latestBrandsAntivirusCheckEvent, List<string> latestFileUploadErrors, List<AntivirusResultEvent> antivirusResultEvents,
-        List<AbstractSubmissionEvent> events)
+    private static void ProcessBrandsAntiVirusCheckEventIfPresent(RegistrationSubmissionGetResponse response, AntivirusCheckEvent? latestBrandsAntivirusCheckEvent, List<string> latestFileUploadErrors, List<AntivirusResultEvent> antivirusResultEvents, List<AbstractSubmissionEvent> events)
     {
         if (latestBrandsAntivirusCheckEvent is not null)
         {
