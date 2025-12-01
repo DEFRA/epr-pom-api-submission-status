@@ -31,4 +31,6 @@ public abstract class AbstractSubmissionGetResponse
     public abstract bool HasValidFile { get; }
 
     public Guid? ComplianceSchemeId { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

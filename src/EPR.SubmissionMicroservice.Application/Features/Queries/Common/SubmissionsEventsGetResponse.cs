@@ -1,6 +1,4 @@
-﻿using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
-
-namespace EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+﻿namespace EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 
 using System.Diagnostics.CodeAnalysis;
 
