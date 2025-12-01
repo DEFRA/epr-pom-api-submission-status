@@ -50,6 +50,4 @@ public class RegistrationSubmissionGetResponse : AbstractSubmissionGetResponse
     public bool PartnersDataIsValid { get; set; }
 
     public int? OrganisationMemberCount { get; set; }
-
-    public string? RegistrationJourney { get; set; }
 }

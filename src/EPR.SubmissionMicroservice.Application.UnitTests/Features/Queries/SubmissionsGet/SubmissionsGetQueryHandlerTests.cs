@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.SubmissionsGet;
+﻿using FluentResults;
+
+namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.SubmissionsGet;
 
 using System.Linq.Expressions;
 using Application.Features.Queries.Common;
@@ -349,7 +351,7 @@ public class SubmissionsGetQueryHandlerTests
                 OrganisationId = _organisationId,
                 SubmissionType = SubmissionType.Registration,
                 ComplianceSchemeId = Guid.NewGuid(),
-                RegistrationJourney = "EXPECTED_PRODUCER_SIZE"
+                RegistrationJourney = "EXPECTED_REG_JOURNEY"
             }
         };
 
@@ -363,12 +365,12 @@ public class SubmissionsGetQueryHandlerTests
             .Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns<Expression<Func<Submission, bool>>>(expr => submissions.Where(expr.Compile()).BuildMock());
 
-        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
-
-        result.Value.Should().HaveCount(1);
-        result.Value[0].Id.Should().Be(submissions[0].Id);
-        result.Value[0].ComplianceSchemeId.Should().Be(submissions[0].ComplianceSchemeId);
-        result.Value[0].RegistrationJourney.Should().Be(submissions[0].RegistrationJourney);
+        var raw = await _systemUnderTest.Handle(query, CancellationToken.None);
+        var result = raw.Value;
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(submissions[0].Id);
+        result[0].ComplianceSchemeId.Should().Be(submissions[0].ComplianceSchemeId);
+        result[0].RegistrationJourney.Should().Be(submissions[0].RegistrationJourney);
 
         _submissionQueryRepositoryMock.Verify(x => x.GetAll(e => e.OrganisationId == query.OrganisationId), Times.Once);
     }
