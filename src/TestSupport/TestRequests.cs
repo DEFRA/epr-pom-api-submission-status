@@ -97,7 +97,8 @@ public static class TestRequests
                 type = EventType.Registration,
                 requiresBrandsFile = false,
                 requiresPartnershipsFile = false,
-                organisationMemberCount = 10
+                organisationMemberCount = 10,
+                registrationJourney = "CsoLargeProducer"
             });
         }
 
