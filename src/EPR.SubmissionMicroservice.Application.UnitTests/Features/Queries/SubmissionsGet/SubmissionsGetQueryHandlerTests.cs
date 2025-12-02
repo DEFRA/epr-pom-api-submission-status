@@ -1,6 +1,4 @@
-﻿using FluentResults;
-
-namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.SubmissionsGet;
+﻿namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.SubmissionsGet;
 
 using System.Linq.Expressions;
 using Application.Features.Queries.Common;

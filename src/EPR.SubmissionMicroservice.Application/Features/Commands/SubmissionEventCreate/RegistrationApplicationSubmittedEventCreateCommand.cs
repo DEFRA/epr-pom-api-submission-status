@@ -16,5 +16,5 @@ public class RegistrationApplicationSubmittedEventCreateCommand : AbstractSubmis
 
     public bool? IsResubmission { get; set; }
 
-    public string? RegistragtionJouney { get; set; }
+    public string? RegistrationJourney { get; set; }
 }
