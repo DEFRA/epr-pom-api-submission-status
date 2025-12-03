@@ -16,4 +16,6 @@ public class SubmissionSubmitCommand : IRequest<ErrorOr<Unit>>
     public string? AppReferenceNumber { get; set; }
 
     public bool? IsResubmission { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

@@ -15,4 +15,6 @@ public class RegistrationApplicationSubmittedEventCreateCommand : AbstractSubmis
     public DateTime? SubmissionDate { get; set; }
 
     public bool? IsResubmission { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

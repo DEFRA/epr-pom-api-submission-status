@@ -26,4 +26,6 @@ public class Submission : EntityWithId, ICreated
     public string? AppReferenceNumber { get; set; }
 
     public DateTime Created { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

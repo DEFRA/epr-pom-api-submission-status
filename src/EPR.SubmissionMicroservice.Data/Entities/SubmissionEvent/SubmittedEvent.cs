@@ -11,4 +11,6 @@ public class SubmittedEvent : AbstractSubmissionEvent
     public string? SubmittedBy { get; set; }
 
     public bool? IsResubmission { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

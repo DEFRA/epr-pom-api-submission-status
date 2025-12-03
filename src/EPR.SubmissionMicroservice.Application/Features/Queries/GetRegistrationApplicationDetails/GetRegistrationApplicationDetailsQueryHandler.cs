@@ -286,6 +286,11 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                     x.SubmissionType == SubmissionType.Registration &&
                     x.SubmissionPeriod == request.SubmissionPeriod);
 
+        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney))
+        {
+            query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+        }
+
         if (request.ComplianceSchemeId is not null)
         {
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
