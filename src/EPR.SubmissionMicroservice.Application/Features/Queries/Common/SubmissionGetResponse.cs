@@ -10,4 +10,6 @@ public class SubmissionGetResponse
     public string SubmissionPeriod { get; set; }
 
     public int Year { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

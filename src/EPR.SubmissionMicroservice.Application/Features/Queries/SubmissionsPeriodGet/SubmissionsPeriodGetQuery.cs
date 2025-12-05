@@ -16,4 +16,6 @@ public class SubmissionsPeriodGetQuery : IRequest<ErrorOr<List<SubmissionGetResp
     public int? Year { get; set; }
 
     public SubmissionType Type { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

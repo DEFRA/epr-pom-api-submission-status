@@ -26,12 +26,11 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
     private readonly Guid _companyDetailsFileId = Guid.NewGuid();
     private readonly Guid _brandsFileId = Guid.NewGuid();
     private readonly Guid _partnersFileId = Guid.NewGuid();
-    private readonly Guid _organisationId = Guid.NewGuid();
     private readonly Guid _submissionId = Guid.NewGuid();
     private readonly Guid _registrationSetId = Guid.NewGuid();
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventsQueryRepositoryMock;
     private Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
-    private SubmissionOrganisationDetailsGetQueryHandler _systemUnderTest;
+    private SubmissionOrganisationDetailsGetQueryHandler _organisationDetailsHandler;
 
     [TestInitialize]
     public void SetUp()
@@ -39,7 +38,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
         _submissionEventsQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
 
-        _systemUnderTest = new SubmissionOrganisationDetailsGetQueryHandler(
+        _organisationDetailsHandler = new SubmissionOrganisationDetailsGetQueryHandler(
             _submissionEventsQueryRepositoryMock.Object,
             _submissionQueryRepositoryMock.Object,
             NullLogger<SubmissionOrganisationDetailsGetQueryHandler>.Instance);
@@ -65,16 +64,21 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
 
         _submissionQueryRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), new CancellationToken()))
-            .ReturnsAsync(new Submission { SubmissionPeriod = SubmissionPeriod });
+            .ReturnsAsync(new Submission
+            {
+                SubmissionPeriod = SubmissionPeriod,
+                RegistrationJourney = "ExpectedJourney"
+            });
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         var expectedResult = new SubmissionOrganisationDetailsGetResponse
         {
             BlobName = RegistrationBlobName,
-            SubmissionPeriod = SubmissionPeriod
+            SubmissionPeriod = SubmissionPeriod,
+            RegistrationJourney = "ExpectedJourney"
         };
         result.Value.Should().BeEquivalentTo(expectedResult);
 
@@ -104,16 +108,21 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
 
         _submissionQueryRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), new CancellationToken()))
-            .ReturnsAsync(new Submission { SubmissionPeriod = SubmissionPeriod });
+            .ReturnsAsync(new Submission
+            {
+                SubmissionPeriod = SubmissionPeriod,
+                RegistrationJourney = "ExpectedJourney"
+            });
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         var expectedResult = new SubmissionOrganisationDetailsGetResponse
         {
             BlobName = RegistrationBlobName,
-            SubmissionPeriod = SubmissionPeriod
+            SubmissionPeriod = SubmissionPeriod,
+            RegistrationJourney = "ExpectedJourney"
         };
         result.Value.Should().BeEquivalentTo(expectedResult);
 
@@ -136,7 +145,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -186,7 +195,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -238,7 +247,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -266,7 +275,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -293,7 +302,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -312,7 +321,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(new List<AbstractSubmissionEvent>().BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();

@@ -31,7 +31,9 @@ public class SubmissionsPeriodGetQueryHandlerTests
         {
             OrganisationId = _organisationId,
             Year = 2023,
-            Type = SubmissionType.Producer
+            Type = SubmissionType.Producer,
+            ComplianceSchemeId = _complianceSchemeId,
+            RegistrationJourney = "EXPECTED_REG_JOURNEY"
         };
 
         var submissions = new List<Submission>
@@ -42,7 +44,8 @@ public class SubmissionsPeriodGetQueryHandlerTests
                 OrganisationId = _organisationId,
                 SubmissionType = SubmissionType.Producer,
                 Created = DateTime.Parse("2023-01-01"),
-                ComplianceSchemeId = _complianceSchemeId
+                ComplianceSchemeId = _complianceSchemeId,
+                RegistrationJourney = "EXPECTED_REG_JOURNEY"
             }
         };
 
@@ -57,9 +60,58 @@ public class SubmissionsPeriodGetQueryHandlerTests
         result.Value.Should().HaveCount(1);
         result.IsError.Should().BeFalse();
         result.Value[0].SubmissionId.Should().Be(submissions[0].Id);
+        result.Value[0].RegistrationJourney.Should().Be(submissions[0].RegistrationJourney);
 
         _submissionQueryRepositoryMock
-            .Verify(x => x.GetAll(x => x.OrganisationId == query.OrganisationId && x.SubmissionType == query.Type && x.Created != null), Times.Once);
+            .Verify(
+                x => x.GetAll(x => x.OrganisationId == query.OrganisationId &&
+                                       x.SubmissionType == query.Type &&
+                                       x.Created != null),
+                Times.Once);
+    }
+
+    [TestMethod]
+    public async Task Handle_ReturnsExpectedEmptyGetResponses_FilteredByRegistrationJourney()
+    {
+        // Arrange
+        var query = new SubmissionsPeriodGetQuery
+        {
+            OrganisationId = _organisationId,
+            Year = 2023,
+            Type = SubmissionType.Producer,
+            ComplianceSchemeId = _complianceSchemeId,
+            RegistrationJourney = "REG_JOURNEY"
+        };
+
+        var submissions = new List<Submission>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                OrganisationId = _organisationId,
+                SubmissionType = SubmissionType.Producer,
+                Created = DateTime.Parse("2023-01-01"),
+                ComplianceSchemeId = _complianceSchemeId,
+                RegistrationJourney = "NOT_MATCHING_REG_JOURNEY"
+            }
+        };
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(submissions.BuildMock());
+
+        // Act
+        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.Should().HaveCount(0);
+        result.IsError.Should().BeFalse();
+        _submissionQueryRepositoryMock
+            .Verify(
+                x => x.GetAll(x => x.OrganisationId == query.OrganisationId &&
+                                   x.SubmissionType == query.Type &&
+                                   x.Created != null),
+                Times.Once);
     }
 
     [TestMethod]

@@ -5,4 +5,6 @@ public class SubmissionOrganisationDetailsGetResponse
     public string BlobName { get; set; }
 
     public string SubmissionPeriod { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }
