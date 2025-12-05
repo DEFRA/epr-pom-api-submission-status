@@ -36,6 +36,11 @@ public class SubmissionsPeriodGetQueryHandler : IRequestHandler<SubmissionsPerio
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
         }
 
+        if (request.RegistrationJourney is not null)
+        {
+            query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+        }
+
         if (request.Year is not null)
         {
             var yearStart = new DateTime((int)request.Year, 1, 1);
