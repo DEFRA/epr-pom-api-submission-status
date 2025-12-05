@@ -30,7 +30,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
     private readonly Guid _registrationSetId = Guid.NewGuid();
     private Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventsQueryRepositoryMock;
     private Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
-    private SubmissionOrganisationDetailsGetQueryHandler _systemUnderTest;
+    private SubmissionOrganisationDetailsGetQueryHandler _organisationDetailsHandler;
 
     [TestInitialize]
     public void SetUp()
@@ -38,7 +38,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
         _submissionEventsQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
 
-        _systemUnderTest = new SubmissionOrganisationDetailsGetQueryHandler(
+        _organisationDetailsHandler = new SubmissionOrganisationDetailsGetQueryHandler(
             _submissionEventsQueryRepositoryMock.Object,
             _submissionQueryRepositoryMock.Object,
             NullLogger<SubmissionOrganisationDetailsGetQueryHandler>.Instance);
@@ -71,7 +71,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             });
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         var expectedResult = new SubmissionOrganisationDetailsGetResponse
@@ -115,7 +115,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             });
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         var expectedResult = new SubmissionOrganisationDetailsGetResponse
@@ -145,7 +145,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -195,7 +195,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -247,7 +247,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -275,7 +275,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -302,7 +302,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(events.BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -321,7 +321,7 @@ public class SubmissionOrganisationDetailsGetQueryHandlerTests
             .Returns(new List<AbstractSubmissionEvent>().BuildMock);
 
         // Act
-        var result = await _systemUnderTest.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
+        var result = await _organisationDetailsHandler.Handle(submissionOrganisationDetailsGetQuery, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
