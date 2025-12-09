@@ -13,7 +13,7 @@ public class AntivirusCheckEvent : AbstractSubmissionEvent
 
     public FileType FileType { get; set; }
 
-    public string FileName { get; set; }
+    public string? FileName { get; set; }
 
     public Guid? RegistrationSetId { get; set; }
 }

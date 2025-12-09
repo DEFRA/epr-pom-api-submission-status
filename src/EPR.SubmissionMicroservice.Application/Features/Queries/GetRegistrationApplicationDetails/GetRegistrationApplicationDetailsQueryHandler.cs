@@ -289,7 +289,14 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
         if (!string.IsNullOrWhiteSpace(request.RegistrationJourney))
         {
-            query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+            if (request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
+            {
+                query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null);
+            }
+            else
+            {
+                query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+            }
         }
 
         if (request.ComplianceSchemeId is not null)
