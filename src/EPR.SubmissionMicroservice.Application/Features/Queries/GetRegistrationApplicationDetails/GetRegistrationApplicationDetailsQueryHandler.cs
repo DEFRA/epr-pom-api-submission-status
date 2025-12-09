@@ -85,7 +85,8 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved || (featureFlagOptions.Value.IsQueryLateFeeEnabled && submission.SubmissionPeriod.Contains("2026") && d.Decision == RegulatorDecision.Queried)),
             IsLatestSubmittedEventAfterFileUpload = isLatestSubmittedEventAfterFileUpload,
             LatestSubmittedEventCreatedDatetime = latestSubmittedEventCreatedDatetime,
-            FirstApplicationSubmittedEventCreatedDatetime = firstApplicationSubmittedEvent?.Created.Date
+            FirstApplicationSubmittedEventCreatedDatetime = firstApplicationSubmittedEvent?.Created.Date,
+            RegistrationJourney = submission.RegistrationJourney,
         };
 
         SetApplicationStatus(response, isLatestSubmittedEventAfterFileUpload, latestCompanyDetailsCreatedDatetime, regulatorRegistrationDecisionEvent);

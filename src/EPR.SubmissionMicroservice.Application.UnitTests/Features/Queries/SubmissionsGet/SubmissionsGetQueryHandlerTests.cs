@@ -51,14 +51,16 @@ public class SubmissionsGetQueryHandlerTests
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
                 SubmissionPeriod = "January to June 2024",
-                SubmissionType = SubmissionType.Registration
+                SubmissionType = SubmissionType.Registration,
+                RegistrationJourney = "EXPECTED_REG_JOURNEY-0"
             },
             new()
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
                 SubmissionPeriod = "July to December 2024",
-                SubmissionType = SubmissionType.Producer
+                SubmissionType = SubmissionType.Producer,
+                RegistrationJourney = null
             }
         };
 
@@ -73,6 +75,8 @@ public class SubmissionsGetQueryHandlerTests
         result.Value.Should().HaveCount(2);
         result.Value[0].Id.Should().Be(submissions[0].Id);
         result.Value[1].Id.Should().Be(submissions[1].Id);
+        result.Value[0].RegistrationJourney.Should().Be(submissions[0].RegistrationJourney);
+        result.Value[1].RegistrationJourney.Should().Be(submissions[1].RegistrationJourney);
 
         _submissionQueryRepositoryMock.Verify(x => x.GetAll(e => e.OrganisationId == query.OrganisationId), Times.Once);
         _pomSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<PomSubmissionGetResponse>(), false, CancellationToken.None), Times.Once);

@@ -18,7 +18,8 @@ public static class TestCommands
                 DataSourceType = DataSourceType.File,
                 SubmissionPeriod = "2022",
                 OrganisationId = Guid.NewGuid(),
-                UserId = Guid.NewGuid()
+                UserId = Guid.NewGuid(),
+                RegistrationJourney = "CsoLargeProducer"
             };
         }
 
@@ -219,7 +220,8 @@ public static class TestCommands
                 UserId = Guid.NewGuid(),
                 PaidAmount = "£100.00",
                 PaymentMethod = "Offline",
-                PaymentStatus = "Paid"
+                PaymentStatus = "Paid",
+                RegistrationJourney = "CsoLargeProducer"
             };
         }
 
