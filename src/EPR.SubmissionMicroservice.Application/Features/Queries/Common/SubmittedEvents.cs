@@ -6,4 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 public class SubmittedEvents : BaseEvent
 {
     public string SubmittedBy { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

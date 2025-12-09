@@ -48,6 +48,8 @@ public class GetRegistrationApplicationDetailsResponse
 
     public DateTime? FirstApplicationSubmittedEventCreatedDatetime { get; set; }
 
+    public string? RegistrationJourney { get; set; }
+
     public class LastSubmittedFileDetails
     {
         public Guid? FileId { get; set; }

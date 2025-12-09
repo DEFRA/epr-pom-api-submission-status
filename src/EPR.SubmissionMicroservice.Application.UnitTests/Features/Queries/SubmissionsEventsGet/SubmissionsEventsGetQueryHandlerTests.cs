@@ -19,7 +19,7 @@ public class SubmissionsEventsGetQueryHandlerTests
     private Mock<IQueryRepository<SubmittedEvent>> _submittedEventQueryRepository = null!;
     private Mock<IQueryRepository<RegulatorPoMDecisionEvent>> _regulatorPoMDecisionEventQueryRepository = null!;
     private Mock<IQueryRepository<AntivirusCheckEvent>> _antivirusCheckEventQueryRepository = null!;
-    private SubmissionsEventsGetQueryHandler _systemUnderTest = null!;
+    private SubmissionsEventsGetQueryHandler _testSubmissionsEventsGetQueryHandler = null!;
 
     [TestInitialize]
     public void TestInitialize()
@@ -28,7 +28,7 @@ public class SubmissionsEventsGetQueryHandlerTests
         _regulatorPoMDecisionEventQueryRepository = new Mock<IQueryRepository<RegulatorPoMDecisionEvent>>();
         _antivirusCheckEventQueryRepository = new Mock<IQueryRepository<AntivirusCheckEvent>>();
 
-        _systemUnderTest = new SubmissionsEventsGetQueryHandler(
+        _testSubmissionsEventsGetQueryHandler = new SubmissionsEventsGetQueryHandler(
             _submittedEventQueryRepository.Object,
             _regulatorPoMDecisionEventQueryRepository.Object,
             _antivirusCheckEventQueryRepository.Object);
@@ -49,7 +49,8 @@ public class SubmissionsEventsGetQueryHandlerTests
                 Id = Guid.NewGuid(),
                 SubmissionId = _submissionId,
                 SubmittedBy = "Test User",
-                UserId = _userId
+                UserId = _userId,
+                RegistrationJourney = "Journey"
             }
         };
 
@@ -95,11 +96,12 @@ public class SubmissionsEventsGetQueryHandlerTests
             .Returns(antivirusCheckEvent.BuildMock());
 
         // Act
-        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
+        var result = await _testSubmissionsEventsGetQueryHandler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeFalse();
         result.Value.SubmittedEvents.Should().HaveCount(1);
+        result.Value.SubmittedEvents.First().RegistrationJourney.Should().Be("Journey");
         result.Value.RegulatorDecisionEvents.Should().HaveCount(1);
         result.Value.AntivirusCheckEvents.Should().HaveCount(1);
 
@@ -142,7 +144,7 @@ public class SubmissionsEventsGetQueryHandlerTests
             .Returns<Expression<Func<AntivirusCheckEvent, bool>>>(expr => antivirusCheckEvent.Where(expr.Compile()).BuildMock());
 
         // Act
-        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
+        var result = await _testSubmissionsEventsGetQueryHandler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeFalse();
@@ -171,7 +173,7 @@ public class SubmissionsEventsGetQueryHandlerTests
             .Throws(new Exception("Sql Query exception"));
 
         // Act / Assert
-        await _systemUnderTest.Invoking(x => x.Handle(query, CancellationToken.None))
+        await _testSubmissionsEventsGetQueryHandler.Invoking(x => x.Handle(query, CancellationToken.None))
             .Should()
             .ThrowAsync<Exception>()
             .WithMessage("Sql Query exception");
@@ -205,7 +207,7 @@ public class SubmissionsEventsGetQueryHandlerTests
             .Returns(antivirusCheckEvent.BuildMock());
 
         // Act
-        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
+        var result = await _testSubmissionsEventsGetQueryHandler.Handle(query, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeFalse();
