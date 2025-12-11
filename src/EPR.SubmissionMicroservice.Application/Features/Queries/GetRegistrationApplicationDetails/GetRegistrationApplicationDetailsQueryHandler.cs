@@ -280,7 +280,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         return isBrandsFileValid;
     }
 
-    public static async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepository, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
+    private static async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepository, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
         var query = submissionQueryRepository
             .GetAll(x => x.OrganisationId == request.OrganisationId &&
@@ -305,6 +305,6 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
-        return submissions.SingleOrDefault();
+        return submissions.FirstOrDefault();
     }
 }
