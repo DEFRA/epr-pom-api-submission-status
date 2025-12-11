@@ -13,6 +13,7 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.GetR
 public class GetRegistrationApplicationDetailsQueryHandlerTests
 {
     private readonly Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
+    private readonly Mock<ILogger<GetRegistrationApplicationDetailsQueryHandler>> _loggerMock;
     private readonly Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventQueryRepositoryMock;
     private readonly GetRegistrationApplicationDetailsQueryHandler _handler;
 
@@ -21,10 +22,12 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var featureFlagOption = new FeatureFlagOptions { IsQueryLateFeeEnabled = true };
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
         _submissionEventQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
+        _loggerMock = new Mock<ILogger<GetRegistrationApplicationDetailsQueryHandler>>();
         _handler = new GetRegistrationApplicationDetailsQueryHandler(
             _submissionQueryRepositoryMock.Object,
             _submissionEventQueryRepositoryMock.Object,
-            Microsoft.Extensions.Options.Options.Create(featureFlagOption));
+            Microsoft.Extensions.Options.Options.Create(featureFlagOption),
+            _loggerMock.Object);
     }
 
     [TestMethod]
@@ -55,7 +58,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { new Submission { Id = subId } }.BuildMock());
 
-        var result = GetRegistrationApplicationDetailsQueryHandler
+        var result = _handler
             .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(), new CancellationToken(false))
             .Result;
 
@@ -64,31 +67,46 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     }
 
     [TestMethod]
-    public async Task GetSubmission_ShouldThrowErrorWhenMoreThanOneSubmissionIsReturned()
+    public async Task GetSubmission_LatestSubmissionIsReturned()
     {
-        var expectedExceptionOccured = false;
         var subId = Guid.NewGuid();
         var repoMock = _submissionQueryRepositoryMock;
         repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[]
             {
-                new Submission { Id = subId },
-                new Submission { Id = Guid.NewGuid() }
+                new Submission { Id = subId, Created = DateTime.Today},
+                new Submission { Id = Guid.NewGuid(), Created = DateTime.Today.AddDays(-1) }
             }.BuildMock());
-        try
-        {
-            _ = GetRegistrationApplicationDetailsQueryHandler
-                .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
-                    new CancellationToken(false))
-                .Result;
-        }
-        catch (Exception e)
-        {
-            e.InnerException.Message.Should().Be("Sequence contains more than one element");
-            expectedExceptionOccured = true;
-        }
-
-        expectedExceptionOccured.Should().BeTrue();
+        
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
+                new CancellationToken(false))
+            .Result;
+        
+        result.Should().NotBeNull();
+        result.Id.Should().Be(subId);
+    }
+    
+    [TestMethod]
+    public async Task GetSubmission_FilteredSubmissionIsReturned()
+    {
+        var subId = Guid.NewGuid();
+        var expectedFilteredResult = Guid.NewGuid();
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission { Id = subId, Created = DateTime.Today, RegistrationJourney = "Foo"},
+                new Submission { Id = expectedFilteredResult, Created = DateTime.Today.AddDays(-1), RegistrationJourney = "Bar"}
+            }.BuildMock());
+        
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(){RegistrationJourney = "Bar"},
+                new CancellationToken(false))
+            .Result;
+        
+        result.Should().NotBeNull();
+        result.Id.Should().Be(expectedFilteredResult);
     }
 
     [TestMethod]
@@ -98,7 +116,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new List<Submission>().BuildMock());
 
-        var result = GetRegistrationApplicationDetailsQueryHandler
+        var result = _handler
             .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(), new CancellationToken(false))
             .Result;
         result.Should().BeNull();

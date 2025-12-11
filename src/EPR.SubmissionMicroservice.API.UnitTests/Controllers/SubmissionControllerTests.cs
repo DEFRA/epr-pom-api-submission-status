@@ -302,7 +302,7 @@ public class SubmissionControllerTests
     }
 
     [TestMethod]
-    public async Task GetRegistrationApplicationSubmissionDetails_MappsRequestObject()
+    public async Task GetRegistrationApplicationSubmissionDetails_MapsRequestObject()
     {
         var request = new GetRegistrationApplicationDetailsRequest { RegistrationJourney = "foo" };
         _mockMediator
