@@ -284,7 +284,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         return isBrandsFileValid;
     }
 
-    private async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepo, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
+    public async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepo, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
         var query = submissionQueryRepo
             .GetAll(x => x.OrganisationId == request.OrganisationId &&

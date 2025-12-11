@@ -58,7 +58,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { new Submission { Id = subId } }.BuildMock());
 
-        var result = GetRegistrationApplicationDetailsQueryHandler
+        var result = _handler
             .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(), new CancellationToken(false))
             .Result;
 
@@ -67,31 +67,24 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     }
 
     [TestMethod]
-    public async Task GetSubmission_ShouldThrowErrorWhenMoreThanOneSubmissionIsReturned()
+    public async Task GetSubmission_LatestSubmissionIsReturned()
     {
-        var expectedExceptionOccured = false;
         var subId = Guid.NewGuid();
         var repoMock = _submissionQueryRepositoryMock;
         repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[]
             {
-                new Submission { Id = subId },
-                new Submission { Id = Guid.NewGuid() }
+                new Submission { Id = subId, Created = DateTime.Today},
+                new Submission { Id = Guid.NewGuid(), Created = DateTime.Today.AddDays(-1) }
             }.BuildMock());
-        try
-        {
-            _ = GetRegistrationApplicationDetailsQueryHandler
-                .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
-                    new CancellationToken(false))
-                .Result;
-        }
-        catch (Exception e)
-        {
-            e.InnerException.Message.Should().Be("Sequence contains more than one element");
-            expectedExceptionOccured = true;
-        }
-
-        expectedExceptionOccured.Should().BeTrue();
+        
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
+                new CancellationToken(false))
+            .Result;
+        
+        result.Should().NotBeNull();
+        result.Id.Should().Be(subId);
     }
 
     [TestMethod]
@@ -101,7 +94,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new List<Submission>().BuildMock());
 
-        var result = GetRegistrationApplicationDetailsQueryHandler
+        var result = _handler
             .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(), new CancellationToken(false))
             .Result;
         result.Should().BeNull();
