@@ -13,6 +13,7 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.GetR
 public class GetRegistrationApplicationDetailsQueryHandlerTests
 {
     private readonly Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
+    private readonly Mock<ILogger<GetRegistrationApplicationDetailsQueryHandler>> _loggerMock;
     private readonly Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventQueryRepositoryMock;
     private readonly GetRegistrationApplicationDetailsQueryHandler _handler;
 
@@ -21,10 +22,12 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var featureFlagOption = new FeatureFlagOptions { IsQueryLateFeeEnabled = true };
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
         _submissionEventQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
+        _loggerMock = new Mock<ILogger<GetRegistrationApplicationDetailsQueryHandler>>();
         _handler = new GetRegistrationApplicationDetailsQueryHandler(
             _submissionQueryRepositoryMock.Object,
             _submissionEventQueryRepositoryMock.Object,
-            Microsoft.Extensions.Options.Options.Create(featureFlagOption));
+            Microsoft.Extensions.Options.Options.Create(featureFlagOption),
+            _loggerMock.Object);
     }
 
     [TestMethod]
