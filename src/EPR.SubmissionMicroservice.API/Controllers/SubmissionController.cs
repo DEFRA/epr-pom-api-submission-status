@@ -180,7 +180,13 @@ public class SubmissionController : ApiController
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> GetRegistrationApplicationDetails([FromQuery] GetRegistrationApplicationDetailsRequest request)
     {
-        var query = _mapper.Map<GetRegistrationApplicationDetailsQuery>(request);
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            ComplianceSchemeId = request.ComplianceSchemeId,
+            OrganisationId = request.OrganisationId,
+            SubmissionPeriod = request.SubmissionPeriod,
+            RegistrationJourney = request.RegistrationJourney,
+        };
 
         var result = await Mediator.Send(query);
 
