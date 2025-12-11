@@ -8,6 +8,7 @@ using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using static EPR.SubmissionMicroservice.Application.Features.Queries.Common.GetRegistrationApplicationDetailsResponse;
 
@@ -16,9 +17,12 @@ namespace EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistratio
 public class GetRegistrationApplicationDetailsQueryHandler(
     IQueryRepository<Submission> submissionQueryRepository,
     IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
-    IOptions<FeatureFlagOptions> featureFlagOptions)
+    IOptions<FeatureFlagOptions> featureFlagOptions,
+    ILogger<GetRegistrationApplicationDetailsQueryHandler> logger)
     : IRequestHandler<GetRegistrationApplicationDetailsQuery, ErrorOr<GetRegistrationApplicationDetailsResponse>>
 {
+    private readonly ILogger<GetRegistrationApplicationDetailsQueryHandler> _logger = logger;
+
     public async Task<ErrorOr<GetRegistrationApplicationDetailsResponse>> Handle(GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
         var submission = await GetSubmission(submissionQueryRepository, request, cancellationToken);
@@ -280,9 +284,9 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         return isBrandsFileValid;
     }
 
-    private static async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepository, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
+    private async Task<Submission?> GetSubmission(IQueryRepository<Submission> submissionQueryRepo, GetRegistrationApplicationDetailsQuery request, CancellationToken cancellationToken)
     {
-        var query = submissionQueryRepository
+        var query = submissionQueryRepo
             .GetAll(x => x.OrganisationId == request.OrganisationId &&
                     x.SubmissionType == SubmissionType.Registration &&
                     x.SubmissionPeriod == request.SubmissionPeriod);
@@ -291,11 +295,11 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         {
             if (request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
             {
-                query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null);
+                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null);
             }
             else
             {
-                query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
             }
         }
 
@@ -305,6 +309,11 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+        if (submissions.Count > 1)
+        {
+            _logger.LogWarning("Multiple submissions {count} found for organisation {OrganisationId} in period {SubmissionPeriod}", submissions.Count, request.OrganisationId, request.SubmissionPeriod);
+        }
+
         return submissions.FirstOrDefault();
     }
 }
