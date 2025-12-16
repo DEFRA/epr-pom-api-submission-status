@@ -38,7 +38,7 @@ public class SubmissionsPeriodGetQueryHandler : IRequestHandler<SubmissionsPerio
 
         if (request.Year is not null)
         {
-            var yearStart = new DateTime((int)request.Year, 1, 1);
+            var yearStart = new DateTime((int)request.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             var nextYearStart = yearStart.AddYears(1);
 
             query = query.Where(x => yearStart <= x.Created && x.Created < nextYearStart);

@@ -29,7 +29,7 @@ public class SubsidiarySubmissionEventHelper : ISubsidiarySubmissionEventHelper
             return;
         }
 
-        if (antivirusCheckEvent is not null && antivirusCheckEvent.Errors.Count > 0)
+        if (antivirusCheckEvent.Errors.Count > 0)
         {
             fileUploadErrors.AddRange(antivirusCheckEvent.Errors);
         }
