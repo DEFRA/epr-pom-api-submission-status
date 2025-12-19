@@ -85,10 +85,10 @@ public class SubmissionSubmitCommandHandlerTests
     }
 
     [TestMethod]
-    public async Task Handle_UpdatesSubmissionWithProvidedProducerSizeValue()
+    public async Task Handle_UsesCurrentRegistrationJourney()
     {
-        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId, RegistrationJourney = "TO_BE_UPDATED" };
-        var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false, RegistrationJourney = "TO_NOT_BE_USED" };
+        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
+        var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false, RegistrationJourney = "TO_BE_USED" };
 
         _submissionQueryRepositoryMock.Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
@@ -98,9 +98,9 @@ public class SubmissionSubmitCommandHandlerTests
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         result.IsError.Should().BeFalse();
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.Is<Submission>(s => s.RegistrationJourney == "TO_BE_UPDATED")), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.Update(It.Is<Submission>(s => s.RegistrationJourney == "TO_BE_USED")), Times.Once);
     }
-
+    
     [TestMethod]
     public async Task Handle_DoesNotCallsUpdateSubmissionAndCreatesASubmittedEvent_WhenSubmissionHasBeenSubmittedPreviously()
     {

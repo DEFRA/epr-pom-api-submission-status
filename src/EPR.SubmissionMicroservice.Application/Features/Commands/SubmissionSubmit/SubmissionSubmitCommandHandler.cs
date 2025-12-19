@@ -49,7 +49,6 @@ public class SubmissionSubmitCommandHandler(
             submission.IsSubmitted = true;
             submission.IsResubmission = command.IsResubmission;
             submission.AppReferenceNumber = command.AppReferenceNumber;
-            submission.RegistrationJourney = command.RegistrationJourney;
             submissionCommandRepository.Update(submission);
 
             var submittedEvent = new SubmittedEvent
