@@ -57,7 +57,8 @@ public class SubmissionSubmitCommandHandler(
                 FileId = fileId,
                 UserId = userId,
                 SubmittedBy = submittedBy,
-                IsResubmission = command.IsResubmission
+                IsResubmission = command.IsResubmission,
+                RegistrationJourney = submission.RegistrationJourney
             };
 
             await submissionEventCommandRepository.AddAsync(submittedEvent);

@@ -55,7 +55,8 @@ public class SubmissionsEventsGetQueryHandler : IRequestHandler<SubmissionsEvent
                     FileName = GetFileName(antivirusCheckEvents, x.FileId),
                     SubmissionId = x.SubmissionId,
                     SubmittedBy = x.SubmittedBy,
-                    UserId = x.UserId
+                    UserId = x.UserId,
+                    RegistrationJourney = x.RegistrationJourney
                 }));
         }
 

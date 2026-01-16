@@ -94,7 +94,8 @@ public class SubmissionOrganisationDetailsGetQueryHandler
         return new SubmissionOrganisationDetailsGetResponse
         {
             BlobName = registrationAntiVirusResultEvent.BlobName,
-            SubmissionPeriod = submission.SubmissionPeriod
+            SubmissionPeriod = submission.SubmissionPeriod,
+            RegistrationJourney = submission.RegistrationJourney
         };
     }
 }

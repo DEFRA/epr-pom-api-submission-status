@@ -41,7 +41,7 @@ public class RegistrationSubmissionGetResponse : AbstractSubmissionGetResponse
 
     public bool HasMaxRowErrors { get; set; }
 
-    public int RowErrorCount { get; set; } = 0;
+    public int RowErrorCount { get; set; }
 
     public bool CompanyDetailsFileIsValid { get; set; }
 

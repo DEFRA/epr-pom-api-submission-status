@@ -51,14 +51,16 @@ public class SubmissionsGetQueryHandlerTests
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
                 SubmissionPeriod = "January to June 2024",
-                SubmissionType = SubmissionType.Registration
+                SubmissionType = SubmissionType.Registration,
+                RegistrationJourney = "EXPECTED_REG_JOURNEY-0"
             },
             new()
             {
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
                 SubmissionPeriod = "July to December 2024",
-                SubmissionType = SubmissionType.Producer
+                SubmissionType = SubmissionType.Producer,
+                RegistrationJourney = null
             }
         };
 
@@ -73,6 +75,8 @@ public class SubmissionsGetQueryHandlerTests
         result.Value.Should().HaveCount(2);
         result.Value[0].Id.Should().Be(submissions[0].Id);
         result.Value[1].Id.Should().Be(submissions[1].Id);
+        result.Value[0].RegistrationJourney.Should().Be(submissions[0].RegistrationJourney);
+        result.Value[1].RegistrationJourney.Should().Be(submissions[1].RegistrationJourney);
 
         _submissionQueryRepositoryMock.Verify(x => x.GetAll(e => e.OrganisationId == query.OrganisationId), Times.Once);
         _pomSubmissionEventHelperMock.Verify(x => x.SetValidationEventsAsync(It.IsAny<PomSubmissionGetResponse>(), false, CancellationToken.None), Times.Once);
@@ -341,7 +345,6 @@ public class SubmissionsGetQueryHandlerTests
     [TestMethod]
     public async Task Handle_ReturnsExpectedSubmissionList_WhenSubmissionsExistForTheProvidedComplianceSchemeId()
     {
-        // Arrange
         var submissions = new List<Submission>
         {
             new()
@@ -349,7 +352,8 @@ public class SubmissionsGetQueryHandlerTests
                 Id = Guid.NewGuid(),
                 OrganisationId = _organisationId,
                 SubmissionType = SubmissionType.Registration,
-                ComplianceSchemeId = Guid.NewGuid()
+                ComplianceSchemeId = Guid.NewGuid(),
+                RegistrationJourney = "EXPECTED_REG_JOURNEY"
             }
         };
 
@@ -363,13 +367,12 @@ public class SubmissionsGetQueryHandlerTests
             .Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns<Expression<Func<Submission, bool>>>(expr => submissions.Where(expr.Compile()).BuildMock());
 
-        // Act
-        var result = await _systemUnderTest.Handle(query, CancellationToken.None);
-
-        // Assert
-        result.Value.Should().HaveCount(1);
-        result.Value[0].Id.Should().Be(submissions[0].Id);
-        result.Value[0].ComplianceSchemeId.Should().Be(submissions[0].ComplianceSchemeId);
+        var raw = await _systemUnderTest.Handle(query, CancellationToken.None);
+        var result = raw.Value;
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(submissions[0].Id);
+        result[0].ComplianceSchemeId.Should().Be(submissions[0].ComplianceSchemeId);
+        result[0].RegistrationJourney.Should().Be(submissions[0].RegistrationJourney);
 
         _submissionQueryRepositoryMock.Verify(x => x.GetAll(e => e.OrganisationId == query.OrganisationId), Times.Once);
     }

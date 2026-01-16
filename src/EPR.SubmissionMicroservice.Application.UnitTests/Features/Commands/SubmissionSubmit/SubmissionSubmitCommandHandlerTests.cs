@@ -26,7 +26,7 @@ public class SubmissionSubmitCommandHandlerTests
     private readonly Guid _submissionId = Guid.NewGuid();
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _fileId = Guid.NewGuid();
-    private SubmissionSubmitCommandHandler _systemUnderTest;
+    private SubmissionSubmitCommandHandler _testSubmissionSubmitCommandHandler;
     private Mock<ICommandRepository<Submission>> _submissionCommandRepositoryMock;
     private Mock<ICommandRepository<AbstractSubmissionEvent>> _submissionEventCommandRepositoryMock;
     private Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
@@ -51,7 +51,7 @@ public class SubmissionSubmitCommandHandlerTests
             Mock.Of<IUserContextProvider>(),
             Mock.Of<IRequestTimeService>(),
             Mock.Of<List<IEntityDecorator>>());
-        _systemUnderTest = new SubmissionSubmitCommandHandler(
+        _testSubmissionSubmitCommandHandler = new SubmissionSubmitCommandHandler(
             _submissionCommandRepositoryMock.Object,
             _loggerMock.Object,
             _submissionQueryRepositoryMock.Object,
@@ -65,7 +65,6 @@ public class SubmissionSubmitCommandHandlerTests
     [TestMethod]
     public async Task Handle_UpdatesSubmissionAndCreatesASubmittedEvent_WhenSubmissionHasNotBeenSubmittedPreviously()
     {
-        // Arrange
         var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false };
 
@@ -76,10 +75,8 @@ public class SubmissionSubmitCommandHandlerTests
             .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        // Act
-        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
-        // Async
         result.IsError.Should().BeFalse();
         _submissionCommandRepositoryMock.Verify(x => x.Update(It.Is<Submission>(s => s.IsSubmitted.Value)), Times.Once);
         _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -87,6 +84,23 @@ public class SubmissionSubmitCommandHandlerTests
         _loggerMock.VerifyLog(x => x.LogInformation("Submission with id {submissionId} submitted by user {userId}.", _submissionId, _userId));
     }
 
+    [TestMethod]
+    public async Task Handle_UsesCurrentRegistrationJourney()
+    {
+        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
+        var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false, RegistrationJourney = "TO_BE_USED" };
+
+        _submissionQueryRepositoryMock.Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submission);
+        _pomSubmissionEventHelperMock.Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        _submissionCommandRepositoryMock.Verify(x => x.Update(It.Is<Submission>(s => s.RegistrationJourney == "TO_BE_USED")), Times.Once);
+    }
+    
     [TestMethod]
     public async Task Handle_DoesNotCallsUpdateSubmissionAndCreatesASubmittedEvent_WhenSubmissionHasBeenSubmittedPreviously()
     {
@@ -102,7 +116,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(true);
 
         // Act
-        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         result.IsError.Should().BeFalse();
@@ -131,7 +145,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ThrowsAsync(exception);
 
         // Act
-        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         result.IsError.Should().BeTrue();
@@ -157,7 +171,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(false);
 
         // Act
-        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         result.IsError.Should().BeTrue();
@@ -185,7 +199,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ThrowsAsync(new DbUpdateException());
 
         // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
+        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         _loggingServiceMock.Verify(x => x.SendEventAsync(It.IsAny<Guid>(), It.IsAny<ProtectiveMonitoringEvent>()), Times.Never);
@@ -206,7 +220,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(true);
 
         // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
+        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         _loggingServiceMock.Verify(
@@ -242,7 +256,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ThrowsAsync(exception);
 
         // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
+        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         _loggerMock.VerifyLog(x => x.LogError(exception, "An error occurred creating the protective monitoring event"));
@@ -260,7 +274,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(submission);
 
         // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
+        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Async
         _pomSubmissionEventHelperMock.Verify(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()), Times.Once);
@@ -283,7 +297,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(() => false);
 
         // Act
-        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeTrue();
@@ -313,7 +327,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(() => true);
 
         // Act
-        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Assert
         result.IsError.Should().BeFalse();
@@ -356,7 +370,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(true);
 
         // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
+        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Assert
         _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.Is<Submission>(s => s.IsSubmitted == true)), Times.Once);
@@ -392,7 +406,7 @@ public class SubmissionSubmitCommandHandlerTests
             .ReturnsAsync(true);
 
         // Act
-        await _systemUnderTest.Handle(command, CancellationToken.None);
+        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Assert
         _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.IsAny<Submission>()), Times.Once);

@@ -21,4 +21,6 @@ public class SubmissionCreateCommand : IRequest<ErrorOr<SubmissionCreateResponse
     public Guid? ComplianceSchemeId { get; set; }
 
     public bool? IsResubmission { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

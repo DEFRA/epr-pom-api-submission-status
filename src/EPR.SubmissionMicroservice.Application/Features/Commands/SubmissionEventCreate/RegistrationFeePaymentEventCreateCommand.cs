@@ -17,4 +17,6 @@ public class RegistrationFeePaymentEventCreateCommand : AbstractSubmissionEventC
     public string PaidAmount { get; set; }
 
     public bool? IsResubmission { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }

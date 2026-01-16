@@ -13,6 +13,7 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.GetR
 public class GetRegistrationApplicationDetailsQueryHandlerTests
 {
     private readonly Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
+    private readonly Mock<ILogger<GetRegistrationApplicationDetailsQueryHandler>> _loggerMock;
     private readonly Mock<IQueryRepository<AbstractSubmissionEvent>> _submissionEventQueryRepositoryMock;
     private readonly GetRegistrationApplicationDetailsQueryHandler _handler;
 
@@ -21,10 +22,12 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var featureFlagOption = new FeatureFlagOptions { IsQueryLateFeeEnabled = true };
         _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
         _submissionEventQueryRepositoryMock = new Mock<IQueryRepository<AbstractSubmissionEvent>>();
+        _loggerMock = new Mock<ILogger<GetRegistrationApplicationDetailsQueryHandler>>();
         _handler = new GetRegistrationApplicationDetailsQueryHandler(
             _submissionQueryRepositoryMock.Object,
             _submissionEventQueryRepositoryMock.Object,
-            Microsoft.Extensions.Options.Options.Create(featureFlagOption));
+            Microsoft.Extensions.Options.Options.Create(featureFlagOption),
+            _loggerMock.Object);
     }
 
     [TestMethod]
@@ -45,6 +48,78 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Value.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldReturnExpectedSubmission_WhenRequested()
+    {
+        var subId = Guid.NewGuid();
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { new Submission { Id = subId } }.BuildMock());
+
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(), new CancellationToken(false))
+            .Result;
+
+        result.Should().NotBeNull();
+        result.Id.Should().Be(subId);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_LatestSubmissionIsReturned()
+    {
+        var subId = Guid.NewGuid();
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission { Id = subId, Created = DateTime.Today},
+                new Submission { Id = Guid.NewGuid(), Created = DateTime.Today.AddDays(-1) }
+            }.BuildMock());
+        
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
+                new CancellationToken(false))
+            .Result;
+        
+        result.Should().NotBeNull();
+        result.Id.Should().Be(subId);
+    }
+    
+    [TestMethod]
+    public async Task GetSubmission_FilteredSubmissionIsReturned()
+    {
+        var subId = Guid.NewGuid();
+        var expectedFilteredResult = Guid.NewGuid();
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission { Id = subId, Created = DateTime.Today, RegistrationJourney = "Foo"},
+                new Submission { Id = expectedFilteredResult, Created = DateTime.Today.AddDays(-1), RegistrationJourney = "Bar"}
+            }.BuildMock());
+        
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(){RegistrationJourney = "Bar"},
+                new CancellationToken(false))
+            .Result;
+        
+        result.Should().NotBeNull();
+        result.Id.Should().Be(expectedFilteredResult);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldReturnDefaultWhenNoSubmissions()
+    {
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new List<Submission>().BuildMock());
+
+        var result = _handler
+            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(), new CancellationToken(false))
+            .Result;
+        result.Should().BeNull();
     }
 
     [TestMethod]
@@ -69,7 +144,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(Enumerable.Empty<AbstractSubmissionEvent>().BuildMock());
 
         // Act
@@ -147,7 +223,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -272,7 +349,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -401,7 +479,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -530,7 +609,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -611,7 +691,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -631,7 +712,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     }
 
     [TestMethod]
-    public async Task WhenRegistrationValidationEvent_IsNull_Handle_ShouldReturnSubmittedAndHasRecentFileUpload_WhenSubmitted()
+    public async Task
+        WhenRegistrationValidationEvent_IsNull_Handle_ShouldReturnSubmittedAndHasRecentFileUpload_WhenSubmitted()
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -686,7 +768,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -800,7 +883,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -878,7 +962,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -952,7 +1037,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -1105,7 +1191,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -1214,8 +1301,13 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent, submissionEvent, feePaymentEvent, applicationSubmittedEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent,
+                registrationValidationEvent, submissionEvent, feePaymentEvent, applicationSubmittedEvent
+            }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -1278,15 +1370,18 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { antivirusCheckEvent, antivirusResultEvent, registrationValidationEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+                { antivirusCheckEvent, antivirusResultEvent, registrationValidationEvent }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.ApplicationStatus.Should().Be(GetRegistrationApplicationDetailsResponse.ApplicationStatusType.NotStarted);
+        result.Value.ApplicationStatus.Should()
+            .Be(GetRegistrationApplicationDetailsResponse.ApplicationStatusType.NotStarted);
     }
 
     [TestMethod]
@@ -1354,8 +1449,13 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { submissionEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                submissionEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent,
+                registrationValidationEvent
+            }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -1377,7 +1477,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         var submissionId = Guid.NewGuid();
         var fileId = Guid.NewGuid();
         var createdDate = DateTime.Now;
-        var submissionAfterDecision = decision is RegulatorDecision.Cancelled or RegulatorDecision.Queried or RegulatorDecision.Rejected;
+        var submissionAfterDecision =
+            decision is RegulatorDecision.Cancelled or RegulatorDecision.Queried or RegulatorDecision.Rejected;
 
         var query = new GetRegistrationApplicationDetailsQuery
         {
@@ -1432,8 +1533,13 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { decisionEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                decisionEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent,
+                registrationValidationEvent
+            }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -1454,7 +1560,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task Handle_ShouldIgnorePreviousViewPaymentAndApplicationSubmitted_WhenRegulatorRejectedOrQueriedOrCancelled(RegulatorDecision decision)
+    public async Task
+        Handle_ShouldIgnorePreviousViewPaymentAndApplicationSubmitted_WhenRegulatorRejectedOrQueriedOrCancelled(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -1531,8 +1639,13 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { applicationSubmittedEvent, viewPayment, decisionEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                applicationSubmittedEvent, viewPayment, decisionEvent, latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent
+            }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -1549,7 +1662,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task Handle_ShouldNOTIgnoreViewPaymentAndApplicationSubmitted_WhenNewEventIsAfterRegulatorDecision(RegulatorDecision decision)
+    public async Task Handle_ShouldNOTIgnoreViewPaymentAndApplicationSubmitted_WhenNewEventIsAfterRegulatorDecision(
+        RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -1626,8 +1740,13 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { applicationSubmittedEvent, viewPayment, decisionEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                applicationSubmittedEvent, viewPayment, decisionEvent, latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent, registrationValidationEvent
+            }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
@@ -1637,14 +1756,17 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedAndHasRecentFileUpload");
         result.Value.RegistrationFeePaymentMethod.Should().Be("PayOnline");
         result.Value.RegistrationApplicationSubmittedComment.Should().Be("Test comments");
-        result.Value.RegistrationApplicationSubmittedDate.Should().BeCloseTo(new DateTime(2025, 1, 1), TimeSpan.FromSeconds(2));
+        result.Value.RegistrationApplicationSubmittedDate.Should()
+            .BeCloseTo(new DateTime(2025, 1, 1), TimeSpan.FromSeconds(2));
     }
 
     [TestMethod]
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task Handle_ShouldSetLastSubmittedFileDetails_WhenLatestFileIsNotSubmitted_And_Previous_Decision_Exists(RegulatorDecision decision)
+    public async Task
+        Handle_ShouldSetLastSubmittedFileDetails_WhenLatestFileIsNotSubmitted_And_Previous_Decision_Exists(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -1733,7 +1855,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -1863,7 +1986,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -2006,7 +2130,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent1,
@@ -2157,7 +2282,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent1,
@@ -2188,7 +2314,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [TestMethod]
     [DataRow(RegulatorDecision.Accepted)]
     [DataRow(RegulatorDecision.Approved)]
-    public async Task Handle_ReSubmission_ShouldSetRegistrationReferenceNumber_From_Previous_Successful_Submission_Current_Submission_Not_Approved_Yet(RegulatorDecision decision)
+    public async Task
+        Handle_ReSubmission_ShouldSetRegistrationReferenceNumber_From_Previous_Successful_Submission_Current_Submission_Not_Approved_Yet(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -2311,7 +2439,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent1,
@@ -2339,7 +2468,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [TestMethod]
     [DataRow(RegulatorDecision.Accepted)]
     [DataRow(RegulatorDecision.Approved)]
-    public async Task Handle_ReSubmission_ShouldSetRegistrationReferenceNumber_From_Previous_Successful_Submission_Current_Submission_Rejected(RegulatorDecision decision)
+    public async Task
+        Handle_ReSubmission_ShouldSetRegistrationReferenceNumber_From_Previous_Successful_Submission_Current_Submission_Rejected(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -2471,7 +2602,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent1,
@@ -2500,7 +2632,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [TestMethod]
     [DataRow(RegulatorDecision.Accepted)]
     [DataRow(RegulatorDecision.Approved)]
-    public async Task Handle_ReSubmission_ShouldSetRegistrationReferenceNumber_From_Previous_Successful_Submission_Current_Submission_Approved(RegulatorDecision decision)
+    public async Task
+        Handle_ReSubmission_ShouldSetRegistrationReferenceNumber_From_Previous_Successful_Submission_Current_Submission_Approved(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -2632,7 +2766,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent1,
@@ -2662,7 +2797,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task Handle_ReSubmission_Should_NOT_SetRegistrationReferenceNumber_From_Previous_Unsuccessful_Submission(RegulatorDecision decision)
+    public async Task
+        Handle_ReSubmission_Should_NOT_SetRegistrationReferenceNumber_From_Previous_Unsuccessful_Submission(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -2785,7 +2922,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent1,
@@ -2814,7 +2952,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task Handle_ShouldSetViewPaymentAndApplicationSubmittedFromLatest_WhenNewEventsAreAfterRegulatorDecision(RegulatorDecision decision)
+    public async Task
+        Handle_ShouldSetViewPaymentAndApplicationSubmittedFromLatest_WhenNewEventsAreAfterRegulatorDecision(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -2952,7 +3092,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 latestCompanyDetailsAntivirusCheckEvent,
@@ -2980,7 +3121,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Value.ApplicationReferenceNumber!.Should().Be("TestRef");
         result.Value.RegistrationFeePaymentMethod!.Should().Be("PayOnline");
         result.Value.RegistrationApplicationSubmitted.Should().BeTrue();
-        result.Value.RegistrationApplicationSubmittedDate.Should().BeCloseTo(DateTime.Now.AddMinutes(4), TimeSpan.FromSeconds(5));
+        result.Value.RegistrationApplicationSubmittedDate.Should()
+            .BeCloseTo(DateTime.Now.AddMinutes(4), TimeSpan.FromSeconds(5));
         result.Value.ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
         result.Value.RegistrationReferenceNumber.Should().BeNull();
     }
@@ -3035,22 +3177,29 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
-            .Returns(new AbstractSubmissionEvent[] { registrationValidationEvent, latestCompanyDetailsAntivirusCheckEvent, latestCompanyDetailsAntivirusResultEvent }.BuildMock());
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns(new AbstractSubmissionEvent[]
+            {
+                registrationValidationEvent, latestCompanyDetailsAntivirusCheckEvent,
+                latestCompanyDetailsAntivirusResultEvent
+            }.BuildMock());
 
         // Act
         var result = await _handler.Handle(query, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.ApplicationStatus.Should().Be(GetRegistrationApplicationDetailsResponse.ApplicationStatusType.NotStarted);
+        result.Value.ApplicationStatus.Should()
+            .Be(GetRegistrationApplicationDetailsResponse.ApplicationStatusType.NotStarted);
     }
 
     [TestMethod]
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task WithErrorAndWarning_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(RegulatorDecision decision)
+    public async Task WithErrorAndWarning_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(
+        RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -3147,7 +3296,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -3181,7 +3331,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task WithErrorAndWarningWithFalseFlags_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(RegulatorDecision decision)
+    public async Task WithErrorAndWarningWithFalseFlags_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(
+        RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -3278,7 +3429,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -3312,7 +3464,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task WithWarningAndRequiresPartnershipsFile_IsTrue_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(RegulatorDecision decision)
+    public async Task
+        WithWarningAndRequiresPartnershipsFile_IsTrue_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -3409,7 +3563,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -3443,7 +3598,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task WithWarningAndRequiresBrandsFile_IsTrue_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(RegulatorDecision decision)
+    public async Task
+        WithWarningAndRequiresBrandsFile_IsTrue_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -3540,7 +3697,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -3574,7 +3732,9 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Cancelled)]
     [DataRow(RegulatorDecision.Queried)]
     [DataRow(RegulatorDecision.Rejected)]
-    public async Task WithNoWarningNoErrorAndRequiresBrandsFile_IsTrue_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(RegulatorDecision decision)
+    public async Task
+        WithNoWarningNoErrorAndRequiresBrandsFile_IsTrue_Handle_ShouldSetApplicationStatus_WhenLatestFileIsSubmitted(
+            RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -3671,7 +3831,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -3702,7 +3863,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     }
 
     [TestMethod]
-    public async Task LatestBrandValidationEvent_WithWarning_Handle_ShouldReturnCorrectResponse_WhenSubmissionAndEventsFound()
+    public async Task
+        LatestBrandValidationEvent_WithWarning_Handle_ShouldReturnCorrectResponse_WhenSubmissionAndEventsFound()
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -3837,7 +3999,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -3999,7 +4162,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -4085,7 +4249,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 registrationValidationEvent,
@@ -4098,14 +4263,16 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.SubmissionId.Should().Be(submission.Id);
-        result.Value.ApplicationStatus.Should().Be(GetRegistrationApplicationDetailsResponse.ApplicationStatusType.NotStarted);
+        result.Value.ApplicationStatus.Should()
+            .Be(GetRegistrationApplicationDetailsResponse.ApplicationStatusType.NotStarted);
         result.Value.Should().BeEquivalentTo(new GetRegistrationApplicationDetailsResponse
         {
             SubmissionId = submissionId,
             IsSubmitted = false,
             IsResubmission = null,
             ApplicationReferenceNumber = applicationReferenceNumber,
-            LastSubmittedFile = new GetRegistrationApplicationDetailsResponse.LastSubmittedFileDetails { SubmittedByName = null },
+            LastSubmittedFile = new GetRegistrationApplicationDetailsResponse.LastSubmittedFileDetails
+                { SubmittedByName = null },
             RegistrationApplicationSubmittedDate = null,
             RegistrationApplicationSubmittedComment = null,
             RegistrationReferenceNumber = null,
@@ -4195,7 +4362,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -4219,7 +4387,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
     [DataRow(RegulatorDecision.Approved, true)]
     [DataRow(RegulatorDecision.Queried, true)]
     [DataRow(RegulatorDecision.Accepted, true)]
-    public async Task Handle_ShouldSetHasAnyApprovedOrQueriedRegulatorDecision_Correctly_AsPer_LatestDecision(RegulatorDecision decision, bool expectedHasAnyApprovedOrQueriedRegulatorDecision)
+    public async Task Handle_ShouldSetHasAnyApprovedOrQueriedRegulatorDecision_Correctly_AsPer_LatestDecision(
+        RegulatorDecision decision, bool expectedHasAnyApprovedOrQueriedRegulatorDecision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -4316,7 +4485,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -4334,12 +4504,14 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should().Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
+        result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should()
+            .Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
     }
 
     [TestMethod]
     [DataRow(RegulatorDecision.Queried, false)]
-    public async Task Handle_ShouldSetHasAnyApprovedOrQueriedRegulatorDecision_Correctly_AsPer_LatestDecision2025(RegulatorDecision decision, bool expectedHasAnyApprovedOrQueriedRegulatorDecision)
+    public async Task Handle_ShouldSetHasAnyApprovedOrQueriedRegulatorDecision_Correctly_AsPer_LatestDecision2025(
+        RegulatorDecision decision, bool expectedHasAnyApprovedOrQueriedRegulatorDecision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -4436,7 +4608,8 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
             .Returns(new[] { submission }.BuildMock());
 
-        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+        _submissionEventQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
             .Returns(new AbstractSubmissionEvent[]
             {
                 submissionEvent,
@@ -4454,6 +4627,7 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should().Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
+        result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should()
+            .Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
     }
 }

@@ -12,4 +12,6 @@ public class GetRegistrationApplicationDetailsRequest
     public string SubmissionPeriod { get; set; } = null!;
 
     public DateTime LateFeeDeadline { get; set; }
+
+    public string? RegistrationJourney { get; set; }
 }
