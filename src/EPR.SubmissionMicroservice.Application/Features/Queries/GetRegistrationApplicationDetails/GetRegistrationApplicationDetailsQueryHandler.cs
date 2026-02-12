@@ -7,6 +7,7 @@ using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
+using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -295,7 +296,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         {
             if (request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
             {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null);
+                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null || x.RegistrationJourney.IsDefined() == false);
             }
             else
             {
