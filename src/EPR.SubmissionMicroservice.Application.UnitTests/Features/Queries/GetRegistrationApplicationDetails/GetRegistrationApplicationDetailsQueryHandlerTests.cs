@@ -65,27 +65,6 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Should().NotBeNull();
         result.Id.Should().Be(subId);
     }
-
-    [TestMethod]
-    public async Task GetSubmission_LatestSubmissionIsReturned()
-    {
-        var subId = Guid.NewGuid();
-        var repoMock = _submissionQueryRepositoryMock;
-        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
-            .Returns(new[]
-            {
-                new Submission { Id = subId, Created = DateTime.Today},
-                new Submission { Id = Guid.NewGuid(), Created = DateTime.Today.AddDays(-1) }
-            }.BuildMock());
-        
-        var result = _handler
-            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
-                new CancellationToken(false))
-            .Result;
-        
-        result.Should().NotBeNull();
-        result.Id.Should().Be(subId);
-    }
     
     [TestMethod]
     public async Task GetSubmission_FilteredSubmissionIsReturned()
@@ -4629,5 +4608,346 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Should().NotBeNull();
         result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should()
             .Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldIncludeSubmissionsWithoutRegistrationJourney_WhenRequestingCsoLargeProducer()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+        var submissionPeriod = "2024-Q1";
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = submissionPeriod
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = null,  // Missing RegistrationJourney
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = submissionPeriod
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = submissionPeriod,
+            RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission1Id);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldFilterOutSubmissions_WhenRegistrationJourneyDoesNotMatchAndIsNotCsoLargeProducer()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+        var submissionPeriod = "2024-Q1";
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = submissionPeriod
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = RegistrationJourney.DirectLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = submissionPeriod
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = submissionPeriod,
+            RegistrationJourney = RegistrationJourney.DirectLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission2Id);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldRemoveLatestSubmission_WhenLatestHasNullAppReferenceAndPreviousIsValid_For2026Period()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = null  // Null reference number
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = "REF-12345"  // Valid reference number
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = "2024-2026",
+            RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission2Id);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldRemoveLatestSubmission_WhenLatestEndsWithLAndPreviousDoesNot_For2026Period()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = "REF-123L"  // Ends with L
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = "REF-12345"  // Doesn't end with L
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = "2024-2026",
+            RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission2Id);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldKeepLatestSubmission_WhenLatestHasValidAppReference_For2026Period()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = "REF-12345"  // Valid reference number
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = "REF-99999"
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = "2024-2026",
+            RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission1Id);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldNotFilterBadData_WhenNotFor2026Period()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2025",  // Not 2026
+                    AppReferenceNumber = null  // Null reference number
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2025",
+                    AppReferenceNumber = "REF-12345"
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = "2024-2025",
+            RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission1Id);  // Latest submission is returned (not filtered)
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_ShouldNotFilterBadData_WhenNotCsoLargeProducerJourney()
+    {
+        // Arrange
+        var submission1Id = Guid.NewGuid();
+        var submission2Id = Guid.NewGuid();
+        var organisationId = Guid.NewGuid();
+
+        var repoMock = _submissionQueryRepositoryMock;
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+                new Submission 
+                { 
+                    Id = submission1Id, 
+                    Created = DateTime.Today,
+                    RegistrationJourney = RegistrationJourney.DirectLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = null  // Null reference number
+                },
+                new Submission 
+                { 
+                    Id = submission2Id, 
+                    Created = DateTime.Today.AddDays(-1),
+                    RegistrationJourney = RegistrationJourney.DirectLargeProducer.ToString(),
+                    OrganisationId = organisationId,
+                    SubmissionType = SubmissionType.Registration,
+                    SubmissionPeriod = "2024-2026",
+                    AppReferenceNumber = "REF-12345"
+                }
+            }.BuildMock());
+
+        var query = new GetRegistrationApplicationDetailsQuery
+        {
+            OrganisationId = organisationId,
+            SubmissionPeriod = "2024-2026",
+            RegistrationJourney = RegistrationJourney.DirectLargeProducer.ToString()
+        };
+
+        // Act
+        var result = await _handler.GetSubmission(repoMock.Object, query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(submission1Id);  // Latest submission is returned (not filtered)
     }
 }

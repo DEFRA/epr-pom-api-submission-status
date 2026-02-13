@@ -292,29 +292,67 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                     x.SubmissionType == SubmissionType.Registration &&
                     x.SubmissionPeriod == request.SubmissionPeriod);
 
-        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney))
-        {
-            if (request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
-            {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null || x.RegistrationJourney.IsDefined() == false);
-            }
-            else
-            {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
-            }
-        }
-
         if (request.ComplianceSchemeId is not null)
         {
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
         }
 
+        // note: for CsoLargeProducer, still include submissions where RegistrationJourney is missing
+        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney) 
+            && request.RegistrationJourney != RegistrationJourney.CsoLargeProducer.ToString())
+        {
+            query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+        }
+
         var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+
         if (submissions.Count > 1)
         {
+            submissions = ApplyCsoLargeProducerAndBadDataFilters(submissions, request);
+
             _logger.LogWarning("Multiple submissions {count} found for organisation {OrganisationId} in period {SubmissionPeriod}", submissions.Count, request.OrganisationId, request.SubmissionPeriod);
         }
 
         return submissions.FirstOrDefault();
+    }
+
+    private List<Submission> ApplyCsoLargeProducerAndBadDataFilters(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
+    {
+        if (string.IsNullOrWhiteSpace(request.RegistrationJourney) || request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
+        {
+            submissions = FilterCsoLargeProducerWithMissingJourney(submissions);
+            submissions = FilterBadDataForSmal378(submissions, request);
+        }
+
+        return submissions;
+    }
+
+    private List<Submission> FilterCsoLargeProducerWithMissingJourney(List<Submission> submissions)
+    {
+        // Filter in memory for CsoLargeProducer to include missing/null RegistrationJourney. This has been compared with performing a FromRawSql equivalent
+        // and was found to be 30% faster
+        return submissions.Where(x => x.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString() || string.IsNullOrWhiteSpace(x.RegistrationJourney)).ToList();
+    }
+
+    private List<Submission> FilterBadDataForSmal378(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
+    {
+        // Filter out bad data from https://eaflood.atlassian.net/browse/SMAL-378. If there is > 1 submission and the last one has a null Application Reference Number
+        // or that Application Reference Number ends in L and the previous one is not null and doesn't end in L, then ignore the latest. Only do this where the submission period
+        // ends in 2026. This is because some CSOs were presented with no submissions at all and started registration again, because this method failed to pick up their
+        // existing 2026 registration due to the missing RegistrationJourney field (fixed in the previous commit)
+        if (submissions.Count <= 1 || !request.SubmissionPeriod.EndsWith("2026"))
+        {
+            return submissions;
+        }
+
+        var lastSubmission = submissions.First();
+        var previousSubmission = submissions[1];
+
+        var lastHasBadReference = string.IsNullOrWhiteSpace(lastSubmission.AppReferenceNumber) || lastSubmission.AppReferenceNumber.EndsWith('L');
+        var previousHasGoodReference = !string.IsNullOrWhiteSpace(previousSubmission.AppReferenceNumber) && !previousSubmission.AppReferenceNumber.EndsWith('L');
+
+        return lastHasBadReference && previousHasGoodReference 
+            ? submissions.Skip(1).ToList() 
+            : submissions;
     }
 }
