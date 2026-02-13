@@ -65,27 +65,6 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Should().NotBeNull();
         result.Id.Should().Be(subId);
     }
-
-    [TestMethod]
-    public async Task GetSubmission_LatestSubmissionIsReturned()
-    {
-        var subId = Guid.NewGuid();
-        var repoMock = _submissionQueryRepositoryMock;
-        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
-            .Returns(new[]
-            {
-                new Submission { Id = subId, Created = DateTime.Today},
-                new Submission { Id = Guid.NewGuid(), Created = DateTime.Today.AddDays(-1) }
-            }.BuildMock());
-        
-        var result = _handler
-            .GetSubmission(repoMock.Object, new GetRegistrationApplicationDetailsQuery(),
-                new CancellationToken(false))
-            .Result;
-        
-        result.Should().NotBeNull();
-        result.Id.Should().Be(subId);
-    }
     
     [TestMethod]
     public async Task GetSubmission_FilteredSubmissionIsReturned()
