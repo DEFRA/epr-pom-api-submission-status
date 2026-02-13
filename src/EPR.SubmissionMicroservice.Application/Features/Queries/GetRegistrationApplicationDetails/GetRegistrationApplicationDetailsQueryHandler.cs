@@ -305,10 +305,11 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
-        submissions = ApplyCsoLargeProducerAndBadDataFilters(submissions, request);
-        
+
         if (submissions.Count > 1)
         {
+            submissions = ApplyCsoLargeProducerAndBadDataFilters(submissions, request);
+
             _logger.LogWarning("Multiple submissions {count} found for organisation {OrganisationId} in period {SubmissionPeriod}", submissions.Count, request.OrganisationId, request.SubmissionPeriod);
         }
 
@@ -317,7 +318,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
 
     private List<Submission> ApplyCsoLargeProducerAndBadDataFilters(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
     {
-        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney) && request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
+        if (string.IsNullOrWhiteSpace(request.RegistrationJourney) || request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
         {
             submissions = FilterCsoLargeProducerWithMissingJourney(submissions);
             submissions = FilterBadDataForSmal378(submissions, request);
