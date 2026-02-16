@@ -324,14 +324,15 @@ public class GetRegistrationApplicationDetailsQueryHandler(
     [ExcludeFromCodeCoverage]
     private List<Submission> ApplySmal378Patch(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
     {
-        // SMAL-378 patch: in the case of two submissions for CsoLargeProducer, take the original one
-        if (submissions.Count == 2
+        // SMAL-378 patch: in the case of multiple submissions for CsoLargeProducer:
+        //  Look at two most recent submissions, take the latter (without RegistrationJourney specified)
+        if (submissions.Count > 1
             && request.SubmissionPeriod?.Contains("2026") == true
-            && submissions.First().RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
-            && string.IsNullOrEmpty(submissions.Last().RegistrationJourney))
+            && submissions[0].RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
+            && string.IsNullOrEmpty(submissions[1].RegistrationJourney))
         {
             _logger.LogWarning("SMAL-332 patch: Removed duplicate CsoLargeProducer submission for organisation {OrganisationId}, retained original submission", request.OrganisationId);
-            return new List<Submission> { submissions.Last() };
+            return new List<Submission> { submissions[1] };
         }
 
         return submissions;
