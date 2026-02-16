@@ -11,6 +11,7 @@ using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 using static EPR.SubmissionMicroservice.Application.Features.Queries.Common.GetRegistrationApplicationDetailsResponse;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
@@ -313,16 +314,26 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         // ----------------------------------------------------------------------
-        // SMAL-378 patch: in the case of two submissions for CsoLargeProducer, take the original one
-        if (submissions.Count == 2
-            && submissions.First().RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
-            && string.IsNullOrEmpty(submissions.Last().RegistrationJourney))
-        {
-            submissions = new List<Submission> { submissions.Last() };
-            _logger.LogWarning("SMAL-332 patch: Removed duplicate CsoLargeProducer submission for organisation {OrganisationId}, retained original submission", request.OrganisationId);
-        }
+        // SMAL-378 patch
+        submissions = ApplySmal378Patch(submissions, request);
         // ----------------------------------------------------------------------
 
         return submissions.FirstOrDefault();
+    }
+
+    [ExcludeFromCodeCoverage]
+    private List<Submission> ApplySmal378Patch(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
+    {
+        // SMAL-378 patch: in the case of two submissions for CsoLargeProducer, take the original one
+        if (submissions.Count == 2
+            && request.SubmissionPeriod.Contains("2026")
+            && submissions.First().RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
+            && string.IsNullOrEmpty(submissions.Last().RegistrationJourney))
+        {
+            _logger.LogWarning("SMAL-332 patch: Removed duplicate CsoLargeProducer submission for organisation {OrganisationId}, retained original submission", request.OrganisationId);
+            return new List<Submission> { submissions.Last() };
+        }
+
+        return submissions;
     }
 }
