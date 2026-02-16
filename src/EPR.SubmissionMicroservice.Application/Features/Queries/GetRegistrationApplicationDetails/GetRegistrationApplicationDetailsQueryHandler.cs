@@ -313,7 +313,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         // ----------------------------------------------------------------------
-        // SMAL-332 patch: in the case of multiple submissions for CsoLargeProducer, take the original one
+        // SMAL-332 patch: in the case of two submissions for CsoLargeProducer, take the original one
         if (submissions.Count == 2
             && submissions.First().RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
             && string.IsNullOrEmpty(submissions.Last().RegistrationJourney))
