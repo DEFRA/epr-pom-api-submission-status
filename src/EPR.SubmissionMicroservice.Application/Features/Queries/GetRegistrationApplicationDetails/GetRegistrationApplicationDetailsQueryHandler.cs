@@ -312,10 +312,16 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             submissions = submissions.Where(x => x.RegistrationJourney == request.RegistrationJourney || string.IsNullOrWhiteSpace(x.RegistrationJourney)).ToList();
         }
 
-        if (submissions.Count > 1)
+        // ----------------------------------------------------------------------
+        // SMAL-332 patch: in the case of multiple submissions for CsoLargeProducer, take the original one
+        if (submissions.Count == 2
+            && submissions.First().RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
+            && string.IsNullOrEmpty(submissions.Last().RegistrationJourney))
         {
-            _logger.LogWarning("Multiple submissions {count} found for organisation {OrganisationId} in period {SubmissionPeriod}", submissions.Count, request.OrganisationId, request.SubmissionPeriod);
+            submissions = new List<Submission> { submissions.Last() };
+            _logger.LogWarning("SMAL-332 patch: Removed duplicate CsoLargeProducer submission for organisation {OrganisationId}, retained original submission", request.OrganisationId);
         }
+        // ----------------------------------------------------------------------
 
         return submissions.FirstOrDefault();
     }
