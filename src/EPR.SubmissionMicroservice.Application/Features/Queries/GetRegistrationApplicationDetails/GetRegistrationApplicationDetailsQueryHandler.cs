@@ -326,7 +326,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
     {
         // SMAL-378 patch: in the case of two submissions for CsoLargeProducer, take the original one
         if (submissions.Count == 2
-            && request.SubmissionPeriod.Contains("2026")
+            && request.SubmissionPeriod?.Contains("2026") == true
             && submissions.First().RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
             && string.IsNullOrEmpty(submissions.Last().RegistrationJourney))
         {
