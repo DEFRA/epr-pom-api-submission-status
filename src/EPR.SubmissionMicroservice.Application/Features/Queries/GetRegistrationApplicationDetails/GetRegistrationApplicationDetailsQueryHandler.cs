@@ -292,24 +292,26 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                     x.SubmissionType == SubmissionType.Registration &&
                     x.SubmissionPeriod == request.SubmissionPeriod);
 
-        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney))
-        {
-            if (request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
-            {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null || x.RegistrationJourney.IsDefined() == false);
-            }
-            else
-            {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
-            }
-        }
-
         if (request.ComplianceSchemeId is not null)
         {
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
         }
 
+        // note: for CsoLargeProducer, still include submissions where RegistrationJourney is missing
+        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney)
+            && request.RegistrationJourney != RegistrationJourney.CsoLargeProducer.ToString())
+        {
+            query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
+        }
+
         var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+
+        // Filter in memory for CsoLargeProducer to include missing/null RegistrationJourney
+        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney) && request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
+        {
+            submissions = submissions.Where(x => x.RegistrationJourney == request.RegistrationJourney || string.IsNullOrWhiteSpace(x.RegistrationJourney)).ToList();
+        }
+
         if (submissions.Count > 1)
         {
             _logger.LogWarning("Multiple submissions {count} found for organisation {OrganisationId} in period {SubmissionPeriod}", submissions.Count, request.OrganisationId, request.SubmissionPeriod);
