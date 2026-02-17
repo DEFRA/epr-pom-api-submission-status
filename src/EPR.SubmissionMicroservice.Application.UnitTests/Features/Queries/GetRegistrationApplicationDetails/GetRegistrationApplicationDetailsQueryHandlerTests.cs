@@ -6,6 +6,7 @@ using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
+using System;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.GetRegistrationApplicationDetails;
 
@@ -4629,5 +4630,32 @@ public class GetRegistrationApplicationDetailsQueryHandlerTests
         result.Should().NotBeNull();
         result.Value.HasAnyApprovedOrQueriedRegulatorDecision.Should()
             .Be(expectedHasAnyApprovedOrQueriedRegulatorDecision);
+    }
+
+    [TestMethod]
+    public async Task GetSubmission_CsoLargeProducer_IncludesMissingOrEmptyRegistrationJourney()
+    {
+        // Arrange
+        var expectedEmptyJourneyId = Guid.NewGuid();
+        var repoMock = _submissionQueryRepositoryMock;
+
+        repoMock.Setup(x => x.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[]
+            {
+            new Submission { Id = Guid.NewGuid(), Created = DateTime.Today, RegistrationJourney = "CsoSmallProducer"},
+            new Submission { Id = expectedEmptyJourneyId, Created = DateTime.Today.AddDays(-1), RegistrationJourney = string.Empty}
+            }.BuildMock());
+
+        var request = new GetRegistrationApplicationDetailsQuery
+        {
+            RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
+        };
+
+        // Act
+        var result = _handler.GetSubmission(repoMock.Object, request, new CancellationToken(false)).Result;
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Id.Should().Be(expectedEmptyJourneyId);
     }
 }
