@@ -325,7 +325,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
     private List<Submission> ApplySmal378Patch(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
     {
         // SMAL-378 patch: in the case of multiple submissions for CsoLargeProducer:
-        //  Look at two most recent submissions, take the latter (without RegistrationJourney specified)
+        // Return the original submission i.e. where Registration Journey is null and there is an Application Reference Number
         if (submissions.Count > 1
             && request.SubmissionPeriod?.Contains("2026") == true
             && submissions[0].RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
