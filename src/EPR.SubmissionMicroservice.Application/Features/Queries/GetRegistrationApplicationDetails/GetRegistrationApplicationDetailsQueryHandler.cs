@@ -336,7 +336,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                 .OrderByDescending(s => s.Created)
                 .First();
 
-            return new List<Submission> { submissions[1] };
+            return new List<Submission> { originalSubmission };
         }
 
         return submissions;
