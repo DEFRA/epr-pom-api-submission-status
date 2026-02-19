@@ -11,6 +11,7 @@ using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 using static EPR.SubmissionMicroservice.Application.Features.Queries.Common.GetRegistrationApplicationDetailsResponse;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistrationApplicationDetails;
@@ -292,29 +293,52 @@ public class GetRegistrationApplicationDetailsQueryHandler(
                     x.SubmissionType == SubmissionType.Registration &&
                     x.SubmissionPeriod == request.SubmissionPeriod);
 
-        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney))
-        {
-            if (request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
-            {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney || x.RegistrationJourney == null || x.RegistrationJourney.IsDefined() == false);
-            }
-            else
-            {
-                query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
-            }
-        }
-
         if (request.ComplianceSchemeId is not null)
         {
             query = query.Where(x => x.ComplianceSchemeId == request.ComplianceSchemeId);
         }
 
-        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
-        if (submissions.Count > 1)
+        // note: for CsoLargeProducer, still include submissions where RegistrationJourney is missing
+        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney)
+            && request.RegistrationJourney != RegistrationJourney.CsoLargeProducer.ToString())
         {
-            _logger.LogWarning("Multiple submissions {count} found for organisation {OrganisationId} in period {SubmissionPeriod}", submissions.Count, request.OrganisationId, request.SubmissionPeriod);
+            query = query.Where(x => x.RegistrationJourney == request.RegistrationJourney);
         }
 
+        var submissions = await query.OrderByDescending(x => x.Created).ToListAsync(cancellationToken);
+
+        // Filter in memory for CsoLargeProducer to include missing/null RegistrationJourney
+        if (!string.IsNullOrWhiteSpace(request.RegistrationJourney) && request.RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString())
+        {
+            submissions = submissions.Where(x => x.RegistrationJourney == request.RegistrationJourney || string.IsNullOrWhiteSpace(x.RegistrationJourney)).ToList();
+        }
+
+        // ----------------------------------------------------------------------
+        // SMAL-378 patch
+        submissions = ApplySmal378Patch(submissions, request);
+        // ----------------------------------------------------------------------
+
         return submissions.FirstOrDefault();
+    }
+
+    [ExcludeFromCodeCoverage]
+    private List<Submission> ApplySmal378Patch(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
+    {
+        // SMAL-378 patch: in the case of multiple submissions for CsoLargeProducer:
+        // Return the original submission i.e. where Registration Journey is null and there is an Application Reference Number
+        if (submissions.Count > 1
+            && request.SubmissionPeriod?.Contains("2026") == true
+            && submissions[0].RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
+            && submissions.Any(s => string.IsNullOrEmpty(s.RegistrationJourney) && !string.IsNullOrEmpty(s.AppReferenceNumber)))
+        {
+            _logger.LogWarning("SMAL-332 patch: Removed duplicate CsoLargeProducer submission for organisation {OrganisationId}, retained original submission", request.OrganisationId);
+            var originalSubmission = submissions.Where(s => string.IsNullOrEmpty(s.RegistrationJourney) && !string.IsNullOrEmpty(s.AppReferenceNumber))
+                .OrderByDescending(s => s.Created)
+                .First();
+
+            return new List<Submission> { originalSubmission };
+        }
+
+        return submissions;
     }
 }
