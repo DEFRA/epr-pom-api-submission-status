@@ -4,9 +4,12 @@ using System.Runtime.CompilerServices;
 using EPR.SubmissionMicroservice.Application.Behaviours;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common.Interfaces;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common.Services;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionGet;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
 using EPR.SubmissionMicroservice.Application.Options;
 using ErrorOr;
 using FluentValidation;
@@ -42,6 +45,7 @@ public static class ConfigureServices
             .AddScoped<ICompaniesHouseSubmissionEventHelper, CompaniesHouseSubmissionEventHelper>()
             .AddScoped<IAccreditationSubmissionEventHelper, AccreditationSubmissionEventHelper>()
             .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
+            .AddScoped<ISubmissionHydrationService, SubmissionHydrationService>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();
 
@@ -58,6 +62,9 @@ public static class ConfigureServices
                 
                 // GetSubmission chain. QueryHandler -> above behaviours -> Hydrate submission
                 cfg.AddBehavior<IPipelineBehavior<SubmissionGetQuery, ErrorOr<AbstractSubmissionGetResponse>>, HydrateSubmissionBehaviour>();
+                
+                // GetSubmissions chain. QueryHandler -> above behaviours -> Hydrate each submission
+                cfg.AddBehavior<IPipelineBehavior<SubmissionsGetQuery, ErrorOr<List<AbstractSubmissionGetResponse>>>, HydrateSubmissionsBehaviour>();
             });
     }
 }

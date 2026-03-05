@@ -1,4 +1,5 @@
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common.Interfaces;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionGet;
 using EPR.SubmissionMicroservice.Data.Enums;
 using MediatR;
@@ -8,8 +9,16 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.Subm
 [TestClass]
 public class HydrateSubmissionBehaviourTests
 {
+    private Mock<ISubmissionHydrationService> _submissionHydrationServiceMock;
+
+    [TestInitialize]
+    public void SetUp()
+    {
+        _submissionHydrationServiceMock = new Mock<ISubmissionHydrationService>();
+    }
+
     [TestMethod]
-    public async Task Handle_WhenResponseIsError_ShouldReturnError()
+    public async Task Handle_WhenResponseIsError_ShouldReturnErrorWithoutCallingHydrationService()
     {
         // Arrange
         var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
@@ -18,7 +27,7 @@ public class HydrateSubmissionBehaviourTests
         var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
         requestHandlerDelegate.Setup(x => x()).ReturnsAsync(testError);
 
-        var behaviour = new HydrateSubmissionBehaviour();
+        var behaviour = new HydrateSubmissionBehaviour(_submissionHydrationServiceMock.Object);
 
         // Act
         var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
@@ -26,10 +35,11 @@ public class HydrateSubmissionBehaviourTests
         // Assert
         result.IsError.Should().BeTrue();
         result.FirstError.Should().Be(testError);
+        _submissionHydrationServiceMock.Verify(x => x.Hydrate(It.IsAny<AbstractSubmissionGetResponse>()), Times.Never);
     }
 
     [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsNotRegistration_ShouldReturnSubmissionUnchanged()
+    public async Task Handle_WhenResponseIsSuccess_ShouldCallHydrationServiceAndReturnSubmission()
     {
         // Arrange
         var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
@@ -38,7 +48,7 @@ public class HydrateSubmissionBehaviourTests
         var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
         requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
 
-        var behaviour = new HydrateSubmissionBehaviour();
+        var behaviour = new HydrateSubmissionBehaviour(_submissionHydrationServiceMock.Object);
 
         // Act
         var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
@@ -46,12 +56,11 @@ public class HydrateSubmissionBehaviourTests
         // Assert
         result.IsError.Should().BeFalse();
         result.Value.Should().Be(submission);
-        result.Value.RegistrationYear.Should().BeNull();
-        result.Value.RegistrationJourney.Should().BeNull();
+        _submissionHydrationServiceMock.Verify(x => x.Hydrate(submission), Times.Once);
     }
 
     [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWithValidYear_ShouldSetRegistrationYear()
+    public async Task Handle_WhenResponseIsSuccessWithRegistration_ShouldCallHydrationService()
     {
         // Arrange
         var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
@@ -60,182 +69,15 @@ public class HydrateSubmissionBehaviourTests
         var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
         requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
 
-        var behaviour = new HydrateSubmissionBehaviour();
+        var behaviour = new HydrateSubmissionBehaviour(_submissionHydrationServiceMock.Object);
 
         // Act
         var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
 
         // Assert
         result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().Be(2026);
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWith2025Year_ShouldSetRegistrationYearCorrectly()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var submission = CreateTestSubmission(submissionType: SubmissionType.Registration, submissionPeriod: "Apr2025");
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().Be(2025);
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWithInvalidYear_ShouldNotSetRegistrationYear()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var submission = CreateTestSubmission(submissionType: SubmissionType.Registration, submissionPeriod: "PXXX");
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().BeNull();
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWithShortPeriod_ShouldNotSetRegistrationYear()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var submission = CreateTestSubmission(submissionType: SubmissionType.Registration, submissionPeriod: "P");
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().BeNull();
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWith2026AndComplianceSchemeAndNullJourney_ShouldSetRegistrationJourneyToCsoLargeProducer()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var complianceSchemeId = Guid.NewGuid();
-        var submission = CreateTestSubmission(
-            submissionType: SubmissionType.Registration,
-            submissionPeriod: "Apr2026",
-            complianceSchemeId: complianceSchemeId,
-            registrationJourney: null);
-
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().Be(2026);
-        result.Value.RegistrationJourney.Should().Be(RegistrationJourney.CsoLargeProducer.ToString());
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWith2026AndNoComplianceScheme_ShouldNotSetRegistrationJourney()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var submission = CreateTestSubmission(
-            submissionType: SubmissionType.Registration,
-            submissionPeriod: "Apr2026",
-            complianceSchemeId: null,
-            registrationJourney: null);
-
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().Be(2026);
-        result.Value.RegistrationJourney.Should().BeNull();
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWith2026AndExistingJourney_ShouldNotOverwriteRegistrationJourney()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var complianceSchemeId = Guid.NewGuid();
-        var existingJourney = RegistrationJourney.DirectLargeProducer.ToString();
-        var submission = CreateTestSubmission(
-            submissionType: SubmissionType.Registration,
-            submissionPeriod: "Apr2026",
-            complianceSchemeId: complianceSchemeId,
-            registrationJourney: existingJourney);
-
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().Be(2026);
-        result.Value.RegistrationJourney.Should().Be(existingJourney);
-    }
-
-    [TestMethod]
-    public async Task Handle_WhenSubmissionTypeIsRegistrationWith2025AndComplianceScheme_ShouldNotSetRegistrationJourney()
-    {
-        // Arrange
-        var request = new SubmissionGetQuery(Guid.NewGuid(), Guid.NewGuid());
-        var cancellationToken = CancellationToken.None;
-        var complianceSchemeId = Guid.NewGuid();
-        var submission = CreateTestSubmission(
-            submissionType: SubmissionType.Registration,
-            submissionPeriod: "Apr2025",
-            complianceSchemeId: complianceSchemeId,
-            registrationJourney: null);
-
-        var requestHandlerDelegate = new Mock<RequestHandlerDelegate<ErrorOr<AbstractSubmissionGetResponse>>>();
-        requestHandlerDelegate.Setup(x => x()).ReturnsAsync(submission);
-
-        var behaviour = new HydrateSubmissionBehaviour();
-
-        // Act
-        var result = await behaviour.Handle(request, requestHandlerDelegate.Object, cancellationToken);
-
-        // Assert
-        result.IsError.Should().BeFalse();
-        result.Value.RegistrationYear.Should().Be(2025);
-        result.Value.RegistrationJourney.Should().BeNull();
+        result.Value.Should().Be(submission);
+        _submissionHydrationServiceMock.Verify(x => x.Hydrate(submission), Times.Once);
     }
 
     private TestSubmissionGetResponse CreateTestSubmission(
