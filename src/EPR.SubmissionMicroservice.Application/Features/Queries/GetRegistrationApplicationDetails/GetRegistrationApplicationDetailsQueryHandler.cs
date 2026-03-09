@@ -318,6 +318,11 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         submissions = ApplySmal378Patch(submissions, request);
         // ----------------------------------------------------------------------
 
+        // ----------------------------------------------------------------------
+        // ELS-224 patch
+        ApplyEls224Patch(submissions, request);
+        // ----------------------------------------------------------------------
+
         return submissions.FirstOrDefault();
     }
 
@@ -340,5 +345,21 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         }
 
         return submissions;
+    }
+
+    [ExcludeFromCodeCoverage]
+    private void ApplyEls224Patch(List<Submission> submissions, GetRegistrationApplicationDetailsQuery request)
+    {
+        // ELS-224 patch: Fix bug where direct producers registered before 1st Oct 2025
+        // incorrectly have an 'S' suffix due to resubmission prior to app ref number logic corrections.
+        // Remove 'S' suffix for all direct producers (not compliance schemes).
+        if (submissions.Count == 1
+            && !string.IsNullOrEmpty(submissions[0].AppReferenceNumber)
+            && submissions[0].AppReferenceNumber.EndsWith('S')
+            && submissions[0].ComplianceSchemeId is null // important - only direct producers, not compliance schemes
+            )
+        {
+            submissions[0].AppReferenceNumber = submissions[0].AppReferenceNumber.TrimEnd('S');
+        }
     }
 }
