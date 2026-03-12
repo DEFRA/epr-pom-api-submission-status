@@ -1,5 +1,4 @@
 ﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
-using EPR.SubmissionMicroservice.Application.Options;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
@@ -7,10 +6,8 @@ using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
-using Microsoft.Azure.Cosmos.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
 using static EPR.SubmissionMicroservice.Application.Features.Queries.Common.GetRegistrationApplicationDetailsResponse;
 
@@ -19,7 +16,6 @@ namespace EPR.SubmissionMicroservice.Application.Features.Queries.GetRegistratio
 public class GetRegistrationApplicationDetailsQueryHandler(
     IQueryRepository<Submission> submissionQueryRepository,
     IQueryRepository<AbstractSubmissionEvent> submissionEventQueryRepository,
-    IOptions<FeatureFlagOptions> featureFlagOptions,
     ILogger<GetRegistrationApplicationDetailsQueryHandler> logger)
     : IRequestHandler<GetRegistrationApplicationDetailsQuery, ErrorOr<GetRegistrationApplicationDetailsResponse>>
 {
@@ -88,7 +84,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             RegistrationReferenceNumber = regulatorRegistrationDecisionEvents.Find(x => !string.IsNullOrWhiteSpace(x.RegistrationReferenceNumber) && x.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved)?.RegistrationReferenceNumber,
             HasAnyApprovedOrQueriedRegulatorDecision = submissionEvents
                 .OfType<RegulatorRegistrationDecisionEvent>()
-                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved || (featureFlagOptions.Value.IsQueryLateFeeEnabled && submission.SubmissionPeriod.Contains("2026") && d.Decision == RegulatorDecision.Queried)),
+                .Any(d => d.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved or RegulatorDecision.Queried),
             IsLatestSubmittedEventAfterFileUpload = isLatestSubmittedEventAfterFileUpload,
             LatestSubmittedEventCreatedDatetime = latestSubmittedEventCreatedDatetime,
             FirstApplicationSubmittedEventCreatedDatetime = firstApplicationSubmittedEvent?.Created.Date,
