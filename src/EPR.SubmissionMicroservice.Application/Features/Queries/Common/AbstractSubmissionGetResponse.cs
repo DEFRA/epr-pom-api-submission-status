@@ -33,4 +33,6 @@ public abstract class AbstractSubmissionGetResponse
     public Guid? ComplianceSchemeId { get; set; }
 
     public string? RegistrationJourney { get; set; }
+    
+    public int? RegistrationYear { get; set; }
 }

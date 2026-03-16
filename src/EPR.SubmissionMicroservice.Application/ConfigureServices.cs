@@ -1,15 +1,23 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using EPR.SubmissionMicroservice.Application.Behaviours;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common.Interfaces;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common.Services;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionGet;
+using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
 using EPR.SubmissionMicroservice.Application.Options;
+using ErrorOr;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+[assembly: InternalsVisibleTo("EPR.SubmissionMicroservice.Application.UnitTests")]
 namespace EPR.SubmissionMicroservice.Application;
 
 [ExcludeFromCodeCoverage]
@@ -36,14 +44,26 @@ public static class ConfigureServices
             .AddScoped<ICompaniesHouseSubmissionEventHelper, CompaniesHouseSubmissionEventHelper>()
             .AddScoped<IAccreditationSubmissionEventHelper, AccreditationSubmissionEventHelper>()
             .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
+            .AddScoped<ISubmissionHydrationService, SubmissionHydrationService>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();
 
-    private static IServiceCollection AddMediatrAndPipelines(this IServiceCollection services) =>
-        services
-            .AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()))
-            .AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>))
-            .AddTransient(typeof(IPipelineBehavior<,>), typeof(UnhandledExceptionBehaviour<,>))
-            .AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehaviour<,>))
-            .AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
+    private static IServiceCollection AddMediatrAndPipelines(this IServiceCollection services)
+    {
+        return services
+            .AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+                cfg.AddOpenBehavior(typeof(ValidationBehaviour<,>));
+                cfg.AddOpenBehavior(typeof(UnhandledExceptionBehaviour<,>));
+                cfg.AddOpenBehavior(typeof(LoggingBehaviour<,>));
+                cfg.AddOpenBehavior(typeof(PerformanceBehaviour<,>));
+                
+                // GetSubmission chain. QueryHandler -> above behaviours -> Hydrate submission
+                cfg.AddBehavior<IPipelineBehavior<SubmissionGetQuery, ErrorOr<AbstractSubmissionGetResponse>>, HydrateSubmissionBehaviour>();
+                
+                // GetSubmissions chain. QueryHandler -> above behaviours -> Hydrate each submission
+                cfg.AddBehavior<IPipelineBehavior<SubmissionsGetQuery, ErrorOr<List<AbstractSubmissionGetResponse>>>, HydrateSubmissionsBehaviour>();
+            });
+    }
 }
