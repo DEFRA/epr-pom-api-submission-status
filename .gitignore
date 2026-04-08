@@ -408,3 +408,6 @@ FodyWeavers.xsd
 **/obj
 
 **/appsettings.Development.json
+
+# Local Cosmos emulator TLS export (docker compose cert-export service)
+tests/integration/.cosmos-certs/

@@ -62,7 +62,39 @@ dotnet test
 N/A
 
 ### Integration tests
-N/A
+Integration tests use Azure Cosmos DB and can be run locally with the Cosmos Emulator in Docker.
+
+**Cosmos account key (required):** The test harness does not embed an account key. You must provide the Cosmos DB primary key before running integration tests:
+
+- **CI / pipelines:** Inject the `CosmosAccountKey` environment variable (for example as a secret variable mapped in your pipeline). The integration test project reads `CosmosAccountKey` and sets `Database__AccountKey` for the test host.
+- **Local:** Export `CosmosAccountKey` to your emulator’s primary key (see [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/emulator)) or set `Database__AccountKey` directly instead.
+
+Example local run (after starting the emulator):
+
+```bash
+export CosmosAccountKey="<your-cosmos-primary-key>"
+docker compose up
+dotnet test ./src/EPR.SubmissionMicroservice.API.IntegrationTests/EPR.SubmissionMicroservice.API.IntegrationTests.csproj --filter "Category=IntegrationTest"
+```
+
+Route-to-test mapping for maintenance: [tests/integration/INTEGRATION_COVERAGE_CHECKLIST.md](tests/integration/INTEGRATION_COVERAGE_CHECKLIST.md).
+
+Producer and registration submit success paths are covered in `SubmissionSubmitContractTests` (producer requires a minimal PoM chain matching `PomSubmissionEventHelper.VerifyFileIdIsForValidFileAsync`).
+
+When finished:
+
+```bash
+docker compose down
+```
+
+Other defaults set by the integration harness (unless you override them):
+
+- `Database__ConnectionString=https://localhost:8081/`
+- `Database__Name=SubmissionDB`
+
+Notes:
+- The emulator readiness check uses `https://localhost:8081/` (not explorer-specific paths).
+- Tests also set `Database__IgnoreCertificateErrors=true` in the harness; installing the CA is still recommended for parity with production TLS behavior.
 
 ## How To Debug
 Use debugging tools in your chosen IDE
