@@ -115,7 +115,7 @@ public class SubmissionSubmitContractTests : TestBase
             requiresBrandsFile = false,
             requiresPartnershipsFile = false,
             organisationMemberCount = 10,
-            registrationJourney = "CsoLargeProducer",
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
             blobName,
         });
 
@@ -138,7 +138,7 @@ public class SubmissionSubmitContractTests : TestBase
             fileId,
             appReferenceNumber = "APP-SUBMIT",
             isResubmission = false,
-            registrationJourney = "CsoLargeProducer",
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
         };
 
         var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);

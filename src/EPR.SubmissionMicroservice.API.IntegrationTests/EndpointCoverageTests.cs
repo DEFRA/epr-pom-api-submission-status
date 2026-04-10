@@ -81,7 +81,7 @@ public class EndpointCoverageTests : TestBase
             fileId = Guid.NewGuid(),
             appReferenceNumber = "APP-123",
             isResubmission = false,
-            registrationJourney = "CsoLargeProducer",
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
         });
 
         var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{Guid.NewGuid()}/submit", payload);
@@ -94,7 +94,7 @@ public class EndpointCoverageTests : TestBase
     {
         var organisationId = Guid.NewGuid();
         var path =
-            $"/v1/submissions/get-registration-application-details?OrganisationId={organisationId}&SubmissionPeriod=2026&LateFeeDeadline=2026-01-01";
+            $"/v1/submissions/get-registration-application-details?OrganisationId={organisationId}&SubmissionPeriod=January to December 2026&LateFeeDeadline=2026-01-01";
         var response = await HttpClient.GetAsync(path);
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -108,7 +108,7 @@ public class EndpointCoverageTests : TestBase
     {
         var organisationId = Guid.Parse(OrganisationId);
         var path =
-            $"/v1/submissions/get-packaging-data-resubmission-application-details?OrganisationId={organisationId}&SubmissionPeriods=2024";
+            $"/v1/submissions/get-packaging-data-resubmission-application-details?OrganisationId={organisationId}&SubmissionPeriods=January to December 2026";
         var response = await HttpClient.GetAsync(path);
         response.Content.Headers.ContentType.Should().NotBeNull();
         response.Content.Headers.ContentType!.MediaType.Should().Be("application/json");

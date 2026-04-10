@@ -102,7 +102,7 @@ public static class TestRequests
                 requiresBrandsFile = false,
                 requiresPartnershipsFile = false,
                 organisationMemberCount = 10,
-                registrationJourney = "CsoLargeProducer"
+                registrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
             });
         }
 

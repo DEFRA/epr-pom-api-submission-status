@@ -55,7 +55,7 @@ public class DecisionIntegrationTests : TestBase
             requiresBrandsFile = false,
             requiresPartnershipsFile = false,
             organisationMemberCount = 10,
-            registrationJourney = "CsoLargeProducer",
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
             blobName,
         });
 
@@ -75,7 +75,7 @@ public class DecisionIntegrationTests : TestBase
             fileId,
             appReferenceNumber = "APP-DEC",
             isResubmission = false,
-            registrationJourney = "CsoLargeProducer",
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
         };
         var submitResponse = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
         submitResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);

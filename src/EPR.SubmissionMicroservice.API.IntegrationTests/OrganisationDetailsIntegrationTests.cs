@@ -30,7 +30,7 @@ public class OrganisationDetailsIntegrationTests : TestBase
         var createSubmission = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Registration);
         createSubmission.Id = submissionId;
         createSubmission.SubmissionPeriod = "January to December 2026";
-        createSubmission.RegistrationJourney = "CsoLargeProducer";
+        createSubmission.RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString();
         (await HttpClient.PostAsJsonAsync("/v1/submissions", createSubmission)).Should()
             .HaveStatusCode(HttpStatusCode.Created);
 
@@ -59,7 +59,7 @@ public class OrganisationDetailsIntegrationTests : TestBase
                 requiresBrandsFile = true,
                 requiresPartnershipsFile = true,
                 organisationMemberCount = 10,
-                registrationJourney = "CsoLargeProducer",
+                registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
                 blobName = registrationBlobName,
             }),
             JObject.FromObject(new
@@ -101,7 +101,7 @@ public class OrganisationDetailsIntegrationTests : TestBase
 
         var body = await AssertJsonObjectResponseAsync(response);
         body["blobName"]!.Value<string>().Should().Be(registrationBlobName);
-        body["submissionPeriod"]!.Value<string>().Should().Be("January to December 2026");
-        body["registrationJourney"]!.Value<string>().Should().Be("CsoLargeProducer");
+        body["submissionPeriod"]!.Value<string>().Should().Be(createSubmission.SubmissionPeriod);
+        body["registrationJourney"]!.Value<string>().Should().Be(createSubmission.RegistrationJourney);
     }
 }

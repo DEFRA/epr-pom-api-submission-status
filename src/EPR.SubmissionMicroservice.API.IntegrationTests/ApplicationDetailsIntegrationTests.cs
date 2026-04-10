@@ -18,20 +18,20 @@ public class ApplicationDetailsIntegrationTests : TestBase
         var createRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Registration);
         createRequest.Id = submissionId;
         createRequest.SubmissionPeriod = "January to December 2026";
-        createRequest.RegistrationJourney = "CsoLargeProducer";
+        createRequest.RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString();
 
         (await HttpClient.PostAsJsonAsync("/v1/submissions", createRequest)).Should()
             .HaveStatusCode(HttpStatusCode.Created);
 
         var organisationId = Guid.Parse(OrganisationId);
         var path =
-            $"/v1/submissions/get-registration-application-details?OrganisationId={organisationId}&SubmissionPeriod={createRequest.SubmissionPeriod}&LateFeeDeadline=2026-12-31&RegistrationJourney=CsoLargeProducer";
+            $"/v1/submissions/get-registration-application-details?OrganisationId={organisationId}&SubmissionPeriod={createRequest.SubmissionPeriod}&LateFeeDeadline=2026-12-31&RegistrationJourney={createRequest.RegistrationJourney}";
 
         var response = await HttpClient.GetAsync(path);
         var body = await AssertJsonObjectResponseAsync(response);
 
         Guid.Parse(body["submissionId"]!.ToString()).Should().Be(submissionId);
-        body["registrationJourney"]!.Value<string>().Should().Be("CsoLargeProducer");
+        body["registrationJourney"]!.Value<string>().Should().Be(createRequest.RegistrationJourney);
         body["applicationStatus"]!.ToString().Should().NotBeNullOrWhiteSpace();
         body["isSubmitted"]!.Type.Should().Be(JTokenType.Boolean);
     }
