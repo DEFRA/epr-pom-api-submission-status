@@ -2,11 +2,9 @@
 
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Data.Enums;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
 using TestSupport;
 
 [TestClass]
@@ -60,6 +58,7 @@ public class SubmissionTests : TestBase
         Guid.Parse(body["id"]!.ToString()).Should().Be(request.Id);
         body["submissionType"].Should().NotBeNull();
         body["organisationId"]!.ToString().Should().Be(OrganisationId);
+        body["submissionPeriod"]!.ToString().Should().Be(request.SubmissionPeriod);
     }
 
     [TestMethod]

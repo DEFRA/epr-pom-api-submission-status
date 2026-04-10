@@ -17,7 +17,7 @@ public class ApplicationDetailsIntegrationTests : TestBase
         var submissionId = Guid.NewGuid();
         var createRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Registration);
         createRequest.Id = submissionId;
-        createRequest.SubmissionPeriod = "2022";
+        createRequest.SubmissionPeriod = "January to December 2026";
         createRequest.RegistrationJourney = "CsoLargeProducer";
 
         (await HttpClient.PostAsJsonAsync("/v1/submissions", createRequest)).Should()
@@ -25,7 +25,7 @@ public class ApplicationDetailsIntegrationTests : TestBase
 
         var organisationId = Guid.Parse(OrganisationId);
         var path =
-            $"/v1/submissions/get-registration-application-details?OrganisationId={organisationId}&SubmissionPeriod=2022&LateFeeDeadline=2026-12-31&RegistrationJourney=CsoLargeProducer";
+            $"/v1/submissions/get-registration-application-details?OrganisationId={organisationId}&SubmissionPeriod={createRequest.SubmissionPeriod}&LateFeeDeadline=2026-12-31&RegistrationJourney=CsoLargeProducer";
 
         var response = await HttpClient.GetAsync(path);
         var body = await AssertJsonObjectResponseAsync(response);
@@ -43,14 +43,14 @@ public class ApplicationDetailsIntegrationTests : TestBase
         var submissionId = Guid.NewGuid();
         var createRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
         createRequest.Id = submissionId;
-        createRequest.SubmissionPeriod = "2024";
+        createRequest.SubmissionPeriod = "January to December 2026";
 
         (await HttpClient.PostAsJsonAsync("/v1/submissions", createRequest)).Should()
             .HaveStatusCode(HttpStatusCode.Created);
 
         var organisationId = Guid.Parse(OrganisationId);
         var path =
-            $"/v1/submissions/get-packaging-data-resubmission-application-details?OrganisationId={organisationId}&SubmissionPeriods=2024";
+            $"/v1/submissions/get-packaging-data-resubmission-application-details?OrganisationId={organisationId}&SubmissionPeriods={createRequest.SubmissionPeriod}";
 
         var response = await HttpClient.GetAsync(path);
         var body = await AssertJsonArrayResponseAsync(response);

@@ -91,7 +91,7 @@ public class SubmissionSubmitContractTests : TestBase
         await CreateSubmissionAsync(SubmissionType.Registration, submissionId);
 
         var fileId = Guid.NewGuid();
-        const string blobName = "integration-submit-blob.csv";
+        var blobName = $"integration-submit-{Guid.NewGuid():N}.csv";
 
         var antivirusCheck = JObject.FromObject(new
         {

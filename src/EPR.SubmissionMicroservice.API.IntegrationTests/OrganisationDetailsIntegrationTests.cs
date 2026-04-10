@@ -29,7 +29,7 @@ public class OrganisationDetailsIntegrationTests : TestBase
 
         var createSubmission = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Registration);
         createSubmission.Id = submissionId;
-        createSubmission.SubmissionPeriod = "Jan to Jun 23";
+        createSubmission.SubmissionPeriod = "January to December 2026";
         createSubmission.RegistrationJourney = "CsoLargeProducer";
         (await HttpClient.PostAsJsonAsync("/v1/submissions", createSubmission)).Should()
             .HaveStatusCode(HttpStatusCode.Created);
@@ -101,7 +101,7 @@ public class OrganisationDetailsIntegrationTests : TestBase
 
         var body = await AssertJsonObjectResponseAsync(response);
         body["blobName"]!.Value<string>().Should().Be(registrationBlobName);
-        body["submissionPeriod"]!.Value<string>().Should().Be("Jan to Jun 23");
+        body["submissionPeriod"]!.Value<string>().Should().Be("January to December 2026");
         body["registrationJourney"]!.Value<string>().Should().Be("CsoLargeProducer");
     }
 }

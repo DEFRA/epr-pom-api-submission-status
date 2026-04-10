@@ -31,7 +31,7 @@ public class DecisionIntegrationTests : TestBase
         await CreateSubmissionAsync(SubmissionType.Registration, submissionId);
 
         var fileId = Guid.NewGuid();
-        const string blobName = "integration-decisions-blob.csv";
+        var blobName = $"integration-decisions-{Guid.NewGuid():N}.csv";
 
         var antivirusCheck = JObject.FromObject(new
         {
