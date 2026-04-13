@@ -35,6 +35,10 @@ public static class TestRequests
                 EventType.RegulatorRegistrationDecision => ValidRegulatorRegistrationDecisionEventCreateRequest(),
                 EventType.RegistrationFeePayment => ValidRegistrationFeePaymentEventCreateRequest(),
                 EventType.PackagingDataResubmissionFeePayment => ValidPackagingDataResubmissionFeePaymentCreateRequest(),
+                EventType.FileDownloadCheck => ValidFileDownloadCheckEventCreateRequest(),
+                EventType.RegistrationApplicationSubmitted => ValidRegistrationApplicationSubmittedEventCreateRequest(),
+                EventType.SubsidiariesBulkUploadComplete => ValidSubsidiariesBulkUploadCompleteEventCreateRequest(),
+                EventType.PackagingResubmissionReferenceNumberCreated => ValidPackagingResubmissionReferenceNumberCreatedRequest(),
                 _ => throw new NotImplementedException()
             };
         }
@@ -98,7 +102,7 @@ public static class TestRequests
                 requiresBrandsFile = false,
                 requiresPartnershipsFile = false,
                 organisationMemberCount = 10,
-                registrationJourney = "CsoLargeProducer"
+                registrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
             });
         }
 
@@ -183,7 +187,31 @@ public static class TestRequests
             return JObject.FromObject(new
             {
                 type = EventType.FileDownloadCheck,
-                decision = RegulatorDecision.Accepted
+                fileId = Guid.NewGuid(),
+                fileName = "download-check.csv",
+                userEmail = "integration.test@example.com",
+                contentScan = "clean",
+                submissionType = SubmissionType.Producer,
+            });
+        }
+
+        public static JObject ValidRegistrationApplicationSubmittedEventCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.RegistrationApplicationSubmitted,
+                applicationReferenceNumber = "PEPR-INT-REF-001",
+                submissionDate = new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc),
+                comments = "integration",
+            });
+        }
+
+        public static JObject ValidSubsidiariesBulkUploadCompleteEventCreateRequest()
+        {
+            return JObject.FromObject(new
+            {
+                type = EventType.SubsidiariesBulkUploadComplete,
+                fileName = "subsidiaries-upload.csv",
             });
         }
 

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Common.Functions.Database.Context.Interfaces;
 using Common.Functions.Extensions;
 using Microsoft.Azure.Cosmos;
+using System.Net.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +41,11 @@ public static class ConfigureServices
         IServiceProvider serviceProvider)
     {
         var databaseOptions = serviceProvider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+        var ignoreCertificateErrors = string.Equals(
+            Environment.GetEnvironmentVariable("Database__IgnoreCertificateErrors"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
         return services.AddDbContext<IEprCommonContext, SubmissionContext>(
             options =>
             {
@@ -50,6 +56,15 @@ public static class ConfigureServices
                     c =>
                     {
                         c.ConnectionMode(ConnectionMode.Gateway);
+                        if (ignoreCertificateErrors)
+                        {
+                            c.HttpClientFactory(() => new HttpClient(
+                                new HttpClientHandler
+                                {
+                                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+                                }));
+                        }
+
                         c.ExecutionStrategy(x =>
                             new CosmosDbRetryExecutionStrategy(
                                 x.CurrentContext.Context,

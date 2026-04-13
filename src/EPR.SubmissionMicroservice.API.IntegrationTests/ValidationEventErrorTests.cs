@@ -13,15 +13,16 @@ public class ValidationEventErrorTests : TestBase
 {
     private const string ValidationEventErrorBasePath = "/v1/submissions/{0}/producer-validations";
     private const string ValidationEventWarningBasePath = "/v1/submissions/{0}/producer-warning-validations";
+    private const string OrganisationValidationErrorPath = "/v1/submissions/{0}/organisation-details-errors";
+    private const string OrganisationValidationWarningPath = "/v1/submissions/{0}/organisation-details-warnings";
     private const string SubmissionsBasePath = "/v1/submissions";
     private const string SubmissionEventsBasePath = "/v1/submissions/{0}/events";
 
     [TestMethod]
-    public async Task Get_ReturnsOK_WhenProducerValidationExists()
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task GetProducerValidationErrors_ReturnsErrors_WhenProducerValidationExists()
     {
-        // Arrange
         var submissionId = Guid.NewGuid();
-
         var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
         submissionRequest.Id = submissionId;
         await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
@@ -39,21 +40,19 @@ public class ValidationEventErrorTests : TestBase
             Encoding.UTF8,
             "application/json");
         var producerValidationCreateResponse = await HttpClient.PostAsync(submissionEventsPath, requestStringContent);
+        producerValidationCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        // Act
         var errorPath = string.Format(ValidationEventErrorBasePath, submissionId);
         var response = await HttpClient.GetAsync(errorPath);
 
-        // Assert
-        response.Should().HaveStatusCode(HttpStatusCode.OK);
+        await AssertJsonArrayResponseAsync(response);
     }
 
     [TestMethod]
-    public async Task Get_ReturnsOK_WhenProducerValidationWarningsExists()
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task GetProducerValidationWarnings_ReturnsWarnings_WhenProducerValidationWarningsExist()
     {
-        // Arrange
         var submissionId = Guid.NewGuid();
-
         var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
         submissionRequest.Id = submissionId;
         await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
@@ -70,21 +69,19 @@ public class ValidationEventErrorTests : TestBase
             Encoding.UTF8,
             "application/json");
         var producerValidationCreateResponse = await HttpClient.PostAsync(submissionEventsPath, requestStringContent);
+        producerValidationCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        // Act
         var errorPath = string.Format(ValidationEventWarningBasePath, submissionId);
         var response = await HttpClient.GetAsync(errorPath);
 
-        // Assert
-        response.Should().HaveStatusCode(HttpStatusCode.OK);
+        await AssertJsonArrayResponseAsync(response);
     }
 
     [TestMethod]
-    public async Task Get_ReturnsOK_WhenCheckSplitterWarningsExists()
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task GetProducerValidationWarnings_ReturnsWarnings_WhenCheckSplitterWarningsExist()
     {
-        // Arrange
         var submissionId = Guid.NewGuid();
-
         var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
         submissionRequest.Id = submissionId;
         await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
@@ -101,12 +98,27 @@ public class ValidationEventErrorTests : TestBase
             Encoding.UTF8,
             "application/json");
         var checkSplitterCreateResponse = await HttpClient.PostAsync(submissionEventsPath, requestStringContent);
+        checkSplitterCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        // Act
         var errorPath = string.Format(ValidationEventWarningBasePath, submissionId);
         var response = await HttpClient.GetAsync(errorPath);
 
-        // Assert
-        response.Should().HaveStatusCode(HttpStatusCode.OK);
+        await AssertJsonArrayResponseAsync(response);
+    }
+
+    [TestMethod]
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task GetOrganisationDetailValidationErrors_ReturnsBadRequest_WhenSubmissionDoesNotExist()
+    {
+        var response = await HttpClient.GetAsync(string.Format(OrganisationValidationErrorPath, Guid.NewGuid()));
+        await AssertValidationProblemAsync(response, "SubmissionId");
+    }
+
+    [TestMethod]
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task GetOrganisationDetailValidationWarnings_ReturnsBadRequest_WhenSubmissionDoesNotExist()
+    {
+        var response = await HttpClient.GetAsync(string.Format(OrganisationValidationWarningPath, Guid.NewGuid()));
+        await AssertValidationProblemAsync(response, "SubmissionId");
     }
 }

@@ -19,7 +19,7 @@ public static class TestCommands
                 SubmissionPeriod = "2022",
                 OrganisationId = Guid.NewGuid(),
                 UserId = Guid.NewGuid(),
-                RegistrationJourney = "CsoLargeProducer"
+                RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
             };
         }
 
@@ -221,7 +221,7 @@ public static class TestCommands
                 PaidAmount = "£100.00",
                 PaymentMethod = "Offline",
                 PaymentStatus = "Paid",
-                RegistrationJourney = "CsoLargeProducer"
+                RegistrationJourney = RegistrationJourney.CsoLargeProducer.ToString()
             };
         }
 
