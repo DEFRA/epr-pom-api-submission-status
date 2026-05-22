@@ -7,3 +7,43 @@ services:
       - "1234:1234"
     environment:
       PROTOCOL: https
+
+  servicebus-emulator:
+    container_name: "submissions-api-servicebus-emulator"
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    pull_policy: always
+    volumes:
+      - "./docker-compose-servicebus-config.json:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+    environment:
+      SQL_SERVER: sql
+      MSSQL_SA_PASSWORD: "${SQL_PASSWORD}"  # Password should be same as what is set for SQL Edge  
+      ACCEPT_EULA: "Y"
+    depends_on:
+      sql:
+        condition: service_started
+    networks:
+      sb-emulator:
+        aliases:
+          - "sb-emulator"
+
+  sql:
+    container_name: submissions-api-sql
+    image: mcr.microsoft.com/azure-sql-edge
+    restart: always
+    cap_add:
+      - SYS_PTRACE
+    ports:
+      - "1433:1433"
+    networks:
+      sb-emulator:
+        aliases:
+          - "sql"
+    environment:
+      - ACCEPT_EULA=1
+      - SA_PASSWORD=${SQL_PASSWORD}
+
+networks:
+  sb-emulator:

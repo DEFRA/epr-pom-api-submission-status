@@ -29,7 +29,18 @@ Clone the [epr_common](https://dev.azure.com/defragovuk/RWD-CPR-EPR4P-ADO/_git/e
 
 ### Run
 
-- Complete `appsettings.json` file (or `appsettings.Development.json` if exists) with correct details
+1. Navigate to the project directory:
+1. Complete `appsettings.json` file (or `appsettings.Development.json` if exists) with correct details
+1. Start docker
+1. If you don't have one already, create a `.env` file in the root of the project. It should contain the sql password, in the form `SQL_PASSWORD=foobar`
+1. If you haven't pulled the docker images before, run
+   `docker compose pull`
+1. Run the docker containers
+   `docker compose up`
+1. To run the service locally:
+    ```bash
+    dotnet run
+    ```
 - On `EPR.SubmissionMicroservice.API` directory, execute:
 ```
 dotnet run
