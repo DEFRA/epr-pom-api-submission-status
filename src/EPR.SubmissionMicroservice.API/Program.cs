@@ -32,4 +32,9 @@ app.MapControllers();
 
 app.MapHealthChecks("/admin/health", HealthCheckOptionsBuilder.Build());
 
+// retrieve the logger
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+await app.Services.ConfigureMessaging(logger);
+
 app.Run();

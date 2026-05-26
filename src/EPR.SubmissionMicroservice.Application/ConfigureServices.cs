@@ -10,12 +10,14 @@ using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionGet;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing;
 using EPR.SubmissionMicroservice.Application.Options;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 [assembly: InternalsVisibleTo("EPR.SubmissionMicroservice.Application.UnitTests")]
 namespace EPR.SubmissionMicroservice.Application;
@@ -29,9 +31,26 @@ public static class ConfigureServices
         return services.AddBaseServices();
     }
 
+    public static async Task ConfigureMessaging(this IServiceProvider serviceProvider, ILogger logger)
+    {
+        using (logger.BeginScope("Configuring messaging"))
+        {
+            try
+            {
+                var topicCreator = serviceProvider.GetRequiredService<IServiceBusTopicCreator>();
+                await topicCreator.ConfigureTopics();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error while configuring messaging");
+            }
+        }
+    }
+
     private static void ConfigureOptions(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ValidationOptions>(configuration.GetSection(ValidationOptions.ConfigSection));
+        services.Configure<ServiceBusOptions>(configuration.GetSection(ServiceBusOptions.ConfigSection));
     }
 
     private static IServiceCollection AddBaseServices(this IServiceCollection services) =>
@@ -45,6 +64,7 @@ public static class ConfigureServices
             .AddScoped<IAccreditationSubmissionEventHelper, AccreditationSubmissionEventHelper>()
             .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
             .AddScoped<ISubmissionHydrationService, SubmissionHydrationService>()
+            .AddSingleton<IServiceBusTopicCreator, ServiceBusTopicCreator>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();
 
