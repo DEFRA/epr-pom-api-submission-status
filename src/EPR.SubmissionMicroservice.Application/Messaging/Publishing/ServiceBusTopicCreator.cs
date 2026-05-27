@@ -8,12 +8,15 @@ namespace EPR.SubmissionMicroservice.Application.Messaging.Publishing;
 public class ServiceBusTopicCreator : IServiceBusTopicCreator
 {
     private readonly ILogger<ServiceBusTopicCreator> _logger;
+    private readonly ServiceBusAdministrationClient _adminClient;
     private ServiceBusOptions _options;
 
     public ServiceBusTopicCreator(ILogger<ServiceBusTopicCreator> logger,
+        ServiceBusAdministrationClient serviceBusAdministrationClient,
         IOptions<ServiceBusOptions> serviceBusOptions)
     {
         _logger = logger;
+        _adminClient = serviceBusAdministrationClient;
         _options = serviceBusOptions.Value;
     }
 
@@ -21,10 +24,8 @@ public class ServiceBusTopicCreator : IServiceBusTopicCreator
     {
         using (_logger.BeginScope("Configuring service bus topics"))
         {
-            var adminClient = new ServiceBusAdministrationClient(_options.AdminConnectionString);
-
             var topicExistsResult =
-                await adminClient.TopicExistsAsync(_options.RegistrationSubmittedForFeesCalculationTopicName);
+                await _adminClient.TopicExistsAsync(_options.RegistrationSubmittedForFeesCalculationTopicName);
 
             if (!topicExistsResult.HasValue)
             {
@@ -37,7 +38,7 @@ public class ServiceBusTopicCreator : IServiceBusTopicCreator
             if (!topicExistsResult.Value)
             {
                 _logger.LogInformation("Creating topic {topicName}...", _options.RegistrationSubmittedForFeesCalculationTopicName);
-                await adminClient.CreateTopicAsync(_options.RegistrationSubmittedForFeesCalculationTopicName);
+                await _adminClient.CreateTopicAsync(_options.RegistrationSubmittedForFeesCalculationTopicName);
                 _logger.LogInformation("Topic {topicName} successfully created", _options.RegistrationSubmittedForFeesCalculationTopicName);
             }
         }

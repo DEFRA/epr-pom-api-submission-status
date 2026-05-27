@@ -15,6 +15,7 @@ using EPR.SubmissionMicroservice.Application.Options;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -28,7 +29,8 @@ public static class ConfigureServices
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         ConfigureOptions(services, configuration);
-        return services.AddBaseServices();
+        return services.AddBaseServices()
+            .AddMessagingServices(configuration);
     }
 
     public static async Task ConfigureMessaging(this IServiceProvider serviceProvider, ILogger logger)
@@ -64,10 +66,23 @@ public static class ConfigureServices
             .AddScoped<IAccreditationSubmissionEventHelper, AccreditationSubmissionEventHelper>()
             .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
             .AddScoped<ISubmissionHydrationService, SubmissionHydrationService>()
-            .AddSingleton<IServiceBusTopicCreator, ServiceBusTopicCreator>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();
 
+    private static IServiceCollection AddMessagingServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton<IServiceBusTopicCreator, ServiceBusTopicCreator>();
+        var config = configuration.GetSection(ServiceBusOptions.ConfigSection)
+            .Get<ServiceBusOptions>();
+
+        services.AddAzureClients(builder =>
+        {
+            builder.AddServiceAdministrationBusClient(config.AdminConnectionString);
+        });
+
+        return services;
+    }
+    
     private static IServiceCollection AddMediatrAndPipelines(this IServiceCollection services)
     {
         return services
