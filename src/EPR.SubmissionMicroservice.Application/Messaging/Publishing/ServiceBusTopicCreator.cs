@@ -9,7 +9,7 @@ public class ServiceBusTopicCreator : IServiceBusTopicCreator
 {
     private readonly ILogger<ServiceBusTopicCreator> _logger;
     private readonly ServiceBusAdministrationClient _adminClient;
-    private ServiceBusOptions _options;
+    private readonly ServiceBusOptions _options;
 
     public ServiceBusTopicCreator(ILogger<ServiceBusTopicCreator> logger,
         ServiceBusAdministrationClient serviceBusAdministrationClient,
