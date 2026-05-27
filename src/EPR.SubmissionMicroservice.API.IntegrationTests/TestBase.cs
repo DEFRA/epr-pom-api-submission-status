@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.IntegrationTests;
+﻿using Microsoft.Extensions.Configuration;
+
+namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -24,7 +26,6 @@ public class TestBase
     /// </summary>
     private static string DatabasePrimaryKeySettingName => string.Concat("Database__", "Account", "Key");
 
-    private const string EmulatorEndpoint = "https://localhost:8081/";
     private const string EmulatorDatabaseName = "SubmissionDB";
     private const string LoggingApiBaseUrl = "http://localhost";
     protected readonly string OrganisationId = Guid.NewGuid().ToString();
@@ -35,28 +36,23 @@ public class TestBase
     {
         ConfigureEmulatorDefaults();
 
-        var application = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.UseSetting("https_port", "80");
-            });
+        // builds config from only the test appsettings
+        var testConfig = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.test.json")
+            .Build();
 
-        HttpClient = application.CreateDefaultClient();
+        var factory = new CustomWebApplicationFactory(testConfig);
+        HttpClient = factory.CreateClient();
         HttpClient.BaseAddress = new Uri("https://localhost:8000");
         HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         HttpClient.DefaultRequestHeaders.Add("organisationId", OrganisationId);
         HttpClient.DefaultRequestHeaders.Add("userId", _userId);
 
-        EnsureCosmosContainersCreated(application.Services);
+        EnsureCosmosContainersCreated(factory.Services);
     }
 
     private static void ConfigureEmulatorDefaults()
     {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__ConnectionString")))
-        {
-            Environment.SetEnvironmentVariable("Database__ConnectionString", EmulatorEndpoint);
-        }
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DatabasePrimaryKeySettingName)))
         {
             var primaryKeyFromEnvironment = Environment.GetEnvironmentVariable(CosmosPrimaryKeyEnvVarName);
@@ -69,11 +65,6 @@ public class TestBase
             }
 
             Environment.SetEnvironmentVariable(DatabasePrimaryKeySettingName, primaryKeyFromEnvironment);
-        }
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__Name")))
-        {
-            Environment.SetEnvironmentVariable("Database__Name", EmulatorDatabaseName);
         }
 
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("LoggingApi__BaseUrl")))

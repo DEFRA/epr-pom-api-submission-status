@@ -1,0 +1,3 @@
+namespace EPR.SubmissionMicroservice.Application.Messaging.Publishing;
+
+public record RegistrationSubmittedForFeesCalculationEvent(string SubmissionId, DateTime CreatedDate);
