@@ -31,6 +31,11 @@ FROM defradigital/dotnetcore:dotnet8.0
 # Switch to the non-root user
 USER dotnet
 
+ARG BUILD_NUMBER
+ARG GIT_SHA
+ENV BUILD_NUMBER=$BUILD_NUMBER
+ENV GIT_SHA=$GIT_SHA
+
 COPY --from=build-env /home/dotnet/EPR.SubmissionMicroservice.API/out .
 
 # Expose the app on a defined port, configurable via a build argument
