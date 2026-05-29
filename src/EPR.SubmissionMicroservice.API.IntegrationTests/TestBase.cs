@@ -16,16 +16,6 @@ using Data.Enums;
 
 public class TestBase
 {
-    /// <summary>
-    /// CI/local env var name for the Cosmos DB primary key (built via <see cref="string.Concat(string, string, string)"/> so secret scanners do not see a single literal matching common Azure key patterns).
-    /// </summary>
-    private static string CosmosPrimaryKeyEnvVarName => string.Concat("Cosmos", "Account", "Key");
-
-    /// <summary>
-    /// Config key forwarded to the test host for the DB primary key (same concatenation approach as <see cref="CosmosPrimaryKeyEnvVarName"/>).
-    /// </summary>
-    private static string DatabasePrimaryKeySettingName => string.Concat("Database__", "Account", "Key");
-
     private const string EmulatorDatabaseName = "SubmissionDB";
     private const string LoggingApiBaseUrl = "http://localhost";
     protected readonly string OrganisationId = Guid.NewGuid().ToString();
@@ -53,20 +43,6 @@ public class TestBase
 
     private static void ConfigureEmulatorDefaults()
     {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DatabasePrimaryKeySettingName)))
-        {
-            var primaryKeyFromEnvironment = Environment.GetEnvironmentVariable(CosmosPrimaryKeyEnvVarName);
-            if (string.IsNullOrWhiteSpace(primaryKeyFromEnvironment))
-            {
-                throw new InvalidOperationException(
-                    $"Integration tests require a Cosmos DB account key. Set the '{CosmosPrimaryKeyEnvVarName}' " +
-                    $"environment variable (injected by CI), or set '{DatabasePrimaryKeySettingName}' directly. " +
-                    "For the Azure Cosmos DB Emulator, use the primary key from the emulator / Microsoft documentation.");
-            }
-
-            Environment.SetEnvironmentVariable(DatabasePrimaryKeySettingName, primaryKeyFromEnvironment);
-        }
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("LoggingApi__BaseUrl")))
         {
             Environment.SetEnvironmentVariable("LoggingApi__BaseUrl", LoggingApiBaseUrl);
