@@ -75,15 +75,10 @@ N/A
 ### Integration tests
 Integration tests use Azure Cosmos DB and can be run locally with the Cosmos Emulator in Docker.
 
-**Cosmos account key (required):** The test harness does not embed an account key. You must provide the Cosmos DB primary key before running integration tests:
-
-- **CI / pipelines:** Inject the `CosmosAccountKey` environment variable (for example as a secret variable mapped in your pipeline). The integration test project reads `CosmosAccountKey` and sets `Database__AccountKey` for the test host.
-- **Local:** Export `CosmosAccountKey` to your emulator’s primary key (see [Azure Cosmos DB Emulator](https://learn.microsoft.com/azure/cosmos-db/emulator)) or set `Database__AccountKey` directly instead.
 
 Example local run (after starting the emulator):
 
 ```bash
-export CosmosAccountKey="<your-cosmos-primary-key>"
 docker compose up
 dotnet test ./src/EPR.SubmissionMicroservice.API.IntegrationTests/EPR.SubmissionMicroservice.API.IntegrationTests.csproj --filter "Category=IntegrationTest"
 ```

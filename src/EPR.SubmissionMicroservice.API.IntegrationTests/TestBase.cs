@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.IntegrationTests;
+﻿using Microsoft.Extensions.Configuration;
+
+namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -14,17 +16,6 @@ using Data.Enums;
 
 public class TestBase
 {
-    /// <summary>
-    /// CI/local env var name for the Cosmos DB primary key (built via <see cref="string.Concat(string, string, string)"/> so secret scanners do not see a single literal matching common Azure key patterns).
-    /// </summary>
-    private static string CosmosPrimaryKeyEnvVarName => string.Concat("Cosmos", "Account", "Key");
-
-    /// <summary>
-    /// Config key forwarded to the test host for the DB primary key (same concatenation approach as <see cref="CosmosPrimaryKeyEnvVarName"/>).
-    /// </summary>
-    private static string DatabasePrimaryKeySettingName => string.Concat("Database__", "Account", "Key");
-
-    private const string EmulatorEndpoint = "https://localhost:8081/";
     private const string EmulatorDatabaseName = "SubmissionDB";
     private const string LoggingApiBaseUrl = "http://localhost";
     protected readonly string OrganisationId = Guid.NewGuid().ToString();
@@ -35,47 +26,23 @@ public class TestBase
     {
         ConfigureEmulatorDefaults();
 
-        var application = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.UseSetting("https_port", "80");
-            });
+        // builds config from only the test appsettings
+        var testConfig = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.test.json")
+            .Build();
 
-        HttpClient = application.CreateDefaultClient();
+        var factory = new CustomWebApplicationFactory(testConfig);
+        HttpClient = factory.CreateClient();
         HttpClient.BaseAddress = new Uri("https://localhost:8000");
         HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         HttpClient.DefaultRequestHeaders.Add("organisationId", OrganisationId);
         HttpClient.DefaultRequestHeaders.Add("userId", _userId);
 
-        EnsureCosmosContainersCreated(application.Services);
+        EnsureCosmosContainersCreated(factory.Services);
     }
 
     private static void ConfigureEmulatorDefaults()
     {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__ConnectionString")))
-        {
-            Environment.SetEnvironmentVariable("Database__ConnectionString", EmulatorEndpoint);
-        }
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DatabasePrimaryKeySettingName)))
-        {
-            var primaryKeyFromEnvironment = Environment.GetEnvironmentVariable(CosmosPrimaryKeyEnvVarName);
-            if (string.IsNullOrWhiteSpace(primaryKeyFromEnvironment))
-            {
-                throw new InvalidOperationException(
-                    $"Integration tests require a Cosmos DB account key. Set the '{CosmosPrimaryKeyEnvVarName}' " +
-                    $"environment variable (injected by CI), or set '{DatabasePrimaryKeySettingName}' directly. " +
-                    "For the Azure Cosmos DB Emulator, use the primary key from the emulator / Microsoft documentation.");
-            }
-
-            Environment.SetEnvironmentVariable(DatabasePrimaryKeySettingName, primaryKeyFromEnvironment);
-        }
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__Name")))
-        {
-            Environment.SetEnvironmentVariable("Database__Name", EmulatorDatabaseName);
-        }
-
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("LoggingApi__BaseUrl")))
         {
             Environment.SetEnvironmentVariable("LoggingApi__BaseUrl", LoggingApiBaseUrl);
