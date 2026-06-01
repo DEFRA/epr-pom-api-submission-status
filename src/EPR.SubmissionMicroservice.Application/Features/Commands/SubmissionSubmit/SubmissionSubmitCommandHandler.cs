@@ -2,6 +2,7 @@
 using EPR.Common.Logging.Models;
 using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
 using EPR.SubmissionMicroservice.Data;
 using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
@@ -22,7 +23,8 @@ public class SubmissionSubmitCommandHandler(
     SubmissionContext submissionContext,
     IPomSubmissionEventHelper pomSubmissionEventHelper,
     ILoggingService loggingService,
-    ISubmissionEventsValidator submissionEventValidator)
+    ISubmissionEventsValidator submissionEventValidator,
+    IPublisher publisher)
     : IRequestHandler<SubmissionSubmitCommand, ErrorOr<Unit>>
 {
     public async Task<ErrorOr<Unit>> Handle(SubmissionSubmitCommand command, CancellationToken cancellationToken)
@@ -69,6 +71,11 @@ public class SubmissionSubmitCommandHandler(
             await submissionEventCommandRepository.AddAsync(submittedEvent);
             await submissionContext.SaveChangesAsync(cancellationToken);
             await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
+            
+            // publish submitted event to message bus
+            var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId, submittedEvent.BlobName,
+                submission.ComplianceSchemeId, submission.SubmissionPeriod, submittedEvent.Created);
+            await publisher.Publish(message, cancellationToken);
 
             logger.LogInformation("Submission with id {submissionId} submitted by user {userId}.", submissionId, userId);
             return Unit.Value;
