@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionSubmit;
+﻿using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+
+namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionSubmit;
 
 using Application.Features.Commands.SubmissionSubmit;
 using Application.Features.Queries.Helpers.Interfaces;
@@ -35,6 +37,8 @@ public class SubmissionSubmitCommandHandlerTests
     private Mock<ILoggingService> _loggingServiceMock;
     private Mock<ILogger<SubmissionSubmitCommandHandler>> _loggerMock;
     private Mock<ISubmissionEventsValidator> _submissionEventValidatorMock;
+    private Mock<IValidationEventHelper> _validationEventHelperMock;
+    private Mock<IPublisher> _publisherMock;
 
     [TestInitialize]
     public void TestInitialize()
@@ -46,6 +50,8 @@ public class SubmissionSubmitCommandHandlerTests
         _loggingServiceMock = new Mock<ILoggingService>();
         _loggerMock = new Mock<ILogger<SubmissionSubmitCommandHandler>>();
         _submissionEventValidatorMock = new Mock<ISubmissionEventsValidator>();
+        _validationEventHelperMock = new Mock<IValidationEventHelper>();
+        _publisherMock = new Mock<IPublisher>();
         _submissionContextMock = new Mock<SubmissionContext>(
             new DbContextOptions<SubmissionContext>(),
             Mock.Of<IUserContextProvider>(),
@@ -55,11 +61,13 @@ public class SubmissionSubmitCommandHandlerTests
             _submissionCommandRepositoryMock.Object,
             _loggerMock.Object,
             _submissionQueryRepositoryMock.Object,
+            _validationEventHelperMock.Object,
             _submissionEventCommandRepositoryMock.Object,
             _submissionContextMock.Object,
             _pomSubmissionEventHelperMock.Object,
             _loggingServiceMock.Object,
-            _submissionEventValidatorMock.Object);
+            _submissionEventValidatorMock.Object,
+            _publisherMock.Object);
     }
 
     [TestMethod]
@@ -67,6 +75,7 @@ public class SubmissionSubmitCommandHandlerTests
     {
         var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false };
+        var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock
             .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
@@ -74,6 +83,9 @@ public class SubmissionSubmitCommandHandlerTests
         _pomSubmissionEventHelperMock
             .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
+        _validationEventHelperMock
+            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(antivirusResultEvent);
 
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
@@ -89,11 +101,15 @@ public class SubmissionSubmitCommandHandlerTests
     {
         var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false, RegistrationJourney = "TO_BE_USED" };
+        var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock.Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
         _pomSubmissionEventHelperMock.Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
+        _validationEventHelperMock
+            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(antivirusResultEvent);
 
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
@@ -107,6 +123,7 @@ public class SubmissionSubmitCommandHandlerTests
         // Arrange
         var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = true };
+        var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock
             .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
@@ -114,6 +131,9 @@ public class SubmissionSubmitCommandHandlerTests
         _pomSubmissionEventHelperMock
             .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
+        _validationEventHelperMock
+            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(antivirusResultEvent);
 
         // Act
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
@@ -317,6 +337,7 @@ public class SubmissionSubmitCommandHandlerTests
         // Arrange
         var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Registration };
+        var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock
             .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
@@ -325,6 +346,9 @@ public class SubmissionSubmitCommandHandlerTests
         _submissionEventValidatorMock
             .Setup(x => x.IsSubmissionValidAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => true);
+        _validationEventHelperMock
+            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(antivirusResultEvent);
 
         // Act
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);

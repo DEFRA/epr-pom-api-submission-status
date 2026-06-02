@@ -2,6 +2,7 @@
 using EPR.Common.Logging.Models;
 using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
+using EPR.SubmissionMicroservice.Application.Logging;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
 using EPR.SubmissionMicroservice.Data;
 using EPR.SubmissionMicroservice.Data.Entities.Submission;
@@ -19,6 +20,7 @@ public class SubmissionSubmitCommandHandler(
     ICommandRepository<Submission> submissionCommandRepository,
     ILogger<SubmissionSubmitCommandHandler> logger,
     IQueryRepository<Submission> submissionQueryRepository,
+    IValidationEventHelper validationEventHelper,
     ICommandRepository<AbstractSubmissionEvent> submissionEventCommandRepository,
     SubmissionContext submissionContext,
     IPomSubmissionEventHelper pomSubmissionEventHelper,
@@ -29,61 +31,87 @@ public class SubmissionSubmitCommandHandler(
 {
     public async Task<ErrorOr<Unit>> Handle(SubmissionSubmitCommand command, CancellationToken cancellationToken)
     {
-        var submissionId = command.SubmissionId;
-        var fileId = command.FileId;
-        var userId = command.UserId;
-        var submittedBy = command.SubmittedBy;
-
-        try
+        using (logger.BeginScope("Submitting file for fee calculation"))
+        using (logger.AddScopedData(new Dictionary<string, object>
+               {
+                   ["SubmissionId"] = command.SubmissionId,
+                   ["FileId"] = command.FileId,
+                   ["UserId"] = command.UserId,
+                   ["SubmittedBy"] = command.SubmittedBy,
+                   ["AppReferenceNumber"] = command.AppReferenceNumber,
+                   ["IsResubmission"] = command.IsResubmission
+               }))
         {
-            var submission = await submissionQueryRepository.GetByIdAsync(submissionId, cancellationToken);
+            var submissionId = command.SubmissionId;
+            var fileId = command.FileId;
+            var userId = command.UserId;
+            var submittedBy = command.SubmittedBy;
 
-            var isFileIdForValidFile = submission!.SubmissionType is SubmissionType.Producer
-                ? await pomSubmissionEventHelper.VerifyFileIdIsForValidFileAsync(submissionId, fileId, cancellationToken)
-                : await submissionEventValidator.IsSubmissionValidAsync(submissionId, fileId, cancellationToken);
-
-            if (!isFileIdForValidFile)
+            try
             {
-                logger.LogInformation("File id {fileId} is not for a valid file", fileId);
-                return Error.Failure();
+                var submission = await submissionQueryRepository.GetByIdAsync(submissionId, cancellationToken);
+
+                var isFileIdForValidFile = submission!.SubmissionType is SubmissionType.Producer
+                    ? await pomSubmissionEventHelper.VerifyFileIdIsForValidFileAsync(submissionId, fileId,
+                        cancellationToken)
+                    : await submissionEventValidator.IsSubmissionValidAsync(submissionId, fileId, cancellationToken);
+
+                if (!isFileIdForValidFile)
+                {
+                    logger.LogInformation("File id {fileId} is not for a valid file", fileId);
+                    return Error.Failure();
+                }
+
+                submission.IsSubmitted = true;
+                submission.IsResubmission = command.IsResubmission;
+
+                if (string.IsNullOrEmpty(submission.AppReferenceNumber))
+                {
+                    submission.AppReferenceNumber = command.AppReferenceNumber;
+                }
+
+                submissionCommandRepository.Update(submission);
+
+                var submittedEvent = new SubmittedEvent
+                {
+                    SubmissionId = submissionId,
+                    FileId = fileId,
+                    UserId = userId,
+                    SubmittedBy = submittedBy,
+                    IsResubmission = command.IsResubmission,
+                    RegistrationJourney = submission.RegistrationJourney
+                };
+
+                await submissionEventCommandRepository.AddAsync(submittedEvent);
+                await submissionContext.SaveChangesAsync(cancellationToken);
+                await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
+
+                // get blob name
+                var antivirusResult =
+                    await validationEventHelper.GetLatestAntivirusResult(command.SubmissionId, cancellationToken);
+
+                if (antivirusResult is null || string.IsNullOrWhiteSpace(antivirusResult.BlobName))
+                {
+                    logger.LogError($"Antivirus result event blob name is null. Antivirus event is { (antivirusResult  is null ? "not null" : "null")}");
+                    return Error.Failure();
+                }
+
+                // publish submitted event to message bus
+                var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId,
+                    antivirusResult.BlobName,
+                    submission.ComplianceSchemeId, submission.SubmissionPeriod, submittedEvent.Created);
+                await publisher.Publish(message, cancellationToken);
+
+                logger.LogInformation("Submission with id {submissionId} submitted by user {userId}.", submissionId,
+                    userId);
+                return Unit.Value;
             }
-
-            submission.IsSubmitted = true;
-            submission.IsResubmission = command.IsResubmission;
-
-            if (string.IsNullOrEmpty(submission.AppReferenceNumber))
+            catch (Exception exception)
             {
-                submission.AppReferenceNumber = command.AppReferenceNumber;
+                logger.LogCritical(exception, "An error occurred when submitting the submission with id {submissionId}",
+                    submissionId);
+                return Error.Unexpected();
             }
-
-            submissionCommandRepository.Update(submission);
-
-            var submittedEvent = new SubmittedEvent
-            {
-                SubmissionId = submissionId,
-                FileId = fileId,
-                UserId = userId,
-                SubmittedBy = submittedBy,
-                IsResubmission = command.IsResubmission,
-                RegistrationJourney = submission.RegistrationJourney
-            };
-
-            await submissionEventCommandRepository.AddAsync(submittedEvent);
-            await submissionContext.SaveChangesAsync(cancellationToken);
-            await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
-            
-            // publish submitted event to message bus
-            var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId, submittedEvent.BlobName,
-                submission.ComplianceSchemeId, submission.SubmissionPeriod, submittedEvent.Created);
-            await publisher.Publish(message, cancellationToken);
-
-            logger.LogInformation("Submission with id {submissionId} submitted by user {userId}.", submissionId, userId);
-            return Unit.Value;
-        }
-        catch (Exception exception)
-        {
-            logger.LogCritical(exception, "An error occurred when submitting the submission with id {submissionId}", submissionId);
-            return Error.Unexpected();
         }
     }
 
