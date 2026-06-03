@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Azure.Messaging.ServiceBus;
 using EPR.SubmissionMicroservice.Application.Behaviours;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
@@ -11,6 +12,7 @@ using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionGet;
 using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
 using EPR.SubmissionMicroservice.Application.Options;
 using ErrorOr;
 using FluentValidation;
@@ -78,6 +80,14 @@ public static class ConfigureServices
         services.AddAzureClients(builder =>
         {
             builder.AddServiceAdministrationBusClient(config.AdminConnectionString);
+            builder.AddServiceBusClient(config.ConnectionString);
+            
+            builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
+                provider.GetService(typeof(ServiceBusClient)) switch
+                {
+                    ServiceBusClient client => client.CreateSender(config.RegistrationSubmittedForFeesCalculationTopicName),
+                    _ => throw new InvalidOperationException("Unable to create ServiceBusClient")
+                }).WithName(nameof(RegistrationSubmittedForFeesCalculationNotification));
         });
 
         return services;
