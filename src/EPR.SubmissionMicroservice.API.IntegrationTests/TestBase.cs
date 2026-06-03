@@ -6,56 +6,31 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using EPR.SubmissionMicroservice.Data;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using TestSupport;
 using Data.Enums;
 
 public class TestBase
 {
-    private const string EmulatorDatabaseName = "SubmissionDB";
-    private const string LoggingApiBaseUrl = "http://localhost";
     protected readonly string OrganisationId = Guid.NewGuid().ToString();
     protected readonly HttpClient HttpClient;
     private readonly string _userId = Guid.NewGuid().ToString();
 
     protected TestBase()
     {
-        ConfigureEmulatorDefaults();
+        // Use the shared HttpClient from AssemblyTestSetup (initialized once per test run)
+        HttpClient = AssemblyTestSetup.SharedHttpClient;
 
-        // builds config from only the test appsettings
-        var testConfig = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.test.json")
-            .Build();
-
-        var factory = new CustomWebApplicationFactory(testConfig);
-        HttpClient = factory.CreateClient();
-        HttpClient.BaseAddress = new Uri("https://localhost:8000");
-        HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        HttpClient.DefaultRequestHeaders.Add("organisationId", OrganisationId);
-        HttpClient.DefaultRequestHeaders.Add("userId", _userId);
-
-        EnsureCosmosContainersCreated(factory.Services);
-    }
-
-    private static void ConfigureEmulatorDefaults()
-    {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("LoggingApi__BaseUrl")))
+        // Ensure Accept header is set (idempotent operation)
+        if (!HttpClient.DefaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
         {
-            Environment.SetEnvironmentVariable("LoggingApi__BaseUrl", LoggingApiBaseUrl);
+            HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        Environment.SetEnvironmentVariable("Database__IgnoreCertificateErrors", "true");
-    }
-
-    private static void EnsureCosmosContainersCreated(IServiceProvider serviceProvider)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<SubmissionContext>();
-        context.Database.EnsureCreated();
+        // Set per-test headers
+        SetHeader("organisationId", OrganisationId);
+        SetHeader("userId", _userId);
     }
 
     protected async Task<HttpResponseMessage> CreateSubmissionAsync(
