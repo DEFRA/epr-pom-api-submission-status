@@ -15,6 +15,7 @@ public static class AssemblyTestSetup
     private const string IntegrationTestsSubscriptionName = "integration-tests";
     private static CustomWebApplicationFactory? _factory;
     private static HttpClient? _sharedHttpClient;
+    private static ServiceBusClient _serviceBusClient;
 
     public static HttpClient SharedHttpClient
     {
@@ -50,14 +51,19 @@ public static class AssemblyTestSetup
         // subscribe to service bus
         var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
         var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
+        context.WriteLine($"Creating service bus subscription for topic {serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName} and subscription {IntegrationTestsSubscriptionName}");
         await serviceBusAdminClient.CreateSubscriptionAsync(
             serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName);
         
-        var serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
+        _serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
 
-        var serviceBusReceiveOptions = new ServiceBusReceiverOptions();
-        serviceBusReceiveOptions.ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete;
-        ServiceBusReceiver = serviceBusClient.CreateReceiver(
+        var serviceBusReceiveOptions = new ServiceBusReceiverOptions
+        {
+            ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete
+        };
+        
+        context.WriteLine($"Creating service bus receiver for topic {serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName} and subscription {IntegrationTestsSubscriptionName}");
+        ServiceBusReceiver = _serviceBusClient.CreateReceiver(
             serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName, serviceBusReceiveOptions);
     }
 
@@ -69,7 +75,9 @@ public static class AssemblyTestSetup
         await serviceBusAdminClient.DeleteSubscriptionAsync(
             serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName);
         _sharedHttpClient?.Dispose();
-        _factory?.Dispose();
+        await ServiceBusReceiver.DisposeAsync();
+        await _serviceBusClient.DisposeAsync();
+        _factory?.DisposeAsync();
     }
 
     private static void ConfigureEmulatorDefaults()
