@@ -1,6 +1,10 @@
+using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus.Administration;
+using EPR.SubmissionMicroservice.Application.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using EPR.SubmissionMicroservice.Data;
+using Microsoft.Extensions.Options;
 
 namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
@@ -8,6 +12,7 @@ namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 public static class AssemblyTestSetup
 {
     private const string LoggingApiBaseUrl = "http://localhost";
+    private const string IntegrationTestsSubscriptionName = "integration-tests";
     private static CustomWebApplicationFactory? _factory;
     private static HttpClient? _sharedHttpClient;
 
@@ -15,6 +20,8 @@ public static class AssemblyTestSetup
     {
         get => _sharedHttpClient ?? throw new InvalidOperationException("SharedHttpClient not initialized");
     }
+    
+    public static ServiceBusReceiver ServiceBusReceiver { get; private set; }
 
     public static IServiceProvider SharedServices
     {
@@ -22,7 +29,7 @@ public static class AssemblyTestSetup
     }
 
     [AssemblyInitialize]
-    public static void AssemblyInitialize(TestContext context)
+    public static async Task AssemblyInitialize(TestContext context)
     {
         // Configure emulator defaults
         ConfigureEmulatorDefaults();
@@ -39,11 +46,28 @@ public static class AssemblyTestSetup
 
         // Ensure Cosmos containers are created
         EnsureCosmosContainersCreated(_factory.Services);
+        
+        // subscribe to service bus
+        var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
+        var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
+        await serviceBusAdminClient.CreateSubscriptionAsync(
+            serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName);
+        
+        var serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
+
+        var serviceBusReceiveOptions = new ServiceBusReceiverOptions();
+        serviceBusReceiveOptions.ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete;
+        ServiceBusReceiver = serviceBusClient.CreateReceiver(
+            serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName, serviceBusReceiveOptions);
     }
 
     [AssemblyCleanup]
-    public static void AssemblyCleanup()
+    public static async Task AssemblyCleanup()
     {
+        var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
+        var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
+        await serviceBusAdminClient.DeleteSubscriptionAsync(
+            serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName);
         _sharedHttpClient?.Dispose();
         _factory?.Dispose();
     }

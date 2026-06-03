@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-
-namespace EPR.SubmissionMicroservice.API.IntegrationTests;
+﻿namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -167,5 +165,22 @@ public class TestBase
     {
         HttpClient.DefaultRequestHeaders.Remove(headerName);
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
+    }
+
+    protected async Task<T> GetPublishedMessage<T>()
+    {
+        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        Assert.IsNotNull(message, "message should not be null");
+        Assert.IsNotNull(message.Body, "body should not be null");
+        var typedMessage = message.Body.ToObjectFromJson<T>();
+        Assert.IsNotNull(typedMessage, "cannot convert message to expected type");
+        return typedMessage;
+    }
+    
+    [TestCleanup]
+    public Task TestCleanup()
+    {
+        // purge is in preview, so unavailable
+        return AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 }

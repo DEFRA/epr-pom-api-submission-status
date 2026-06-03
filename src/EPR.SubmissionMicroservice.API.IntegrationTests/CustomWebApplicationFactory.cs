@@ -1,5 +1,8 @@
+using EPR.SubmissionMicroservice.Application.Options;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
@@ -26,6 +29,18 @@ internal class CustomWebApplicationFactory(IConfiguration? configuration = null)
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("https_port", "80");
+        builder.ConfigureServices((context, services) =>
+        {
+            var serviceBusConfig =
+                context.Configuration.GetSection(ServiceBusOptions.ConfigSection).Get<ServiceBusOptions>() ??
+                throw new InvalidOperationException("Cannot find 'ServiceBus' section in appSettings.");
+
+            services.AddAzureClients(clientBuilder =>
+            {
+                clientBuilder.AddServiceBusClient(serviceBusConfig.ConnectionString);
+            });
+
+            builder.UseSetting("https_port", "80");
+        });
     }
 }
