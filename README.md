@@ -32,7 +32,6 @@ Clone the [epr_common](https://dev.azure.com/defragovuk/RWD-CPR-EPR4P-ADO/_git/e
 1. Navigate to the project directory:
 1. Complete `appsettings.json` file (or `appsettings.Development.json` if exists) with correct details
 1. Start docker
-1. If you don't have one already, create a `.env` file in the root of the project. It should contain the sql password, in the form `SQL_PASSWORD=foobar`
 1. If you haven't pulled the docker images before, run
    `docker compose pull`
 1. Run the docker containers
@@ -74,7 +73,6 @@ N/A
 
 ### Integration tests
 Integration tests use Azure Cosmos DB and can be run locally with the Cosmos Emulator in Docker.
-
 
 Example local run (after starting the emulator):
 

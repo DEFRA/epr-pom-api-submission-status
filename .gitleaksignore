@@ -5,3 +5,4 @@ ee022e9c128904dcfaa6a589caa005d1b8f2c715:src/EPR.SubmissionMicroservice.API/apps
 245328ae10630a74222ef74e62e5e1773ad1de85:src/EPR.SubmissionMicroservice.API.IntegrationTests/appsettings.test.json:generic-api-key:7
 245328ae10630a74222ef74e62e5e1773ad1de85:src/EPR.SubmissionMicroservice.API.IntegrationTests/appsettings.test.json:azure-messaging-connection-string-shared-access-key:10
 245328ae10630a74222ef74e62e5e1773ad1de85:src/EPR.SubmissionMicroservice.API.IntegrationTests/appsettings.test.json:azure-messaging-connection-string-shared-access-key:11
+de8ecef4f87eb66550180db952258da42f136ede:.env:azure-database-connection-string-account-key:2
