@@ -7,6 +7,7 @@ services:
       - "1234:1234"
     environment:
       PROTOCOL: https
+    env_file: compose.env
 
   sql:
     container_name: submissions-api-sql
@@ -18,8 +19,7 @@ services:
       - "1433:1433"
     environment:
       - ACCEPT_EULA=1
-      - SA_PASSWORD=${SQL_PASSWORD}
-      - MSSQL_SA_PASSWORD=${SQL_PASSWORD}
+    env_file: compose.env
 
   servicebus-emulator:
     container_name: "submissions-api-servicebus-emulator"
@@ -32,7 +32,7 @@ services:
       - "5300:5300"
     environment:
       SQL_SERVER: sql
-      MSSQL_SA_PASSWORD: "${SQL_PASSWORD}"
       ACCEPT_EULA: "Y"
+    env_file: compose.env
     depends_on:
       - sql
