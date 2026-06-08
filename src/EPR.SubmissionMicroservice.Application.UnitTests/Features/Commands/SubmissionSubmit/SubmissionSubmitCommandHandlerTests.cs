@@ -1,21 +1,16 @@
 ﻿using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+using EPR.SubmissionMicroservice.Data.Repositories.Commands;
+using EPR.SubmissionMicroservice.Data.Repositories.Queries;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionSubmit;
 
 using Application.Features.Commands.SubmissionSubmit;
-using Application.Features.Queries.Helpers.Interfaces;
-using Common.Functions.AccessControl.Interfaces;
-using Common.Functions.Database.Decorators.Interfaces;
-using Common.Functions.Services.Interfaces;
 using Common.Logging.Constants;
 using Common.Logging.Models;
 using Common.Logging.Services;
-using Data;
 using Data.Entities.Submission;
 using Data.Entities.SubmissionEvent;
 using Data.Enums;
-using Data.Repositories.Commands.Interfaces;
-using Data.Repositories.Queries.Interfaces;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -29,44 +24,28 @@ public class SubmissionSubmitCommandHandlerTests
     private readonly Guid _userId = Guid.NewGuid();
     private readonly Guid _fileId = Guid.NewGuid();
     private SubmissionSubmitCommandHandler _testSubmissionSubmitCommandHandler;
-    private Mock<ICommandRepository<Submission>> _submissionCommandRepositoryMock;
-    private Mock<ICommandRepository<AbstractSubmissionEvent>> _submissionEventCommandRepositoryMock;
-    private Mock<IQueryRepository<Submission>> _submissionQueryRepositoryMock;
-    private Mock<IPomSubmissionEventHelper> _pomSubmissionEventHelperMock;
-    private Mock<SubmissionContext> _submissionContextMock;
+    private Mock<ISubmissionQueryRepository> _submissionQueryRepositoryMock;
+    private Mock<ISubmissionFileValidator> _submissionFileValidatorMock;
+    private Mock<ISubmissionCommandRepository> _submissionCommandRepositoryMock;
     private Mock<ILoggingService> _loggingServiceMock;
     private Mock<ILogger<SubmissionSubmitCommandHandler>> _loggerMock;
-    private Mock<ISubmissionEventsValidator> _submissionEventValidatorMock;
-    private Mock<IValidationEventHelper> _validationEventHelperMock;
     private Mock<IPublisher> _publisherMock;
 
     [TestInitialize]
     public void TestInitialize()
     {
-        _submissionCommandRepositoryMock = new Mock<ICommandRepository<Submission>>();
-        _submissionEventCommandRepositoryMock = new Mock<ICommandRepository<AbstractSubmissionEvent>>();
-        _submissionQueryRepositoryMock = new Mock<IQueryRepository<Submission>>();
-        _pomSubmissionEventHelperMock = new Mock<IPomSubmissionEventHelper>();
+        _submissionQueryRepositoryMock = new();
+        _submissionFileValidatorMock = new();
+        _submissionCommandRepositoryMock = new();
         _loggingServiceMock = new Mock<ILoggingService>();
         _loggerMock = new Mock<ILogger<SubmissionSubmitCommandHandler>>();
-        _submissionEventValidatorMock = new Mock<ISubmissionEventsValidator>();
-        _validationEventHelperMock = new Mock<IValidationEventHelper>();
         _publisherMock = new Mock<IPublisher>();
-        _submissionContextMock = new Mock<SubmissionContext>(
-            new DbContextOptions<SubmissionContext>(),
-            Mock.Of<IUserContextProvider>(),
-            Mock.Of<IRequestTimeService>(),
-            Mock.Of<List<IEntityDecorator>>());
         _testSubmissionSubmitCommandHandler = new SubmissionSubmitCommandHandler(
-            _submissionCommandRepositoryMock.Object,
-            _loggerMock.Object,
             _submissionQueryRepositoryMock.Object,
-            _validationEventHelperMock.Object,
-            _submissionEventCommandRepositoryMock.Object,
-            _submissionContextMock.Object,
-            _pomSubmissionEventHelperMock.Object,
+            _loggerMock.Object,
+            _submissionFileValidatorMock.Object,
+            _submissionCommandRepositoryMock.Object,
             _loggingServiceMock.Object,
-            _submissionEventValidatorMock.Object,
             _publisherMock.Object);
     }
 
@@ -78,21 +57,21 @@ public class SubmissionSubmitCommandHandlerTests
         var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _validationEventHelperMock
-            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         result.IsError.Should().BeFalse();
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.Is<Submission>(s => s.IsSubmitted.Value)), Times.Once);
-        _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(x => x.AddAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.Is<Submission>(s => s.IsSubmitted.Value)), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
         _loggerMock.VerifyLog(x => x.LogInformation("Submission with id {submissionId} submitted by user {userId}.", _submissionId, _userId));
     }
 
@@ -103,18 +82,18 @@ public class SubmissionSubmitCommandHandlerTests
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false, RegistrationJourney = "TO_BE_USED" };
         var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
-        _submissionQueryRepositoryMock.Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+        _submissionQueryRepositoryMock.Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock.Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock.Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _validationEventHelperMock
-            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         result.IsError.Should().BeFalse();
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.Is<Submission>(s => s.RegistrationJourney == "TO_BE_USED")), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.Is<Submission>(s => s.RegistrationJourney == "TO_BE_USED")), Times.Once);
     }
     
     [TestMethod]
@@ -126,13 +105,13 @@ public class SubmissionSubmitCommandHandlerTests
         var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _validationEventHelperMock
-            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         // Act
@@ -140,9 +119,9 @@ public class SubmissionSubmitCommandHandlerTests
 
         // Async
         result.IsError.Should().BeFalse();
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.IsAny<Submission>()), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(x => x.AddAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
-        _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _loggerMock.VerifyLog(x => x.LogInformation("Submission with id {submissionId} submitted by user {userId}.", _submissionId, _userId));
     }
 
@@ -155,12 +134,12 @@ public class SubmissionSubmitCommandHandlerTests
         var exception = new DbUpdateException();
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _submissionContextMock
+        _submissionCommandRepositoryMock
             .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(exception);
 
@@ -170,9 +149,9 @@ public class SubmissionSubmitCommandHandlerTests
         // Async
         result.IsError.Should().BeTrue();
         result.Errors.Should().OnlyContain(error => error.Type == ErrorType.Unexpected);
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.IsAny<Submission>()), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(x => x.AddAsync(It.IsAny<SubmittedEvent>()), Times.Once);
-        _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _loggerMock.VerifyLog(x => x.LogCritical(exception, "An error occurred when submitting the submission with id {submissionId}", _submissionId));
     }
 
@@ -184,10 +163,10 @@ public class SubmissionSubmitCommandHandlerTests
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         // Act
@@ -196,9 +175,9 @@ public class SubmissionSubmitCommandHandlerTests
         // Async
         result.IsError.Should().BeTrue();
         result.Errors.Should().OnlyContain(error => error.Type == ErrorType.Failure);
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.IsAny<Submission>()), Times.Never);
-        _submissionEventCommandRepositoryMock.Verify(x => x.AddAsync(It.IsAny<SubmittedEvent>()), Times.Never);
-        _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
@@ -209,12 +188,12 @@ public class SubmissionSubmitCommandHandlerTests
         var submission = new Submission { Id = _submissionId, IsSubmitted = false };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        _submissionContextMock
+        _submissionCommandRepositoryMock
             .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateException());
 
@@ -233,10 +212,10 @@ public class SubmissionSubmitCommandHandlerTests
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer, IsSubmitted = false };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         // Act
@@ -266,10 +245,10 @@ public class SubmissionSubmitCommandHandlerTests
         var exception = new Exception();
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
-        _pomSubmissionEventHelperMock
-            .Setup(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _loggingServiceMock
             .Setup(x => x.SendEventAsync(It.IsAny<Guid>(), It.IsAny<ProtectiveMonitoringEvent>()))
@@ -283,25 +262,6 @@ public class SubmissionSubmitCommandHandlerTests
     }
 
     [TestMethod]
-    public async Task Handle_CallsCorrectSubmissionHelper_WhenSubmissionTypeIsPom()
-    {
-        // Arrange
-        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
-        var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Producer };
-
-        _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(submission);
-
-        // Act
-        await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
-
-        // Async
-        _pomSubmissionEventHelperMock.Verify(x => x.VerifyFileIdIsForValidFileAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()), Times.Once);
-        _submissionEventValidatorMock.Verify(x => x.IsSubmissionValidAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [TestMethod]
     public async Task Handle_WhenSubmissionTypeIsRegistration_AndNotValid_ReturnsFailureResult()
     {
         // Arrange
@@ -309,11 +269,11 @@ public class SubmissionSubmitCommandHandlerTests
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Registration };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
 
-        _submissionEventValidatorMock
-            .Setup(x => x.IsSubmissionValidAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => false);
 
         // Act
@@ -323,12 +283,12 @@ public class SubmissionSubmitCommandHandlerTests
         result.IsError.Should().BeTrue();
         result.Errors.Should().Contain(error => error.Type == ErrorType.Failure);
 
-        _submissionEventValidatorMock.Verify(
-            x => x.IsSubmissionValidAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()),
+        _submissionFileValidatorMock.Verify(
+            x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()),
             Times.Once);
-        _submissionCommandRepositoryMock.Verify(x => x.Update(It.IsAny<Submission>()), Times.Never);
-        _submissionEventCommandRepositoryMock.Verify(x => x.AddAsync(It.IsAny<SubmittedEvent>()), Times.Never);
-        _submissionContextMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
@@ -340,14 +300,14 @@ public class SubmissionSubmitCommandHandlerTests
         var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
         _submissionQueryRepositoryMock
-            .Setup(x => x.GetByIdAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
 
-        _submissionEventValidatorMock
-            .Setup(x => x.IsSubmissionValidAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => true);
-        _validationEventHelperMock
-            .Setup(x => x.GetLatestAntivirusResult(_submissionId, It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock
+            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         // Act
@@ -356,13 +316,6 @@ public class SubmissionSubmitCommandHandlerTests
         // Assert
         result.IsError.Should().BeFalse();
         result.Value.Should().Be(Unit.Value);
-
-        _submissionEventValidatorMock.Verify(
-            x => x.IsSubmissionValidAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()),
-            Times.Once);
-        _pomSubmissionEventHelperMock.Verify(
-            x => x.VerifyFileIdIsForValidFileAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [TestMethod]
@@ -387,18 +340,18 @@ public class SubmissionSubmitCommandHandlerTests
         };
 
         _submissionQueryRepositoryMock
-            .Setup(repo => repo.GetByIdAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetSubmissionAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
 
-        _submissionEventValidatorMock.Setup(x => x.IsSubmissionValidAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock.Setup(x => x.IsFileIdForValidFileAsync(It.IsAny<Submission>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         // Act
         await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Assert
-        _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.Is<Submission>(s => s.IsSubmitted == true)), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<AbstractSubmissionEvent>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(repo => repo.UpdateSubmission(It.Is<Submission>(s => s.IsSubmitted == true)), Times.Once);
+        _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
     }
 
     [TestMethod]
@@ -423,17 +376,17 @@ public class SubmissionSubmitCommandHandlerTests
         };
 
         _submissionQueryRepositoryMock
-            .Setup(repo => repo.GetByIdAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetSubmissionAsync(command.SubmissionId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submission);
 
-        _submissionEventValidatorMock.Setup(x => x.IsSubmissionValidAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _submissionFileValidatorMock.Setup(x => x.IsFileIdForValidFileAsync(It.IsAny<Submission>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         // Act
         await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
 
         // Assert
-        _submissionCommandRepositoryMock.Verify(repo => repo.Update(It.IsAny<Submission>()), Times.Once);
-        _submissionEventCommandRepositoryMock.Verify(repo => repo.AddAsync(It.IsAny<AbstractSubmissionEvent>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(repo => repo.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
     }
 }

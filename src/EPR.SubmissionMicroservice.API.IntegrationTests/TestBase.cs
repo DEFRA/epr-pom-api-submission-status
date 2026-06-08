@@ -167,7 +167,7 @@ public class TestBase
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
     }
 
-    protected async Task<T> GetPublishedMessage<T>()
+    protected static async Task<T> GetPublishedMessage<T>()
     {
         var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
         Assert.IsNotNull(message, "message should not be null");

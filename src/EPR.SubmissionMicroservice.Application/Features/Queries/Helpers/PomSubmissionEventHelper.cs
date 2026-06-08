@@ -1,4 +1,5 @@
-﻿using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
+﻿using System.Diagnostics.CodeAnalysis;
+using EPR.SubmissionMicroservice.Application.Features.Queries.Common;
 using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
@@ -26,6 +27,7 @@ public class PomSubmissionEventHelper : IPomSubmissionEventHelper
         _validationErrorQueryRepository = validationErrorQueryRepository;
     }
 
+    [SuppressMessage("Critical Code Smell", "S3776:Cognitive Complexity of methods should not be too high", Justification = "The risk involved in rewriting this method is too high. It is a class that is stable and there are no plans to update it, so very little benefit in rewriting it.")]
     public async Task SetValidationEventsAsync(PomSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken)
     {
         var submissionId = response.Id;

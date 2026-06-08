@@ -214,7 +214,7 @@ public class SubmissionSubmitContractTests : TestBase
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var message = await this.GetPublishedMessage<RegistrationSubmittedForFeesCalculationNotification>();
+        var message = await GetPublishedMessage<RegistrationSubmittedForFeesCalculationNotification>();
         
         message.SubmissionId.Should().Be(submissionId);
         message.SubmissionPeriod.Should().Be("2022");

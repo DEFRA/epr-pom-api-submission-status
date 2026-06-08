@@ -97,7 +97,7 @@ public static class AssemblyTestSetup
         _sharedHttpClient?.Dispose();
         await ServiceBusReceiver.DisposeAsync();
         await _serviceBusClient.DisposeAsync();
-        _factory?.DisposeAsync();
+        if (_factory != null) await _factory.DisposeAsync();
     }
 
     private static void ConfigureEmulatorDefaults()
