@@ -68,6 +68,7 @@ public static class ConfigureServices
             .AddScoped<IAccreditationSubmissionEventHelper, AccreditationSubmissionEventHelper>()
             .AddScoped<ISubmissionEventsValidator, SubmissionEventsValidator>()
             .AddScoped<ISubmissionHydrationService, SubmissionHydrationService>()
+            .AddScoped<ISubmissionFileValidator, SubmissionFileValidator>()
             .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly())
             .AddMediatrAndPipelines();
 

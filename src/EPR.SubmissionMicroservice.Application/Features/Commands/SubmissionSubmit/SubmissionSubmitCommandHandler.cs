@@ -1,14 +1,12 @@
 ﻿using EPR.Common.Logging.Constants;
 using EPR.Common.Logging.Models;
 using EPR.Common.Logging.Services;
-using EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interfaces;
 using EPR.SubmissionMicroservice.Application.Logging;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
-using EPR.SubmissionMicroservice.Data;
-using EPR.SubmissionMicroservice.Data.Entities.Submission;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
-using EPR.SubmissionMicroservice.Data.Enums;
+using EPR.SubmissionMicroservice.Data.Repositories.Commands;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
+using EPR.SubmissionMicroservice.Data.Repositories.Queries;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
@@ -17,15 +15,11 @@ using Microsoft.Extensions.Logging;
 namespace EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSubmit;
 
 public class SubmissionSubmitCommandHandler(
-    ICommandRepository<Submission> submissionCommandRepository,
+    ISubmissionQueryRepository submissionQueryRepository,
     ILogger<SubmissionSubmitCommandHandler> logger,
-    IQueryRepository<Submission> submissionQueryRepository,
-    IValidationEventHelper validationEventHelper,
-    ICommandRepository<AbstractSubmissionEvent> submissionEventCommandRepository,
-    SubmissionContext submissionContext,
-    IPomSubmissionEventHelper pomSubmissionEventHelper,
+    ISubmissionFileValidator fileValidator,
+    ISubmissionCommandRepository submissionCommandRepository,
     ILoggingService loggingService,
-    ISubmissionEventsValidator submissionEventValidator,
     IPublisher publisher)
     : IRequestHandler<SubmissionSubmitCommand, ErrorOr<Unit>>
 {
@@ -49,12 +43,9 @@ public class SubmissionSubmitCommandHandler(
 
             try
             {
-                var submission = await submissionQueryRepository.GetByIdAsync(submissionId, cancellationToken);
+                var submission = await submissionQueryRepository.GetSubmissionAsync(submissionId, cancellationToken);
 
-                var isFileIdForValidFile = submission!.SubmissionType is SubmissionType.Producer
-                    ? await pomSubmissionEventHelper.VerifyFileIdIsForValidFileAsync(submissionId, fileId,
-                        cancellationToken)
-                    : await submissionEventValidator.IsSubmissionValidAsync(submissionId, fileId, cancellationToken);
+                var isFileIdForValidFile = await fileValidator.IsFileIdForValidFileAsync(submission!, fileId, cancellationToken);
 
                 if (!isFileIdForValidFile)
                 {
@@ -70,7 +61,7 @@ public class SubmissionSubmitCommandHandler(
                     submission.AppReferenceNumber = command.AppReferenceNumber;
                 }
 
-                submissionCommandRepository.Update(submission);
+                submissionCommandRepository.UpdateSubmission(submission);
 
                 var submittedEvent = new SubmittedEvent
                 {
@@ -82,13 +73,13 @@ public class SubmissionSubmitCommandHandler(
                     RegistrationJourney = submission.RegistrationJourney
                 };
 
-                await submissionEventCommandRepository.AddAsync(submittedEvent);
-                await submissionContext.SaveChangesAsync(cancellationToken);
+                await submissionCommandRepository.AddSubmitEventAsync(submittedEvent, cancellationToken);
+                await submissionCommandRepository.SaveChangesAsync(cancellationToken);
                 await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
 
                 // get blob name
                 var antivirusResult =
-                    await validationEventHelper.GetLatestAntivirusResult(command.SubmissionId, cancellationToken);
+                    await fileValidator.GetLatestAntivirusResultAsync(command.SubmissionId, cancellationToken);
 
                 if (antivirusResult is null || string.IsNullOrWhiteSpace(antivirusResult.BlobName))
                 {

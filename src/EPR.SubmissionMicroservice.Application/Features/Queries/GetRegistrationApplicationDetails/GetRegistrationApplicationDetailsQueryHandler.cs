@@ -325,7 +325,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
         if (submissions.Count > 1
             && request.SubmissionPeriod?.Contains("2026") == true
             && submissions[0].RegistrationJourney == RegistrationJourney.CsoLargeProducer.ToString()
-            && submissions.Any(s => string.IsNullOrEmpty(s.RegistrationJourney) && !string.IsNullOrEmpty(s.AppReferenceNumber)))
+            && submissions.Exists(s => string.IsNullOrEmpty(s.RegistrationJourney) && !string.IsNullOrEmpty(s.AppReferenceNumber)))
         {
             _logger.LogWarning("SMAL-332 patch: Removed duplicate CsoLargeProducer submission for organisation {OrganisationId}, retained original submission", request.OrganisationId);
             var originalSubmission = submissions.Where(s => string.IsNullOrEmpty(s.RegistrationJourney) && !string.IsNullOrEmpty(s.AppReferenceNumber))

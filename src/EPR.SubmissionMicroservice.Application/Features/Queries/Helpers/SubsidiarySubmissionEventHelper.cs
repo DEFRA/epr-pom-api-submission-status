@@ -29,21 +29,16 @@ public class SubsidiarySubmissionEventHelper : ISubsidiarySubmissionEventHelper
             return;
         }
 
-        if (antivirusCheckEvent is not null && antivirusCheckEvent.Errors.Count > 0)
+        if (antivirusCheckEvent.Errors.Count > 0)
         {
             fileUploadErrors.AddRange(antivirusCheckEvent.Errors);
         }
 
         var antivirusResultEvent = await GetAntivirusResultEventByFileIdAsync(antivirusCheckEvent.FileId, cancellationToken);
-        var processingComplete = false;
-
-        if (antivirusResultEvent is not null
-            && antivirusCheckEvent.Errors.Count == 0
-            && antivirusResultEvent.Errors.Count == 0
-            && antivirusResultEvent.AntivirusScanResult == AntivirusScanResult.Success)
-        {
-            processingComplete = true;
-        }
+        bool processingComplete = antivirusResultEvent is not null
+                                  && antivirusCheckEvent.Errors.Count == 0
+                                  && antivirusResultEvent.Errors.Count == 0
+                                  && antivirusResultEvent.AntivirusScanResult == AntivirusScanResult.Success;
 
         if (antivirusResultEvent?.Errors.Count > 0)
         {
