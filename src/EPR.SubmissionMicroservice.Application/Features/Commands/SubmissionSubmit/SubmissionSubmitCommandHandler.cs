@@ -83,7 +83,7 @@ public class SubmissionSubmitCommandHandler(
 
                 if (antivirusResult is null || string.IsNullOrWhiteSpace(antivirusResult.BlobName))
                 {
-                    logger.LogError($"Antivirus result event blob name is null. Antivirus event is { (antivirusResult  is null ? "not null" : "null")}");
+                    logger.LogError("Antivirus result event blob name is null. Antivirus event is {antivirusResult}",  antivirusResult  is null ? "null" : "not null");
                     return Error.Failure();
                 }
 
