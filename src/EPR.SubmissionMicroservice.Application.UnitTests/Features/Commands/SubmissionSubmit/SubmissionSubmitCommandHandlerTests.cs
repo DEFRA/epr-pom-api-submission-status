@@ -71,7 +71,7 @@ public class SubmissionSubmitCommandHandlerTests
         result.IsError.Should().BeFalse();
         _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.Is<Submission>(s => s.IsSubmitted.Value)), Times.Once);
         _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId), It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
         _loggerMock.VerifyLog(x => x.LogInformation("Submission with id {submissionId} submitted by user {userId}.", _submissionId, _userId));
     }
 
@@ -120,7 +120,7 @@ public class SubmissionSubmitCommandHandlerTests
         // Async
         result.IsError.Should().BeFalse();
         _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
-        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId), It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId && s.UserId == _userId && s.FileId == _fileId)), Times.Once);
         _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _loggerMock.VerifyLog(x => x.LogInformation("Submission with id {submissionId} submitted by user {userId}.", _submissionId, _userId));
     }
@@ -150,7 +150,7 @@ public class SubmissionSubmitCommandHandlerTests
         result.IsError.Should().BeTrue();
         result.Errors.Should().OnlyContain(error => error.Type == ErrorType.Unexpected);
         _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
-        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
         _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _loggerMock.VerifyLog(x => x.LogCritical(exception, "An error occurred when submitting the submission with id {submissionId}", _submissionId));
     }
@@ -176,7 +176,7 @@ public class SubmissionSubmitCommandHandlerTests
         result.IsError.Should().BeTrue();
         result.Errors.Should().OnlyContain(error => error.Type == ErrorType.Failure);
         _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Never);
-        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Never);
         _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -287,7 +287,7 @@ public class SubmissionSubmitCommandHandlerTests
             x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()),
             Times.Once);
         _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.IsAny<Submission>()), Times.Never);
-        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>(), It.IsAny<CancellationToken>()), Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Never);
         _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -351,7 +351,7 @@ public class SubmissionSubmitCommandHandlerTests
 
         // Assert
         _submissionCommandRepositoryMock.Verify(repo => repo.UpdateSubmission(It.Is<Submission>(s => s.IsSubmitted == true)), Times.Once);
-        _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
     }
 
     [TestMethod]
@@ -387,6 +387,6 @@ public class SubmissionSubmitCommandHandlerTests
 
         // Assert
         _submissionCommandRepositoryMock.Verify(repo => repo.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
-        _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+        _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
     }
 }

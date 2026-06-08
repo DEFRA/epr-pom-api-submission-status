@@ -7,7 +7,7 @@ public interface ISubmissionCommandRepository
 {
     void UpdateSubmission(Submission submission);
     
-    Task AddSubmitEventAsync(SubmittedEvent submittedEvent, CancellationToken cancellationToken);
+    Task AddSubmitEventAsync(SubmittedEvent submittedEvent);
     
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

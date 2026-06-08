@@ -73,7 +73,7 @@ public class SubmissionSubmitCommandHandler(
                     RegistrationJourney = submission.RegistrationJourney
                 };
 
-                await submissionCommandRepository.AddSubmitEventAsync(submittedEvent, cancellationToken);
+                await submissionCommandRepository.AddSubmitEventAsync(submittedEvent);
                 await submissionCommandRepository.SaveChangesAsync(cancellationToken);
                 await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
 

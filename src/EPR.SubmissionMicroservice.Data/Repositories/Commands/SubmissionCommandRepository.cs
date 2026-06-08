@@ -15,13 +15,13 @@ public class SubmissionCommandRepository(
         submissionCommandRepository.Update(submission);
     }
     
-    public async Task AddSubmitEventAsync(SubmittedEvent submittedEvent, CancellationToken cancellationToken)
+    public Task AddSubmitEventAsync(SubmittedEvent submittedEvent)
     {
-        await submissionEventCommandRepository.AddAsync(submittedEvent);
+        return submissionEventCommandRepository.AddAsync(submittedEvent);
     }
     
-    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
-        await submissionContext.SaveChangesAsync(cancellationToken);
+        return submissionContext.SaveChangesAsync(cancellationToken);
     }
 }
