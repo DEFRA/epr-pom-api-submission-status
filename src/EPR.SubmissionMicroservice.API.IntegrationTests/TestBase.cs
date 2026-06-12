@@ -4,91 +4,31 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using EPR.SubmissionMicroservice.Data;
 using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using TestSupport;
 using Data.Enums;
 
 public class TestBase
 {
-    /// <summary>
-    /// CI/local env var name for the Cosmos DB primary key (built via <see cref="string.Concat(string, string, string)"/> so secret scanners do not see a single literal matching common Azure key patterns).
-    /// </summary>
-    private static string CosmosPrimaryKeyEnvVarName => string.Concat("Cosmos", "Account", "Key");
-
-    /// <summary>
-    /// Config key forwarded to the test host for the DB primary key (same concatenation approach as <see cref="CosmosPrimaryKeyEnvVarName"/>).
-    /// </summary>
-    private static string DatabasePrimaryKeySettingName => string.Concat("Database__", "Account", "Key");
-
-    private const string EmulatorEndpoint = "https://localhost:8081/";
-    private const string EmulatorDatabaseName = "SubmissionDB";
-    private const string LoggingApiBaseUrl = "http://localhost";
     protected readonly string OrganisationId = Guid.NewGuid().ToString();
     protected readonly HttpClient HttpClient;
     private readonly string _userId = Guid.NewGuid().ToString();
 
     protected TestBase()
     {
-        ConfigureEmulatorDefaults();
+        // Use the shared HttpClient from AssemblyTestSetup (initialized once per test run)
+        HttpClient = AssemblyTestSetup.SharedHttpClient;
 
-        var application = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.UseSetting("https_port", "80");
-            });
-
-        HttpClient = application.CreateDefaultClient();
-        HttpClient.BaseAddress = new Uri("https://localhost:8000");
-        HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        HttpClient.DefaultRequestHeaders.Add("organisationId", OrganisationId);
-        HttpClient.DefaultRequestHeaders.Add("userId", _userId);
-
-        EnsureCosmosContainersCreated(application.Services);
-    }
-
-    private static void ConfigureEmulatorDefaults()
-    {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__ConnectionString")))
+        // Ensure Accept header is set (idempotent operation)
+        if (!HttpClient.DefaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
         {
-            Environment.SetEnvironmentVariable("Database__ConnectionString", EmulatorEndpoint);
+            HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DatabasePrimaryKeySettingName)))
-        {
-            var primaryKeyFromEnvironment = Environment.GetEnvironmentVariable(CosmosPrimaryKeyEnvVarName);
-            if (string.IsNullOrWhiteSpace(primaryKeyFromEnvironment))
-            {
-                throw new InvalidOperationException(
-                    $"Integration tests require a Cosmos DB account key. Set the '{CosmosPrimaryKeyEnvVarName}' " +
-                    $"environment variable (injected by CI), or set '{DatabasePrimaryKeySettingName}' directly. " +
-                    "For the Azure Cosmos DB Emulator, use the primary key from the emulator / Microsoft documentation.");
-            }
-
-            Environment.SetEnvironmentVariable(DatabasePrimaryKeySettingName, primaryKeyFromEnvironment);
-        }
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Database__Name")))
-        {
-            Environment.SetEnvironmentVariable("Database__Name", EmulatorDatabaseName);
-        }
-
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("LoggingApi__BaseUrl")))
-        {
-            Environment.SetEnvironmentVariable("LoggingApi__BaseUrl", LoggingApiBaseUrl);
-        }
-
-        Environment.SetEnvironmentVariable("Database__IgnoreCertificateErrors", "true");
-    }
-
-    private static void EnsureCosmosContainersCreated(IServiceProvider serviceProvider)
-    {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<SubmissionContext>();
-        context.Database.EnsureCreated();
+        // Set per-test headers
+        SetHeader("organisationId", OrganisationId);
+        SetHeader("userId", _userId);
     }
 
     protected async Task<HttpResponseMessage> CreateSubmissionAsync(
@@ -225,5 +165,22 @@ public class TestBase
     {
         HttpClient.DefaultRequestHeaders.Remove(headerName);
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
+    }
+
+    protected static async Task<T> GetPublishedMessage<T>()
+    {
+        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        Assert.IsNotNull(message, "message should not be null");
+        Assert.IsNotNull(message.Body, "body should not be null");
+        var typedMessage = message.Body.ToObjectFromJson<T>();
+        Assert.IsNotNull(typedMessage, "cannot convert message to expected type");
+        return typedMessage;
+    }
+    
+    [TestCleanup]
+    public Task TestCleanup()
+    {
+        // purge is in preview, so unavailable
+        return AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 }

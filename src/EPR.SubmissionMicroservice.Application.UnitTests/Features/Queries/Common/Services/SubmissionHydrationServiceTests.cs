@@ -160,7 +160,7 @@ public class SubmissionHydrationServiceTests
         submission.RegistrationJourney.Should().BeNull();
     }
 
-    private TestSubmissionGetResponse CreateTestSubmission(
+    private static TestSubmissionGetResponse CreateTestSubmission(
         SubmissionType submissionType,
         string submissionPeriod,
         Guid? complianceSchemeId = null,

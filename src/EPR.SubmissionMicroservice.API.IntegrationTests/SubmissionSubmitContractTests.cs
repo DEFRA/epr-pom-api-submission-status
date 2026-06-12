@@ -1,3 +1,5 @@
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
+
 namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
@@ -148,5 +150,76 @@ public class SubmissionSubmitContractTests : TestBase
         var getResponse = await HttpClient.GetAsync($"/v1/submissions/{submissionId}");
         var submission = await AssertJsonObjectResponseAsync(getResponse);
         submission["isSubmitted"]!.Value<bool>().Should().BeTrue();
+    }
+        [TestMethod]
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task Submit_PublishesToServiceBus_WhenRegistrationPipelineIsValid()
+    {
+        var submissionId = Guid.NewGuid();
+        await CreateSubmissionAsync(SubmissionType.Registration, submissionId);
+
+        var fileId = Guid.NewGuid();
+        var blobName = $"integration-submit-{Guid.NewGuid():N}.csv";
+
+        var antivirusCheck = JObject.FromObject(new
+        {
+            type = EventType.AntivirusCheck,
+            fileId,
+            fileType = FileType.CompanyDetails,
+            fileName = "company.csv",
+        });
+        var antivirusResult = JObject.FromObject(new
+        {
+            type = EventType.AntivirusResult,
+            fileId,
+            antivirusScanResult = AntivirusScanResult.Success,
+            antivirusScanTrigger = AntivirusScanTrigger.Upload,
+            blobName,
+            requiresRowValidation = false,
+        });
+        var registrationValidation = JObject.FromObject(new
+        {
+            type = EventType.Registration,
+            requiresBrandsFile = false,
+            requiresPartnershipsFile = false,
+            organisationMemberCount = 10,
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+            blobName,
+        });
+
+        (await HttpClient.PostAsync(
+            $"/v1/submissions/{submissionId}/events",
+            new StringContent(antivirusCheck.ToString(), Encoding.UTF8, "application/json"))).Should()
+            .HaveStatusCode(HttpStatusCode.Created);
+        (await HttpClient.PostAsync(
+            $"/v1/submissions/{submissionId}/events",
+            new StringContent(antivirusResult.ToString(), Encoding.UTF8, "application/json"))).Should()
+            .HaveStatusCode(HttpStatusCode.Created);
+        (await HttpClient.PostAsync(
+            $"/v1/submissions/{submissionId}/events",
+            new StringContent(registrationValidation.ToString(), Encoding.UTF8, "application/json"))).Should()
+            .HaveStatusCode(HttpStatusCode.Created);
+
+        var submitPayload = new
+        {
+            submittedBy = "Integration",
+            fileId,
+            appReferenceNumber = "APP-SUBMIT",
+            isResubmission = false,
+            registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+        };
+
+        var dateTime = DateTime.UtcNow;
+        var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var message = await GetPublishedMessage<RegistrationSubmittedForFeesCalculationNotification>();
+        
+        message.SubmissionId.Should().Be(submissionId);
+        message.SubmissionPeriod.Should().Be("2022");
+        message.RegistrationBlobName.Should().Be(blobName);
+        message.SubmissionDate.Should().BeOnOrAfter(dateTime);
+        message.ComplianceSchemeId.Should().BeNull();
     }
 }

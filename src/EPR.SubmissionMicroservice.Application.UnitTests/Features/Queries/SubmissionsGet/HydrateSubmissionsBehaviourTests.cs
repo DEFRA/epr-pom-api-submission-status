@@ -109,7 +109,7 @@ public class HydrateSubmissionsBehaviourTests
         _submissionHydrationServiceMock.Verify(x => x.Hydrate(submission3), Times.Once);
     }
 
-    private TestSubmissionGetResponse CreateTestSubmission(
+    private static TestSubmissionGetResponse CreateTestSubmission(
         SubmissionType submissionType,
         string submissionPeriod,
         Guid? complianceSchemeId = null,

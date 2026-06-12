@@ -77,5 +77,7 @@ public static class ConfigureServices
     private static IServiceCollection RegisterRepositories(this IServiceCollection services) =>
         services
             .AddScoped(typeof(ICommandRepository<>), typeof(CommandRepository<>))
-            .AddScoped(typeof(IQueryRepository<>), typeof(QueryRepository<>));
+            .AddScoped(typeof(IQueryRepository<>), typeof(QueryRepository<>))
+            .AddScoped<ISubmissionCommandRepository, SubmissionCommandRepository>()
+            .AddScoped<ISubmissionQueryRepository, SubmissionQueryRepository>();
 }

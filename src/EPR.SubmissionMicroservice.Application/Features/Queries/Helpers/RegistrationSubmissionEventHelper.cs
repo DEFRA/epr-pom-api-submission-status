@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers;
 
 using Common;
 using Data.Entities.AntivirusEvents;
@@ -32,6 +34,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
         return !response.RequiresPartnershipsFile || (response.PartnershipsDataComplete && response.PartnersDataIsValid);
     }
 
+    [SuppressMessage("Critical Code Smell", "S3776:Cognitive Complexity of methods should not be too high", Justification = "The risk involved in rewriting this method is too high. It is a class that is stable and there are no plans to update it, so very little benefit in rewriting it.")]
     public async Task SetValidationEvents(RegistrationSubmissionGetResponse response, bool isSubmitted, CancellationToken cancellationToken)
     {
         var submissionId = response.Id;
