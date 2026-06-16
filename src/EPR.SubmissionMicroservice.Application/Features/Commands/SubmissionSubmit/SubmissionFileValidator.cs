@@ -18,8 +18,8 @@ public class SubmissionFileValidator(
             : await submissionEventValidator.IsSubmissionValidAsync(submission.Id, fileId, cancellationToken);
     }
     
-    public async Task<AntivirusResultEvent?> GetLatestAntivirusResultAsync(Guid submissionId, CancellationToken cancellationToken)
+    public async Task<AntivirusResultEvent?> GetAntivirusResultByFileIdAsync(Guid submissionId, Guid fileId, CancellationToken cancellationToken)
     {
-        return await validationEventHelper.GetLatestAntivirusResult(submissionId, cancellationToken);
+        return await validationEventHelper.GetAntivirusResultByFileId(submissionId, fileId, cancellationToken);
     }
 }

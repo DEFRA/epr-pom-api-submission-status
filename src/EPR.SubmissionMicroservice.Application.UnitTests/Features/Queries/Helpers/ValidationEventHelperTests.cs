@@ -85,4 +85,69 @@ public class ValidationEventHelperTests
         // Assert
         result.Should().BeEquivalentTo(antivirusResultQueryEvents.First());
     }
+
+    [TestMethod]
+    public async Task GetAntivirusResultByFileId_ReturnsNull_WhenNoMatchingEventExists()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var fileId = Guid.NewGuid();
+
+        var antivirusResultQueryEvents = new List<AbstractSubmissionEvent>();
+
+        _submissionEventQueryRepositoryMock
+            .Setup(x => x.GetAll(It.Is<Expression<Func<AbstractSubmissionEvent, bool>>>(y => y.Compile().Invoke(new AntivirusResultEvent { SubmissionId = submissionId }))))
+            .Returns(antivirusResultQueryEvents.BuildMock);
+
+        // Act
+        var result = await _systemUnderTest.GetAntivirusResultByFileId(submissionId, fileId, It.IsAny<CancellationToken>());
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task GetAntivirusResultByFileId_ReturnsResultForRegistrationCsv_EvenWhenBrandFileUploadedMoreRecently()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var registrationFileId = Guid.NewGuid();
+        var brandFileId = Guid.NewGuid();
+        var registrationBlob = "registration-blob.csv";
+        var brandBlob = "brand-blob.csv";
+
+        var antivirusResultQueryEvents = new List<AbstractSubmissionEvent>
+        {
+            new AntivirusResultEvent
+            {
+                Id = Guid.NewGuid(),
+                SubmissionId = submissionId,
+                FileId = registrationFileId,
+                AntivirusScanResult = AntivirusScanResult.Success,
+                BlobName = registrationBlob,
+                Created = DateTime.UtcNow.AddMinutes(-10)
+            },
+            new AntivirusResultEvent
+            {
+                Id = Guid.NewGuid(),
+                SubmissionId = submissionId,
+                FileId = brandFileId,
+                AntivirusScanResult = AntivirusScanResult.Success,
+                BlobName = brandBlob,
+                Created = DateTime.UtcNow
+            }
+        };
+
+        _submissionEventQueryRepositoryMock
+            .Setup(x => x.GetAll(It.Is<Expression<Func<AbstractSubmissionEvent, bool>>>(y => y.Compile().Invoke(new AntivirusResultEvent { SubmissionId = submissionId }))))
+            .Returns(antivirusResultQueryEvents.BuildMock);
+
+        // Act
+        var result = await _systemUnderTest.GetAntivirusResultByFileId(submissionId, registrationFileId, It.IsAny<CancellationToken>());
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.FileId.Should().Be(registrationFileId);
+        result.BlobName.Should().Be(registrationBlob);
+    }
 }

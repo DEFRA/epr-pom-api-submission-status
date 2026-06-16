@@ -5,4 +5,6 @@ namespace EPR.SubmissionMicroservice.Application.Features.Queries.Helpers.Interf
 public interface IValidationEventHelper
 {
     public Task<AntivirusResultEvent?> GetLatestAntivirusResult(Guid submissionId, CancellationToken cancellationToken);
+
+    public Task<AntivirusResultEvent?> GetAntivirusResultByFileId(Guid submissionId, Guid fileId, CancellationToken cancellationToken);
 }
