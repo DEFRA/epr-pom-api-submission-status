@@ -6,6 +6,6 @@ namespace EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionSub
 public interface ISubmissionFileValidator
 {
     Task<bool> IsFileIdForValidFileAsync(Submission submission, Guid fileId, CancellationToken cancellationToken);
-    
-    Task<AntivirusResultEvent?> GetLatestAntivirusResultAsync(Guid submissionId, CancellationToken cancellationToken);
+
+    Task<AntivirusResultEvent?> GetAntivirusResultByFileIdAsync(Guid submissionId, Guid fileId, CancellationToken cancellationToken);
 }

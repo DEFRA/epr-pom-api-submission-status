@@ -38,4 +38,14 @@ public class ValidationEventHelper : IValidationEventHelper
 
         return latestAntivirusResultEvent;
     }
+
+    public async Task<AntivirusResultEvent?> GetAntivirusResultByFileId(Guid submissionId, Guid fileId, CancellationToken cancellationToken)
+    {
+        return await _submissionEventQueryRepository
+            .GetAll(x => x.SubmissionId == submissionId && x.Type == EventType.AntivirusResult)
+            .OrderByDescending(x => x.Created)
+            .Cast<AntivirusResultEvent>()
+            .Where(x => x.FileId == fileId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }

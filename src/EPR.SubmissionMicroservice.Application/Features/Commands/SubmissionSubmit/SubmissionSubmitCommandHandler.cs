@@ -77,9 +77,10 @@ public class SubmissionSubmitCommandHandler(
                 await submissionCommandRepository.SaveChangesAsync(cancellationToken);
                 await CreateProtectiveMonitoringEvent(submissionId, userId, fileId);
 
-                // get blob name
+                // get blob name for the registration CSV the user submitted (command.FileId is guaranteed
+                // to be the registration file by the IsFileIdForValidFileAsync check above)
                 var antivirusResult =
-                    await fileValidator.GetLatestAntivirusResultAsync(command.SubmissionId, cancellationToken);
+                    await fileValidator.GetAntivirusResultByFileIdAsync(command.SubmissionId, command.FileId, cancellationToken);
 
                 if (antivirusResult is null || string.IsNullOrWhiteSpace(antivirusResult.BlobName))
                 {

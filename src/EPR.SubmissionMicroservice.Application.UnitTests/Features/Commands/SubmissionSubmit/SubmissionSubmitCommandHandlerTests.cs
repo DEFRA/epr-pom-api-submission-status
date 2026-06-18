@@ -1,4 +1,5 @@
-﻿using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
+﻿using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
+using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries;
 
@@ -63,7 +64,7 @@ public class SubmissionSubmitCommandHandlerTests
             .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _submissionFileValidatorMock
-            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
@@ -87,7 +88,7 @@ public class SubmissionSubmitCommandHandlerTests
         _submissionFileValidatorMock.Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _submissionFileValidatorMock
-            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
@@ -111,7 +112,7 @@ public class SubmissionSubmitCommandHandlerTests
             .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _submissionFileValidatorMock
-            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         // Act
@@ -307,7 +308,7 @@ public class SubmissionSubmitCommandHandlerTests
             .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => true);
         _submissionFileValidatorMock
-            .Setup(x => x.GetLatestAntivirusResultAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(antivirusResultEvent);
 
         // Act
@@ -388,5 +389,50 @@ public class SubmissionSubmitCommandHandlerTests
         // Assert
         _submissionCommandRepositoryMock.Verify(repo => repo.UpdateSubmission(It.IsAny<Submission>()), Times.Once);
         _submissionCommandRepositoryMock.Verify(repo => repo.AddSubmitEventAsync(It.IsAny<SubmittedEvent>()), Times.Once);
+    }
+
+    [TestMethod]
+    public async Task Handle_PublishesNotificationWithRegistrationBlobName_WhenBrandFileWasUploadedMoreRecentlyThanRegistrationCsv()
+    {
+        // Arrange — submit carries the registration file id; the brand file uploaded after it must not leak into the message
+        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
+        var submission = new Submission
+        {
+            Id = _submissionId,
+            SubmissionType = SubmissionType.Registration,
+            IsSubmitted = false,
+            ComplianceSchemeId = Guid.NewGuid(),
+            SubmissionPeriod = "Jan to Jun 26"
+        };
+        const string registrationBlob = "registration-blob.csv";
+        var registrationAntivirusResult = new AntivirusResultEvent { FileId = _fileId, BlobName = registrationBlob };
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submission);
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _submissionFileValidatorMock
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(registrationAntivirusResult);
+
+        // Act
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        _publisherMock.Verify(
+            p => p.Publish(
+                It.Is<RegistrationSubmittedForFeesCalculationNotification>(n =>
+                    n.SubmissionId == _submissionId
+                    && n.RegistrationBlobName == registrationBlob
+                    && n.ComplianceSchemeId == submission.ComplianceSchemeId
+                    && n.SubmissionPeriod == submission.SubmissionPeriod),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _submissionFileValidatorMock.Verify(
+            x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }
