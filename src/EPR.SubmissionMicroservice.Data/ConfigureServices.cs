@@ -1,11 +1,13 @@
 ﻿namespace EPR.SubmissionMicroservice.Data;
 
 using System.Diagnostics.CodeAnalysis;
+using Azure.Identity;
 using Common.Functions.Database.Context.Interfaces;
 using Common.Functions.Extensions;
 using Microsoft.Azure.Cosmos;
 using System.Net.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -22,7 +24,7 @@ public static class ConfigureServices
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        ConfigureOptions(services, configuration);
+        services.ConfigureOptions(configuration);
         var serviceProvider = services.BuildServiceProvider();
         return services
             .AddCommonServices()
@@ -49,29 +51,42 @@ public static class ConfigureServices
         return services.AddDbContext<IEprCommonContext, SubmissionContext>(
             options =>
             {
-                options.UseCosmos(
-                    databaseOptions.ConnectionString,
-                    databaseOptions.AccountKey,
-                    databaseOptions.Name,
-                    c =>
-                    {
-                        c.ConnectionMode(ConnectionMode.Gateway);
-                        if (ignoreCertificateErrors)
-                        {
-                            c.HttpClientFactory(() => new HttpClient(
-                                new HttpClientHandler
-                                {
-                                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-                                }));
-                        }
-
-                        c.ExecutionStrategy(x =>
-                            new CosmosDbRetryExecutionStrategy(
-                                x.CurrentContext.Context,
-                                databaseOptions.MaxRetryCount,
-                                TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds)));
-                    });
+                if (!string.IsNullOrWhiteSpace(databaseOptions.AccountKey))
+                {
+                    options.UseCosmos(
+                        databaseOptions.ConnectionString,
+                        databaseOptions.AccountKey,
+                        databaseOptions.Name,
+                        ConfigureCosmos);
+                }
+                else
+                {
+                    options.UseCosmos(
+                        databaseOptions.ConnectionString,
+                        new DefaultAzureCredential(),
+                        databaseOptions.Name,
+                        ConfigureCosmos);
+                }
             });
+
+        void ConfigureCosmos(CosmosDbContextOptionsBuilder c)
+        {
+            c.ConnectionMode(ConnectionMode.Gateway);
+            if (ignoreCertificateErrors)
+            {
+                c.HttpClientFactory(() => new HttpClient(
+                    new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+                    }));
+            }
+
+            c.ExecutionStrategy(x =>
+                new CosmosDbRetryExecutionStrategy(
+                    x.CurrentContext.Context,
+                    databaseOptions.MaxRetryCount,
+                    TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds)));
+        }
     }
 
     private static IServiceCollection RegisterRepositories(this IServiceCollection services) =>
