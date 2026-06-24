@@ -48,10 +48,17 @@ public static class ConfigureServices
             "true",
             StringComparison.OrdinalIgnoreCase);
 
+        // Created once and reused so EF Core's internal service provider cache stays stable:
+        // a fresh TokenCredential per DbContext instantiation changes the options fingerprint
+        // and triggers ManyServiceProvidersCreatedWarning after 20 contexts.
+        var credential = string.IsNullOrWhiteSpace(databaseOptions.AccountKey)
+            ? new DefaultAzureCredential()
+            : null;
+
         return services.AddDbContext<IEprCommonContext, SubmissionContext>(
             options =>
             {
-                if (!string.IsNullOrWhiteSpace(databaseOptions.AccountKey))
+                if (credential is null)
                 {
                     options.UseCosmos(
                         databaseOptions.ConnectionString,
@@ -63,7 +70,7 @@ public static class ConfigureServices
                 {
                     options.UseCosmos(
                         databaseOptions.ConnectionString,
-                        new DefaultAzureCredential(),
+                        credential,
                         databaseOptions.Name,
                         ConfigureCosmos);
                 }
