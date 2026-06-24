@@ -8,6 +8,7 @@ using Microsoft.Azure.Cosmos;
 using System.Net.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -49,11 +50,24 @@ public static class ConfigureServices
             StringComparison.OrdinalIgnoreCase);
 
         // Created once and reused so EF Core's internal service provider cache stays stable:
-        // a fresh TokenCredential per DbContext instantiation changes the options fingerprint
-        // and triggers ManyServiceProvidersCreatedWarning after 20 contexts.
+        // a fresh TokenCredential / factory delegate per DbContext instantiation changes the
+        // options fingerprint and trips ManyServiceProvidersCreatedWarning after 20 contexts.
         var credential = string.IsNullOrWhiteSpace(databaseOptions.AccountKey)
             ? new DefaultAzureCredential()
             : null;
+
+        Func<HttpClient>? httpClientFactory = ignoreCertificateErrors
+            ? () => new HttpClient(new HttpClientHandler
+              {
+                  ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+              })
+            : null;
+
+        Func<ExecutionStrategyDependencies, IExecutionStrategy> executionStrategyFactory =
+            x => new CosmosDbRetryExecutionStrategy(
+                x.CurrentContext.Context,
+                databaseOptions.MaxRetryCount,
+                TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds));
 
         return services.AddDbContext<IEprCommonContext, SubmissionContext>(
             options =>
@@ -79,20 +93,12 @@ public static class ConfigureServices
         void ConfigureCosmos(CosmosDbContextOptionsBuilder c)
         {
             c.ConnectionMode(ConnectionMode.Gateway);
-            if (ignoreCertificateErrors)
+            if (httpClientFactory is not null)
             {
-                c.HttpClientFactory(() => new HttpClient(
-                    new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-                    }));
+                c.HttpClientFactory(httpClientFactory);
             }
 
-            c.ExecutionStrategy(x =>
-                new CosmosDbRetryExecutionStrategy(
-                    x.CurrentContext.Context,
-                    databaseOptions.MaxRetryCount,
-                    TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds)));
+            c.ExecutionStrategy(executionStrategyFactory);
         }
     }
 
