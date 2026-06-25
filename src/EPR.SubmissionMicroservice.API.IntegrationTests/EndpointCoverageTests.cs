@@ -12,7 +12,6 @@ using TestSupport;
 public class EndpointCoverageTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionFile_ReturnsNotFound_WhenFileDoesNotExist()
     {
         var response = await HttpClient.GetAsync($"/v1/submissions/files/{Guid.NewGuid()}");
@@ -20,7 +19,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionFile_ReturnsOk_WhenAntivirusCheckEventExists()
     {
         var submissionId = Guid.NewGuid();
@@ -37,7 +35,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionUploadedFile_ReturnsNotFound_WhenFileDoesNotExist()
     {
         var response = await HttpClient.GetAsync($"/v1/submissions/{Guid.NewGuid()}/uploadedfile/{Guid.NewGuid()}");
@@ -45,7 +42,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionUploadedFile_ReturnsOk_WhenAntivirusResultEventExists()
     {
         var submissionId = Guid.NewGuid();
@@ -62,7 +58,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionOrganisationDetails_ReturnsNotFound_WhenBlobNameDoesNotMatch()
     {
         var submissionId = Guid.NewGuid();
@@ -72,7 +67,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task Submit_ReturnsBadRequest_WhenSubmissionDoesNotExist()
     {
         var payload = JObject.FromObject(new
@@ -89,7 +83,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegistrationApplicationDetails_ReturnsNoContent_WhenNoMatchingSubmissionExists()
     {
         var organisationId = Guid.NewGuid();
@@ -103,7 +96,6 @@ public class EndpointCoverageTests : TestBase
     /// Smoke: valid JSON array + media type. Deeper seeded assertions live in <see cref="ApplicationDetailsIntegrationTests"/>.
     /// </summary>
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetPackagingDataResubmissionApplicationDetails_ReturnsOk_WhenRequestIsValid()
     {
         var organisationId = Guid.Parse(OrganisationId);
@@ -116,7 +108,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegulatorPomDecision_ReturnsOk_WhenRequestIsValid()
     {
         var response =
@@ -130,7 +121,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegulatorPomDecision_ReturnsBadRequest_WhenLastSyncTimeIsMissing()
     {
         var response = await HttpClient.GetAsync("/v1/submissions/events/get-regulator-pom-decision?LastSyncTime=");
@@ -138,7 +128,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetOrganisationRegistrationEvents_ReturnsOk_WhenRequestIsValid()
     {
         var response =
@@ -152,7 +141,6 @@ public class EndpointCoverageTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetOrganisationRegistrationEvents_ReturnsBadRequest_WhenLastSyncTimeIsMissing()
     {
         var response =

@@ -8,7 +8,6 @@ using FluentAssertions;
 public class HeaderAndBoundaryTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsBadRequest_WhenOrganisationIdHeaderIsMissing()
     {
         RemoveHeader("organisationId");
@@ -18,7 +17,6 @@ public class HeaderAndBoundaryTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsOk_WhenUserIdHeaderIsMissing()
     {
         await CreateSubmissionsAsync(SubmissionType.Producer, 1);
@@ -30,7 +28,6 @@ public class HeaderAndBoundaryTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsBadRequest_WhenTypeQueryIsInvalid()
     {
         var response = await HttpClient.GetAsync("/v1/submissions?Type=InvalidType");
@@ -38,7 +35,6 @@ public class HeaderAndBoundaryTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsOk_WhenLimitIsLarge()
     {
         // SubmissionsGetQueryHandler returns at most one row per SubmissionPeriod (latest by Created).
@@ -57,7 +53,6 @@ public class HeaderAndBoundaryTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmission_ReturnsUnauthorized_WhenOrganisationIdDoesNotOwnSubmission()
     {
         var submissionId = Guid.NewGuid();
@@ -73,7 +68,6 @@ public class HeaderAndBoundaryTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsOk_WhenLimitIsZero()
     {
         await CreateSubmissionsAsync(SubmissionType.Producer, 1);

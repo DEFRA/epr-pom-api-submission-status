@@ -17,7 +17,6 @@ public class SubmissionSubmitContractTests : TestBase
     /// AntivirusResult (with blob), CheckSplitter (same blob + DataCount), and that many valid ProducerValidation events for the blob.
     /// </summary>
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task Submit_ReturnsNoContent_WhenProducerPipelineIsValid()
     {
         var submissionId = Guid.NewGuid();
@@ -86,7 +85,6 @@ public class SubmissionSubmitContractTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task Submit_ReturnsNoContent_WhenRegistrationPipelineIsValid()
     {
         var submissionId = Guid.NewGuid();
@@ -153,7 +151,6 @@ public class SubmissionSubmitContractTests : TestBase
     }
     
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task Submit_PublishesToServiceBus_WhenRegistrationPipelineIsValid()
     {
         var submissionId = Guid.NewGuid();
@@ -225,7 +222,6 @@ public class SubmissionSubmitContractTests : TestBase
     }
     
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task Submit_DoesNotPublishServiceBus_WhenPackagingSubmission()
     {
         var submissionId = Guid.NewGuid();

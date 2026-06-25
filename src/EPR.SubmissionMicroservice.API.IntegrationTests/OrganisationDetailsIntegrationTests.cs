@@ -17,7 +17,6 @@ public class OrganisationDetailsIntegrationTests : TestBase
     /// then asserts the JSON contract for a successful GET.
     /// </summary>
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionOrganisationDetails_ReturnsOk_WithExpectedFields_WhenBrandBlobChainExists()
     {
         var submissionId = Guid.NewGuid();
