@@ -39,6 +39,7 @@ public static class ConfigureServices
         services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.ConfigSection));
     }
 
+    [SuppressMessage("Security", "S4830:Server certificates should be verified during SSL/TLS connections", Justification = "Certificate validation is only bypassed for the local Cosmos DB emulator (self-signed cert) when the Database__IgnoreCertificateErrors environment variable is explicitly set to true. Never enabled in deployed environments.")]
     private static IServiceCollection RegisterCosmosDatabase(
         this IServiceCollection services,
         IServiceProvider serviceProvider)
