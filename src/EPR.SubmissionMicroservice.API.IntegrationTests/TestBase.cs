@@ -167,6 +167,17 @@ public class TestBase
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
     }
 
+    protected static async Task<bool> HasMessageBeenPublished<T>()
+    {
+        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+
+        if (message == null) return false;
+        
+        var typedMessage = message.Body.ToObjectFromJson<T>();
+        
+        return typedMessage != null;
+    }
+
     protected static async Task<T> GetPublishedMessage<T>()
     {
         var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));

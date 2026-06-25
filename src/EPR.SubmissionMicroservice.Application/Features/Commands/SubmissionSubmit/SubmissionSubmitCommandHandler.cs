@@ -4,10 +4,9 @@ using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Logging;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
+using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands;
-using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries;
-using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -88,11 +87,14 @@ public class SubmissionSubmitCommandHandler(
                     return Error.Failure();
                 }
 
-                // publish submitted event to message bus
-                var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId,
-                    antivirusResult.BlobName,
-                    submission.ComplianceSchemeId, submission.SubmissionPeriod, submittedEvent.Created);
-                await publisher.Publish(message, cancellationToken);
+                // publish submitted registration event to message bus
+                if (submission.SubmissionType == SubmissionType.Registration)
+                {
+                    var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId,
+                        antivirusResult.BlobName,
+                        submission.ComplianceSchemeId, submission.SubmissionPeriod, submittedEvent.Created);
+                    await publisher.Publish(message, cancellationToken);
+                }
 
                 logger.LogInformation("Submission with id {submissionId} submitted by user {userId}.", submissionId,
                     userId);

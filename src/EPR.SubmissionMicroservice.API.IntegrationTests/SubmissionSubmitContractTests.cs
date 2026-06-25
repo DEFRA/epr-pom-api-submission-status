@@ -151,7 +151,8 @@ public class SubmissionSubmitContractTests : TestBase
         var submission = await AssertJsonObjectResponseAsync(getResponse);
         submission["isSubmitted"]!.Value<bool>().Should().BeTrue();
     }
-        [TestMethod]
+    
+    [TestMethod]
     [TestProperty("Category", "IntegrationTest")]
     public async Task Submit_PublishesToServiceBus_WhenRegistrationPipelineIsValid()
     {
@@ -221,5 +222,73 @@ public class SubmissionSubmitContractTests : TestBase
         message.RegistrationBlobName.Should().Be(blobName);
         message.SubmissionDate.Should().BeOnOrAfter(dateTime);
         message.ComplianceSchemeId.Should().BeNull();
+    }
+    
+    [TestMethod]
+    [TestProperty("Category", "IntegrationTest")]
+    public async Task Submit_DoesNotPublishServiceBus_WhenPackagingSubmission()
+    {
+        var submissionId = Guid.NewGuid();
+        await CreateSubmissionAsync(SubmissionType.Producer, submissionId);
+
+        var fileId = Guid.NewGuid();
+        // Must be unique per run: VerifyFileIdIsForValidFileAsync counts ProducerValidation events globally by BlobName.
+        var blobName = $"integration-producer-submit-{Guid.NewGuid():N}.csv";
+        const string blobContainerName = "pom-upload-container";
+
+        var antivirusCheck = JObject.FromObject(new
+        {
+            type = EventType.AntivirusCheck,
+            fileId,
+            fileType = FileType.Pom,
+            fileName = "pom.csv",
+        });
+        var antivirusResult = JObject.FromObject(new
+        {
+            type = EventType.AntivirusResult,
+            fileId,
+            antivirusScanResult = AntivirusScanResult.Success,
+            antivirusScanTrigger = AntivirusScanTrigger.Upload,
+            blobName,
+            requiresRowValidation = false,
+        });
+        var checkSplitter = JObject.FromObject(new
+        {
+            type = EventType.CheckSplitter,
+            dataCount = 1,
+            blobName,
+            blobContainerName,
+        });
+        var producerValidation = JObject.FromObject(new
+        {
+            type = EventType.ProducerValidation,
+            producerId = "123456",
+            blobName,
+            blobContainerName,
+        });
+
+        foreach (var ev in new[] { antivirusCheck, antivirusResult, checkSplitter, producerValidation })
+        {
+            (await HttpClient.PostAsync(
+                $"/v1/submissions/{submissionId}/events",
+                new StringContent(ev.ToString(), Encoding.UTF8, "application/json"))).Should()
+                .HaveStatusCode(HttpStatusCode.Created);
+        }
+
+        var submitPayload = new
+        {
+            submittedBy = "Integration",
+            fileId,
+            appReferenceNumber = "APP-PROD-SUBMIT",
+            isResubmission = false,
+        };
+
+        var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var isPublished = await HasMessageBeenPublished<RegistrationSubmittedForFeesCalculationNotification>();
+        
+        isPublished.Should().BeFalse();
     }
 }
