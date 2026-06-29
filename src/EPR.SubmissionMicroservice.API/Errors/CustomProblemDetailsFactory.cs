@@ -50,8 +50,6 @@ public class CustomProblemDetailsFactory : ProblemDetailsFactory
         string? detail = null,
         string? instance = null)
     {
-        ArgumentNullException.ThrowIfNull(nameof(modelStateDictionary));
-
         statusCode ??= 400;
 
         var problemDetails = new ValidationProblemDetails(modelStateDictionary)
