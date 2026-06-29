@@ -18,7 +18,7 @@ public class TestBase
     protected TestBase()
     {
         // Use the shared HttpClient from AssemblyTestSetup (initialized once per test run)
-        HttpClient = AssemblyTestSetup.SharedHttpClient;
+        HttpClient = AssemblyTestSetup.CreateClient();
 
         // Ensure Accept header is set (idempotent operation)
         if (!HttpClient.DefaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
@@ -176,11 +176,11 @@ public class TestBase
         Assert.IsNotNull(typedMessage, "cannot convert message to expected type");
         return typedMessage;
     }
-    
+
     [TestCleanup]
-    public Task TestCleanup()
+    public async Task TestCleanup()
     {
         // purge is in preview, so unavailable
-        return AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 }
