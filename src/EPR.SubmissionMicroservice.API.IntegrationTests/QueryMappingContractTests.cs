@@ -11,7 +11,6 @@ using TestSupport;
 public class QueryMappingContractTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_FiltersByCommaSeparatedPeriods_WhenPeriodsQueryProvided()
     {
         var req2025 = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
@@ -32,7 +31,6 @@ public class QueryMappingContractTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionsByType_ReturnsSubmissionRows_WithExpectedKeys_WhenSubmissionExistsForYear()
     {
         var organisationId = Guid.Parse(OrganisationId);

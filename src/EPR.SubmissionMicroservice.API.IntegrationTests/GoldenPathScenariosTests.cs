@@ -9,7 +9,6 @@ using Newtonsoft.Json.Linq;
 public class GoldenPathScenariosTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task ProducerSubmission_GoldenPath_CreateThenEventThenQuery()
     {
         var submissionId = Guid.NewGuid();
@@ -35,7 +34,6 @@ public class GoldenPathScenariosTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task Decisions_GoldenPath_ValidQueryReturnsOkWithArray()
     {
         var submissionId = Guid.NewGuid();

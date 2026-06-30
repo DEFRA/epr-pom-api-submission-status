@@ -12,7 +12,6 @@ using TestSupport;
 public class DecisionIntegrationTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetDecisions_ReturnsOk_WithJsonArray_WhenQueryIsValid()
     {
         var submissionId = Guid.NewGuid();
@@ -24,7 +23,6 @@ public class DecisionIntegrationTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetDecisions_ReturnsEntries_WithExpectedKeys_WhenRegistrationSubmittedAndDecisionEventExists()
     {
         var submissionId = Guid.NewGuid();
@@ -102,7 +100,6 @@ public class DecisionIntegrationTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetDecisions_ReturnsBadRequest_WhenLastSyncTimeIsUnparseable()
     {
         var submissionId = Guid.NewGuid();

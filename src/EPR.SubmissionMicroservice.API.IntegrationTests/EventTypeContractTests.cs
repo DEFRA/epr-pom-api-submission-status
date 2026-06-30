@@ -9,7 +9,6 @@ using TestSupport;
 public class EventTypeContractTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_ReturnsCreated_WhenFileDownloadCheckOnProducerSubmission()
     {
         var submissionId = Guid.NewGuid();
@@ -21,7 +20,6 @@ public class EventTypeContractTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_ReturnsCreated_WhenRegistrationApplicationSubmittedOnRegistrationSubmission()
     {
         var submissionId = Guid.NewGuid();
@@ -36,7 +34,6 @@ public class EventTypeContractTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_ReturnsCreated_WhenSubsidiariesBulkUploadCompleteOnSubsidiarySubmission()
     {
         var submissionId = Guid.NewGuid();
@@ -51,7 +48,6 @@ public class EventTypeContractTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_Persists_WhenPackagingResubmissionReferenceNumberCreatedOnProducerSubmission()
     {
         var submissionId = Guid.NewGuid();

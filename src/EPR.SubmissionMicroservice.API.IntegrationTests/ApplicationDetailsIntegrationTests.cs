@@ -11,7 +11,6 @@ using TestSupport;
 public class ApplicationDetailsIntegrationTests : TestBase
 {
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegistrationApplicationDetails_ReturnsOk_WithSubmissionFields_WhenSubmissionMatchesQuery()
     {
         var submissionId = Guid.NewGuid();
@@ -37,7 +36,6 @@ public class ApplicationDetailsIntegrationTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetPackagingDataResubmissionApplicationDetails_ReturnsArray_WithSubmissionId_WhenProducerExistsForPeriod()
     {
         var submissionId = Guid.NewGuid();
