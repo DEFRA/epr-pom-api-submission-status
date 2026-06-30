@@ -13,7 +13,6 @@ public class SubmissionTests : TestBase
     private const string BasePath = "/v1/submissions";
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow(SubmissionType.Producer)]
     [DataRow(SubmissionType.Registration)]
     public async Task CreateSubmission_ReturnsCreatedAndLocation_WhenSubmissionDoesNotExist(SubmissionType submissionType)
@@ -28,7 +27,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow(SubmissionType.Producer)]
     [DataRow(SubmissionType.Registration)]
     public async Task CreateSubmission_ReturnsValidationProblem_WhenSubmissionAlreadyExists(SubmissionType submissionType)
@@ -42,7 +40,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow(SubmissionType.Producer)]
     [DataRow(SubmissionType.Registration)]
     public async Task GetSubmission_ReturnsSubmissionBody_WhenSubmissionExists(SubmissionType submissionType)
@@ -62,7 +59,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmission_ReturnsProblemDetails_WhenSubmissionDoesNotExist()
     {
         var path = $"{BasePath}/{Guid.NewGuid()}";
@@ -71,7 +67,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow(SubmissionType.Producer)]
     [DataRow(SubmissionType.Registration)]
     public async Task GetSubmissions_ReturnsCollection_WhenSubmissionExists(SubmissionType submissionType)
@@ -85,7 +80,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsAtLeastOneSubmission_WhenProducerAndRegistrationExist()
     {
         await CreateSubmissionAsync(SubmissionType.Producer);
@@ -97,7 +91,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_ReturnsOkWithCollection_WhenNoSubmissionExists()
     {
         SetHeader("organisationId", Guid.NewGuid().ToString());
@@ -108,7 +101,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissions_RespectsLimit_ForDeterministicFixtureSet()
     {
         await CreateSubmissionsAsync(SubmissionType.Producer, 3);
@@ -119,7 +111,6 @@ public class SubmissionTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetSubmissionEvents_ReturnsOk_WhenLastSyncTimeIsValid()
     {
         var submissionId = Guid.NewGuid();

@@ -17,7 +17,6 @@ public class SubmissionEventTests : TestBase
         $"{SubmissionsBasePath}/events/get-regulator-registration-decision";
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow(SubmissionType.Producer, EventType.AntivirusCheck)]
     [DataRow(SubmissionType.Producer, EventType.CheckSplitter)]
     [DataRow(SubmissionType.Producer, EventType.ProducerValidation)]
@@ -33,7 +32,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_EmitsQueryableState_WhenProducerValidationEventIsCreated()
     {
         var submissionId = Guid.NewGuid();
@@ -50,7 +48,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow(EventType.AntivirusCheck)]
     [DataRow(EventType.CheckSplitter)]
     [DataRow(EventType.ProducerValidation)]
@@ -63,7 +60,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_ReturnsValidationProblem_WhenTypeIsMissing()
     {
         var submissionId = Guid.NewGuid();
@@ -76,7 +72,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_ReturnsValidationProblem_WhenTypeIsOutOfRange()
     {
         var submissionId = Guid.NewGuid();
@@ -89,7 +84,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task CreateEvent_ReturnsBadRequest_WhenJsonIsMalformed()
     {
         var submissionId = Guid.NewGuid();
@@ -103,7 +97,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsOk_WhenRequestIsValid()
     {
         var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=2024-01-10";
@@ -112,7 +105,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsBadRequest_WhenLastSyncTimeIsMissing()
     {
         var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=";
@@ -121,7 +113,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsBadRequest_WhenLastSyncTimeIsInvalid()
     {
         var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime=not-a-date";
@@ -130,7 +121,6 @@ public class SubmissionEventTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     [DataRow("2024-01-01T00:00:00Z")]
     [DataRow("2024-01-01T00:00:00+01:00")]
     [DataRow("2024-03-31T00:59:59+00:00")]

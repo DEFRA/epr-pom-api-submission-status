@@ -19,7 +19,6 @@ public class ValidationEventErrorTests : TestBase
     private const string SubmissionEventsBasePath = "/v1/submissions/{0}/events";
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetProducerValidationErrors_ReturnsErrors_WhenProducerValidationExists()
     {
         var submissionId = Guid.NewGuid();
@@ -49,7 +48,6 @@ public class ValidationEventErrorTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetProducerValidationWarnings_ReturnsWarnings_WhenProducerValidationWarningsExist()
     {
         var submissionId = Guid.NewGuid();
@@ -78,7 +76,6 @@ public class ValidationEventErrorTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetProducerValidationWarnings_ReturnsWarnings_WhenCheckSplitterWarningsExist()
     {
         var submissionId = Guid.NewGuid();
@@ -107,7 +104,6 @@ public class ValidationEventErrorTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetOrganisationDetailValidationErrors_ReturnsBadRequest_WhenSubmissionDoesNotExist()
     {
         var response = await HttpClient.GetAsync(string.Format(OrganisationValidationErrorPath, Guid.NewGuid()));
@@ -115,7 +111,6 @@ public class ValidationEventErrorTests : TestBase
     }
 
     [TestMethod]
-    [TestProperty("Category", "IntegrationTest")]
     public async Task GetOrganisationDetailValidationWarnings_ReturnsBadRequest_WhenSubmissionDoesNotExist()
     {
         var response = await HttpClient.GetAsync(string.Format(OrganisationValidationWarningPath, Guid.NewGuid()));
