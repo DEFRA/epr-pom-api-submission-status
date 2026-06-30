@@ -167,14 +167,22 @@ public class TestBase
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
     }
 
+    protected static async Task DrainServiceBusReceiverAsync()
+    {
+        // Establish a clean baseline before a "did this test publish?" assertion: any messages
+        // leaked by a prior test would otherwise be misattributed to the current one.
+        await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+    }
+
     protected static async Task<bool> HasMessageBeenPublished<T>()
     {
-        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        // Peek (not Receive) so a message racing in from another test isn't consumed away from it.
+        var message = await AssemblyTestSetup.ServiceBusReceiver.PeekMessageAsync();
 
         if (message == null) return false;
-        
+
         var typedMessage = message.Body.ToObjectFromJson<T>();
-        
+
         return typedMessage != null;
     }
 
