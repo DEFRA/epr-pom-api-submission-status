@@ -75,6 +75,7 @@ public class SubmissionContext : EprCommonContext
         {
             x.ToContainer("SubmissionEvents");
             x.HasPartitionKey(submissionEvent => submissionEvent.Id);
+            x.HasDiscriminatorInJsonId();
             x.HasDiscriminator(submissionEvent => submissionEvent.Type)
                 .HasValue<CheckSplitterValidationEvent>(EventType.CheckSplitter)
                 .HasValue<ProducerValidationEvent>(EventType.ProducerValidation)
@@ -112,6 +113,7 @@ public class SubmissionContext : EprCommonContext
         {
             x.ToContainer("ProducerValidationErrors");
             x.HasPartitionKey(submissionEventError => submissionEventError.Id);
+            x.HasDiscriminatorInJsonId();
             x.HasDiscriminator(submissionEventError => submissionEventError.ValidationErrorType)
                 .HasValue<CheckSplitterValidationError>(ValidationType.CheckSplitter)
                 .HasValue<ProducerValidationError>(ValidationType.ProducerValidation)
@@ -124,6 +126,7 @@ public class SubmissionContext : EprCommonContext
         {
             x.ToContainer("ProducerValidationWarnings");
             x.HasPartitionKey(warning => warning.ValidationEventId);
+            x.HasDiscriminatorInJsonId();
             x.HasDiscriminator(warning => warning.ValidationWarningType)
                 .HasValue<ProducerValidationWarning>(ValidationType.ProducerValidation)
                 .HasValue<CheckSplitterValidationWarning>(ValidationType.CheckSplitter)
