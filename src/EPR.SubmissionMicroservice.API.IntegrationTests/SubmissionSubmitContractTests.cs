@@ -279,12 +279,14 @@ public class SubmissionSubmitContractTests : TestBase
             isResubmission = false,
         };
 
+        await DrainServiceBusReceiverAsync();
+
         var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var isPublished = await HasMessageBeenPublished<RegistrationSubmittedForFeesCalculationNotification>();
-        
+
         isPublished.Should().BeFalse();
     }
 }

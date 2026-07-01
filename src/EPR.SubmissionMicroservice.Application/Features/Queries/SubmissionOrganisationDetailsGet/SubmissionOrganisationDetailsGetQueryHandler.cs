@@ -31,18 +31,8 @@ public class SubmissionOrganisationDetailsGetQueryHandler
         SubmissionOrganisationDetailsGetQuery request,
         CancellationToken cancellationToken)
     {
-        var requiredEventTypes = new List<EventType>
-        {
-            EventType.AntivirusCheck,
-            EventType.AntivirusResult,
-            EventType.Registration,
-            EventType.BrandValidation,
-            EventType.PartnerValidation,
-        };
-
         var submissionEvents = await _submissionEventsQueryRepository
-            .GetAll(x => x.SubmissionId == request.SubmissionId &&
-                         requiredEventTypes.Contains(x.Type))
+            .GetAll(x => x.SubmissionId == request.SubmissionId)
             .OrderByDescending(x => x.Created)
             .ToListAsync(cancellationToken);
 
