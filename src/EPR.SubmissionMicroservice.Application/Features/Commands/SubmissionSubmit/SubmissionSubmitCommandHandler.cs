@@ -92,7 +92,8 @@ public class SubmissionSubmitCommandHandler(
                 {
                     var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId,
                         antivirusResult.BlobName,
-                        submission.ComplianceSchemeId, submission.SubmissionPeriod, submittedEvent.Created);
+                        submission.ComplianceSchemeId, submittedEvent.Created,
+                        command.SubmissionPeriodId);
                     await publisher.Publish(message, cancellationToken);
                 }
 
