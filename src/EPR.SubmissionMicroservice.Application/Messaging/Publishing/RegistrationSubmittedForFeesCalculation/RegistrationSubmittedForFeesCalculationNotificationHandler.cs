@@ -25,8 +25,8 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
                    ["SubmissionId"] = notification.SubmissionId,
                    ["RegistrationBlobName"] = notification.RegistrationBlobName,
                    ["ComplianceSchemeId"] = notification.ComplianceSchemeId,
-                   ["SubmissionPeriod"] = notification.SubmissionPeriod,
                    ["SubmissionDate"] = notification.SubmissionDate,
+                   ["SubmissionPeriodId"] = notification.SubmissionPeriodId,
                }))
         {
             string messagePayload = JsonSerializer.Serialize(notification);

@@ -215,7 +215,6 @@ public class SubmissionSubmitContractTests : TestBase
         var message = await GetPublishedMessage<RegistrationSubmittedForFeesCalculationNotification>();
         
         message.SubmissionId.Should().Be(submissionId);
-        message.SubmissionPeriod.Should().Be("2022");
         message.RegistrationBlobName.Should().Be(blobName);
         message.SubmissionDate.Should().BeOnOrAfter(dateTime);
         message.ComplianceSchemeId.Should().BeNull();
