@@ -6,6 +6,10 @@ using Newtonsoft.Json.Linq;
 
 public static class TestRequests
 {
+    public const string ApplicationReferenceNumber = "PEPR-INT-REF-001";
+
+    public static DateTime RegistrationApplicationSubmittedDate = new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc);
+    
     public static class Submission
     {
         public static SubmissionCreateRequest ValidSubmissionCreateRequest(SubmissionType submissionType)
@@ -200,8 +204,8 @@ public static class TestRequests
             return JObject.FromObject(new
             {
                 type = EventType.RegistrationApplicationSubmitted,
-                applicationReferenceNumber = "PEPR-INT-REF-001",
-                submissionDate = new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc),
+                applicationReferenceNumber = ApplicationReferenceNumber,
+                submissionDate = RegistrationApplicationSubmittedDate,
                 comments = "integration",
             });
         }

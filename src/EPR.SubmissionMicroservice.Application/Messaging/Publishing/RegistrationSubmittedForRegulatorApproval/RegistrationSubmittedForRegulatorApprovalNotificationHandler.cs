@@ -5,27 +5,25 @@ using MediatR;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 
-namespace EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
+namespace EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
 
-public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotificationHandler<RegistrationSubmittedForFeesCalculationNotification>
+public class RegistrationSubmittedForRegulatorApprovalNotificationHandler : INotificationHandler<RegistrationSubmittedForRegulatorApprovalNotification>
 {
-    private readonly ILogger<RegistrationSubmittedForFeesCalculationNotificationHandler> _logger;
+    private readonly ILogger<RegistrationSubmittedForRegulatorApprovalNotificationHandler> _logger;
     private readonly ServiceBusSender _serviceBusSender;
 
-    public RegistrationSubmittedForFeesCalculationNotificationHandler(ILogger<RegistrationSubmittedForFeesCalculationNotificationHandler> logger, IAzureClientFactory<ServiceBusSender> senderFactory)
+    public RegistrationSubmittedForRegulatorApprovalNotificationHandler(ILogger<RegistrationSubmittedForRegulatorApprovalNotificationHandler> logger, IAzureClientFactory<ServiceBusSender> senderFactory)
     {
         _logger = logger;
-        _serviceBusSender = senderFactory.CreateClient(nameof(RegistrationSubmittedForFeesCalculationNotification));
+        _serviceBusSender = senderFactory.CreateClient(nameof(RegistrationSubmittedForRegulatorApprovalNotification));
     }
     
-    public async Task Handle(RegistrationSubmittedForFeesCalculationNotification notification, CancellationToken cancellationToken)
+    public async Task Handle(RegistrationSubmittedForRegulatorApprovalNotification notification, CancellationToken cancellationToken)
     {
         using (_logger.AddScopedData(new Dictionary<string, object>
                {
                    ["SubmissionId"] = notification.SubmissionId,
-                   ["RegistrationBlobName"] = notification.RegistrationBlobName,
-                   ["ComplianceSchemeId"] = notification.ComplianceSchemeId,
-                   ["SubmissionPeriod"] = notification.SubmissionPeriod,
+                   ["ApplicationReferenceNumber"] = notification.ApplicationReferenceNumber,
                    ["SubmissionDate"] = notification.SubmissionDate,
                }))
         {

@@ -1,4 +1,8 @@
-﻿namespace EPR.SubmissionMicroservice.API.IntegrationTests;
+﻿using Azure.Messaging.ServiceBus;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
+
+namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -169,7 +173,7 @@ public class TestBase
 
     protected static async Task<bool> HasMessageBeenPublished<T>()
     {
-        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        var message = await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
 
         if (message == null) return false;
         
@@ -178,20 +182,31 @@ public class TestBase
         return typedMessage != null;
     }
 
-    protected static async Task<T> GetPublishedMessage<T>()
+    protected static Task<RegistrationSubmittedForFeesCalculationNotification> GetRegistrationSubmittedForFeesCalculationPublishedMessage()
     {
-        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        return GetPublishedMessage<RegistrationSubmittedForFeesCalculationNotification>(AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver);
+    }
+    
+    protected static Task<RegistrationSubmittedForRegulatorApprovalNotification> GetRegistrationSubmittedForRegulatorApprovalPublishedMessage()
+    {
+        return GetPublishedMessage<RegistrationSubmittedForRegulatorApprovalNotification>(AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver);
+    }
+    
+    [TestCleanup]
+    public async Task TestCleanup()
+    {
+        // purge is in preview, so unavailable
+        await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+    }
+
+    private static async Task<T> GetPublishedMessage<T>(ServiceBusReceiver receiver)
+    {
+        var message = await receiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
         Assert.IsNotNull(message, "message should not be null");
         Assert.IsNotNull(message.Body, "body should not be null");
         var typedMessage = message.Body.ToObjectFromJson<T>();
         Assert.IsNotNull(typedMessage, "cannot convert message to expected type");
         return typedMessage;
-    }
-    
-    [TestCleanup]
-    public Task TestCleanup()
-    {
-        // purge is in preview, so unavailable
-        return AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 }
