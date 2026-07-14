@@ -15,12 +15,18 @@ public static class AssemblyTestSetup
     private const string RegistrationSubmittedForFeesCalculationSubscriptionName = "integration-tests-reg-submitted-for-fees";
     private const string RegistrationSubmittedForRegulatorApprovalSubscriptionName = "integration-tests-reg-submitted-for-approval";
     private static CustomWebApplicationFactory? _factory;
-    private static HttpClient? _sharedHttpClient;
     private static ServiceBusClient _serviceBusClient;
 
-    public static HttpClient SharedHttpClient
+    public static HttpClient CreateClient()
     {
-        get => _sharedHttpClient ?? throw new InvalidOperationException("SharedHttpClient not initialized");
+        if (_factory is null)
+        {
+            throw new InvalidOperationException("Factory not initialized");
+        }
+
+        var client = _factory.CreateClient();
+        client.BaseAddress = new Uri("https://localhost:8000");
+        return client;
     }
     
     public static ServiceBusReceiver RegistrationSubmittedForFeesCalculationServiceBusReceiver { get; private set; }
@@ -44,16 +50,14 @@ public static class AssemblyTestSetup
 
         // Create factory and client once for the entire test run
         _factory = new CustomWebApplicationFactory(testConfig);
-        _sharedHttpClient = _factory.CreateClient();
-        _sharedHttpClient.BaseAddress = new Uri("https://localhost:8000");
 
         // Ensure Cosmos containers are created
-        EnsureCosmosContainersCreated(_factory.Services);
-        
+        await EnsureCosmosContainersCreatedAsync(_factory.Services);
+
         // Wait for Service Bus emulator to be ready
         context.WriteLine("Waiting for Service Bus emulator to be ready...");
         await WaitForServiceBusEmulatorAsync(context);
-        
+
         // subscribe to service bus
         var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
         var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
@@ -107,11 +111,14 @@ public static class AssemblyTestSetup
             serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, RegistrationSubmittedForFeesCalculationSubscriptionName);
         await serviceBusAdminClient.DeleteSubscriptionAsync(
             serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName, RegistrationSubmittedForRegulatorApprovalSubscriptionName);
-        _sharedHttpClient?.Dispose();
         await RegistrationSubmittedForFeesCalculationServiceBusReceiver.DisposeAsync();
         await RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.DisposeAsync();
         await _serviceBusClient.DisposeAsync();
-        if (_factory != null) await _factory.DisposeAsync();
+
+        if (_factory != null)
+        {
+            await _factory.DisposeAsync();
+        }
     }
 
     private static void ConfigureEmulatorDefaults()
@@ -198,10 +205,10 @@ public static class AssemblyTestSetup
         throw new InvalidOperationException("Service Bus emulator failed to start");
     }
 
-    private static void EnsureCosmosContainersCreated(IServiceProvider serviceProvider)
+    private static async Task EnsureCosmosContainersCreatedAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<SubmissionContext>();
-        context.Database.EnsureCreated();
+        await context.Database.EnsureCreatedAsync();
     }
 }

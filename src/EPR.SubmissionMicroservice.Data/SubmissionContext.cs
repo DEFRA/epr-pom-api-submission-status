@@ -60,82 +60,7 @@ public class SubmissionContext : EprCommonContext
             .ToContainer("Submissions")
             .HasPartitionKey(x => x.Id)
             .HasNoDiscriminator();
-
-        modelBuilder.Entity<AbstractValidationEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<AntivirusCheckEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<RegulatorPoMDecisionEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<RegulatorRegistrationDecisionEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<FileDownloadCheckEvent>()
-           .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<AntivirusResultEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<CheckSplitterValidationEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<ProducerValidationEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<SubmittedEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<RegistrationValidationEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<BrandValidationEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<PartnerValidationEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<RegistrationFeePaymentEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<RegistrationApplicationSubmittedEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<CheckSplitterValidationError>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<CheckSplitterValidationWarning>()
-            .HasPartitionKey(x => x.ValidationEventId);
-
-        modelBuilder.Entity<ProducerValidationError>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<ProducerValidationWarning>()
-            .HasPartitionKey(x => x.ValidationEventId);
-
-        modelBuilder.Entity<RegistrationValidationError>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<RegistrationValidationWarning>()
-            .HasPartitionKey(x => x.ValidationEventId);
-
-        modelBuilder.Entity<PackagingDataResubmissionFeePaymentEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<SubsidiariesBulkUploadCompleteEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<PackagingResubmissionReferenceNumberCreatedEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<PackagingResubmissionFeeViewCreatedEvent>()
-            .HasPartitionKey(x => x.Id);
-
-        modelBuilder.Entity<PackagingResubmissionApplicationSubmittedCreatedEvent>()
-            .HasPartitionKey(x => x.Id);
-        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -150,6 +75,7 @@ public class SubmissionContext : EprCommonContext
         {
             x.ToContainer("SubmissionEvents");
             x.HasPartitionKey(submissionEvent => submissionEvent.Id);
+            x.HasDiscriminatorInJsonId();
             x.HasDiscriminator(submissionEvent => submissionEvent.Type)
                 .HasValue<CheckSplitterValidationEvent>(EventType.CheckSplitter)
                 .HasValue<ProducerValidationEvent>(EventType.ProducerValidation)
@@ -187,6 +113,7 @@ public class SubmissionContext : EprCommonContext
         {
             x.ToContainer("ProducerValidationErrors");
             x.HasPartitionKey(submissionEventError => submissionEventError.Id);
+            x.HasDiscriminatorInJsonId();
             x.HasDiscriminator(submissionEventError => submissionEventError.ValidationErrorType)
                 .HasValue<CheckSplitterValidationError>(ValidationType.CheckSplitter)
                 .HasValue<ProducerValidationError>(ValidationType.ProducerValidation)
@@ -199,6 +126,7 @@ public class SubmissionContext : EprCommonContext
         {
             x.ToContainer("ProducerValidationWarnings");
             x.HasPartitionKey(warning => warning.ValidationEventId);
+            x.HasDiscriminatorInJsonId();
             x.HasDiscriminator(warning => warning.ValidationWarningType)
                 .HasValue<ProducerValidationWarning>(ValidationType.ProducerValidation)
                 .HasValue<CheckSplitterValidationWarning>(ValidationType.CheckSplitter)
@@ -215,6 +143,16 @@ public class SubmissionContext : EprCommonContext
             x.Property(e => e.AntivirusScanResult).HasConversion<string>();
             x.Property(e => e.AntivirusScanTrigger).HasConversion<string>();
         });
+
+        modelBuilder.Entity<AbstractValidationEvent>()
+            .HasMany(e => e.ValidationErrors)
+            .WithOne(e => e.ValidationEvent)
+            .HasForeignKey(e => e.ValidationEventId);
+
+        modelBuilder.Entity<AbstractValidationEvent>()
+            .HasMany(e => e.ValidationWarnings)
+            .WithOne(e => e.ValidationEvent)
+            .HasForeignKey(e => e.ValidationEventId);
 
         modelBuilder.Entity<Migration>(x =>
         {

@@ -78,7 +78,7 @@ Example local run (after starting the emulator):
 
 ```bash
 docker compose up
-dotnet test ./src/EPR.SubmissionMicroservice.API.IntegrationTests/EPR.SubmissionMicroservice.API.IntegrationTests.csproj --filter "Category=IntegrationTest"
+dotnet test ./src/EPR.SubmissionMicroservice.API.IntegrationTests/EPR.SubmissionMicroservice.API.IntegrationTests.csproj --filter "TestCategory=IntegrationTest"
 ```
 
 Route-to-test mapping for maintenance: [tests/integration/INTEGRATION_COVERAGE_CHECKLIST.md](tests/integration/INTEGRATION_COVERAGE_CHECKLIST.md).

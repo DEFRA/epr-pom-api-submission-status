@@ -153,6 +153,7 @@ public class SubmissionSubmitContractTests : TestBase
     [TestMethod]
     public async Task Submit_PublishesToServiceBus_WhenRegistrationPipelineIsValid()
     {
+        await DrainServiceBusReceiverAsync();
         var submissionId = Guid.NewGuid();
         await CreateSubmissionAsync(SubmissionType.Registration, submissionId);
 
@@ -224,6 +225,7 @@ public class SubmissionSubmitContractTests : TestBase
     [TestMethod]
     public async Task Submit_DoesNotPublishServiceBus_WhenPackagingSubmission()
     {
+        await DrainServiceBusReceiverAsync();
         var submissionId = Guid.NewGuid();
         await CreateSubmissionAsync(SubmissionType.Producer, submissionId);
 
@@ -283,8 +285,8 @@ public class SubmissionSubmitContractTests : TestBase
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        var isPublished = await HasMessageBeenPublished<RegistrationSubmittedForFeesCalculationNotification>();
-        
+        var isPublished = await HasRegistrationSubmittedForFeesCalculationMessageBeenPublished();
+
         isPublished.Should().BeFalse();
     }
 }

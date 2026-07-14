@@ -22,7 +22,7 @@ public class TestBase
     protected TestBase()
     {
         // Use the shared HttpClient from AssemblyTestSetup (initialized once per test run)
-        HttpClient = AssemblyTestSetup.SharedHttpClient;
+        HttpClient = AssemblyTestSetup.CreateClient();
 
         // Ensure Accept header is set (idempotent operation)
         if (!HttpClient.DefaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
@@ -171,15 +171,23 @@ public class TestBase
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
     }
 
-    protected static async Task<bool> HasMessageBeenPublished<T>()
+    // this is a bit slow, so only call from tests that test the service bus
+    public async Task DrainServiceBusReceiverAsync()
     {
-        var message = await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        // Establish a clean baseline before a "did this test publish?" assertion: any messages
+        // leaked by a prior test would otherwise be misattributed to the current one.
+        await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+    }
 
-        if (message == null) return false;
-        
-        var typedMessage = message.Body.ToObjectFromJson<T>();
-        
-        return typedMessage != null;
+    protected static Task<bool> HasRegistrationSubmittedForFeesCalculationMessageBeenPublished()
+    {
+        return HasMessageBeenPublished<RegistrationSubmittedForFeesCalculationNotification>(AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver);
+    }
+
+    protected static Task<bool> HasRegistrationSubmittedForRegulatorApprovalMessageBeenPublished()
+    {
+        return HasMessageBeenPublished<RegistrationSubmittedForRegulatorApprovalNotification>(AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver);
     }
 
     protected static Task<RegistrationSubmittedForFeesCalculationNotification> GetRegistrationSubmittedForFeesCalculationPublishedMessage()
@@ -208,5 +216,17 @@ public class TestBase
         var typedMessage = message.Body.ToObjectFromJson<T>();
         Assert.IsNotNull(typedMessage, "cannot convert message to expected type");
         return typedMessage;
+    }
+
+    private static async Task<bool> HasMessageBeenPublished<T>(ServiceBusReceiver receiver)
+    {
+        // Peek (not Receive) so a message racing in from another test isn't consumed away from it.
+        var message = await receiver.PeekMessageAsync();
+
+        if (message == null) return false;
+
+        var typedMessage = message.Body.ToObjectFromJson<T>();
+
+        return typedMessage != null;
     }
 }

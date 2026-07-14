@@ -1,4 +1,4 @@
-﻿FROM defradigital/dotnetcore-development:dotnet8.0 AS build-env
+﻿FROM defradigital/dotnetcore-development:dotnet10.0 AS build-env
 USER root
 
 # Expose the app on a defined port, configurable via a build argument
@@ -26,7 +26,7 @@ WORKDIR /home/dotnet/EPR.SubmissionMicroservice.API
 RUN dotnet publish -c Release -o out
 
 # Build runtime image
-FROM defradigital/dotnetcore:dotnet8.0
+FROM defradigital/dotnetcore:dotnet10.0
 
 # Switch to the non-root user
 USER dotnet

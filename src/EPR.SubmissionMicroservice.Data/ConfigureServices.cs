@@ -1,11 +1,14 @@
 ﻿namespace EPR.SubmissionMicroservice.Data;
 
 using System.Diagnostics.CodeAnalysis;
+using Azure.Identity;
 using Common.Functions.Database.Context.Interfaces;
 using Common.Functions.Extensions;
 using Microsoft.Azure.Cosmos;
 using System.Net.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -22,7 +25,7 @@ public static class ConfigureServices
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        ConfigureOptions(services, configuration);
+        services.ConfigureOptions(configuration);
         var serviceProvider = services.BuildServiceProvider();
         return services
             .AddCommonServices()
@@ -36,6 +39,7 @@ public static class ConfigureServices
         services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.ConfigSection));
     }
 
+    [SuppressMessage("Security", "S4830:Server certificates should be verified during SSL/TLS connections", Justification = "Certificate validation is only bypassed for the local Cosmos DB emulator (self-signed cert) when the Database__IgnoreCertificateErrors environment variable is explicitly set to true. Never enabled in deployed environments.")]
     private static IServiceCollection RegisterCosmosDatabase(
         this IServiceCollection services,
         IServiceProvider serviceProvider)
@@ -46,32 +50,57 @@ public static class ConfigureServices
             "true",
             StringComparison.OrdinalIgnoreCase);
 
+        // Created once and reused so EF Core's internal service provider cache stays stable:
+        // a fresh TokenCredential / factory delegate per DbContext instantiation changes the
+        // options fingerprint and trips ManyServiceProvidersCreatedWarning after 20 contexts.
+        var credential = string.IsNullOrWhiteSpace(databaseOptions.AccountKey)
+            ? new DefaultAzureCredential()
+            : null;
+
+        Func<HttpClient>? httpClientFactory = ignoreCertificateErrors
+            ? () => new HttpClient(new HttpClientHandler
+              {
+                  ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+              })
+            : null;
+
+        Func<ExecutionStrategyDependencies, IExecutionStrategy> executionStrategyFactory =
+            x => new CosmosDbRetryExecutionStrategy(
+                x.CurrentContext.Context,
+                databaseOptions.MaxRetryCount,
+                TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds));
+
         return services.AddDbContext<IEprCommonContext, SubmissionContext>(
             options =>
             {
-                options.UseCosmos(
-                    databaseOptions.ConnectionString,
-                    databaseOptions.AccountKey,
-                    databaseOptions.Name,
-                    c =>
-                    {
-                        c.ConnectionMode(ConnectionMode.Gateway);
-                        if (ignoreCertificateErrors)
-                        {
-                            c.HttpClientFactory(() => new HttpClient(
-                                new HttpClientHandler
-                                {
-                                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-                                }));
-                        }
-
-                        c.ExecutionStrategy(x =>
-                            new CosmosDbRetryExecutionStrategy(
-                                x.CurrentContext.Context,
-                                databaseOptions.MaxRetryCount,
-                                TimeSpan.FromMilliseconds(databaseOptions.MaxRetryDelayInMilliseconds)));
-                    });
+                if (credential is null)
+                {
+                    options.UseCosmos(
+                        databaseOptions.ConnectionString,
+                        databaseOptions.AccountKey,
+                        databaseOptions.Name,
+                        ConfigureCosmos);
+                }
+                else
+                {
+                    options.UseCosmos(
+                        databaseOptions.ConnectionString,
+                        credential,
+                        databaseOptions.Name,
+                        ConfigureCosmos);
+                }
             });
+
+        void ConfigureCosmos(CosmosDbContextOptionsBuilder c)
+        {
+            c.ConnectionMode(ConnectionMode.Gateway);
+            if (httpClientFactory is not null)
+            {
+                c.HttpClientFactory(httpClientFactory);
+            }
+
+            c.ExecutionStrategy(executionStrategyFactory);
+        }
     }
 
     private static IServiceCollection RegisterRepositories(this IServiceCollection services) =>

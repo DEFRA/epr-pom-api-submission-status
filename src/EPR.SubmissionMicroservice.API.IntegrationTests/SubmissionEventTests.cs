@@ -141,6 +141,7 @@ public class SubmissionEventTests : TestBase
     [TestMethod]
     public async Task CreateEvent_PublishesToServiceBus_WhenSubmissionExists()
     {
+        await DrainServiceBusReceiverAsync();
         var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
         await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
         var response = await CreateEventAsync(submissionRequest.Id, EventType.RegistrationApplicationSubmitted);
@@ -157,11 +158,12 @@ public class SubmissionEventTests : TestBase
     [TestMethod]
     public async Task CreateEvent_DoesNotPublishToServiceBus_WhenSubmissionDoesNotExists()
     {
+        await DrainServiceBusReceiverAsync();
         var response = await CreateEventAsync(Guid.NewGuid(), EventType.RegistrationApplicationSubmitted);
 
         response.Should().HaveStatusCode(System.Net.HttpStatusCode.BadRequest);
 
-        var isPublished = await HasMessageBeenPublished<RegistrationSubmittedForRegulatorApprovalNotification>();
+        var isPublished = await HasRegistrationSubmittedForRegulatorApprovalMessageBeenPublished();
         isPublished.Should().BeFalse();
     }
 }

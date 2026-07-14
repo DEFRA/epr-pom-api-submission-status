@@ -4,9 +4,11 @@ using System.Linq;
 using Data.Entities.AntivirusEvents;
 using Data.Entities.Submission;
 using Data.Entities.SubmissionEvent;
+using Data.Enums;
 using Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 public class SubmissionUploadedFileGetQueryHandler
     : IRequestHandler<SubmissionUploadedFileGetQuery, ErrorOr<SubmissionUploadedFileGetResponse>>
@@ -26,12 +28,12 @@ public class SubmissionUploadedFileGetQueryHandler
         SubmissionUploadedFileGetQuery request,
         CancellationToken cancellationToken)
     {
-        var antivirusResultEvent = _submissionEventQueryRepository
-            .GetAll(x => x is AntivirusResultEvent)
-            .OfType<AntivirusResultEvent>()
+        var antivirusResultEvent = await _submissionEventQueryRepository
+            .GetAll(x => x.Type == EventType.AntivirusResult)
+            .Cast<AntivirusResultEvent>()
             .Where(x => x.SubmissionId == request.SubmissionId && x.FileId == request.FileId)
             .OrderByDescending(x => x.Created)
-            .FirstOrDefault();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (antivirusResultEvent == null)
         {
