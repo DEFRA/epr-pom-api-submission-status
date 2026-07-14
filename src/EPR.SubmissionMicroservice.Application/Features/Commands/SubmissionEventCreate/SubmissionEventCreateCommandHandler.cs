@@ -1,4 +1,7 @@
-﻿namespace EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
+﻿using EPR.SubmissionMicroservice.Application.Logging;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
+
+namespace EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
 
 using System;
 using AutoMapper;
@@ -36,17 +39,20 @@ public class SubmissionEventCreateCommandHandler :
     private readonly ILoggingService _loggingService;
     private readonly IMapper _mapper;
     private readonly ILogger<SubmissionEventCreateCommandHandler> _logger;
+    private readonly IPublisher _publisher;
 
     public SubmissionEventCreateCommandHandler(
         ICommandRepository<AbstractSubmissionEvent> commandRepository,
         ILoggingService loggingService,
         IMapper mapper,
-        ILogger<SubmissionEventCreateCommandHandler> logger)
+        ILogger<SubmissionEventCreateCommandHandler> logger,
+        IPublisher publisher)
     {
         _commandRepository = commandRepository;
         _loggingService = loggingService;
         _mapper = mapper;
         _logger = logger;
+        _publisher = publisher;
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingResubmissionReferenceNumberCreateCommand command, CancellationToken cancellationToken)
@@ -143,7 +149,15 @@ public class SubmissionEventCreateCommandHandler :
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegistrationApplicationSubmittedEventCreateCommand command, CancellationToken cancellationToken)
     {
-        return await AbstractHandle(command, cancellationToken);
+        var response = await AbstractHandle(command, cancellationToken);
+
+        if (!response.IsError)
+        {
+            var message = new RegistrationSubmittedForRegulatorApprovalNotification(command.SubmissionId, command.ApplicationReferenceNumber, command.SubmissionDate.Value);
+            await _publisher.Publish(message, cancellationToken);
+        }
+        
+        return response;
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingDataResubmissionFeePaymentEventCreateCommand command, CancellationToken cancellationToken)
@@ -160,13 +174,34 @@ public class SubmissionEventCreateCommandHandler :
         AbstractSubmissionEventCreateCommand command,
         CancellationToken cancellationToken)
     {
-        var submissionEvent = _mapper.Map<AbstractSubmissionEvent>(command);
+        using (_logger.BeginScope("Creating submission event"))
+        using (_logger.AddScopedData(new Dictionary<string, object>
+               {
+                   ["SubmissionId"] = command.SubmissionId,
+                   ["Type"] = command.Type,
+                   ["UserId"] = command.UserId,
+                   ["BlobName"] = command.BlobName,
+                   ["BlobContainerName"] = command.BlobContainerName
+               }))
+        {
+            var submissionEvent = _mapper.Map<AbstractSubmissionEvent>(command);
 
-        await _commandRepository.AddAsync(submissionEvent);
+            _logger.LogInformation("Storing submission event");
+            await _commandRepository.AddAsync(submissionEvent);
 
-        return await _commandRepository.SaveChangesAsync(cancellationToken)
-            ? new SubmissionEventCreateResponse(submissionEvent.Id)
-            : Error.Failure();
+            var success = await _commandRepository.SaveChangesAsync(cancellationToken);
+
+            if (success)
+            {
+                _logger.LogInformation("Submission event was successfully stored with event id {SubmissionEventId}", submissionEvent.Id);
+                return new SubmissionEventCreateResponse(submissionEvent.Id);
+            }
+            else
+            {
+                _logger.LogInformation("Failed to store submission event");
+                return Error.Failure();
+            }
+        }
     }
 
     private async Task LogAsync(Guid sessionId, Guid userId, string additionalInfo)

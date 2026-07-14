@@ -4,6 +4,7 @@ using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCr
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
+using MediatR;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
 
@@ -14,6 +15,7 @@ public class SubmissionEventCreateCommandHandlerTests
     private readonly IMapper _mapper = AutoMapperHelpers.GetMapper();
     private readonly Mock<ILogger<SubmissionEventCreateCommandHandler>> _mockLogger = new();
     private readonly Mock<ILoggingService> _loggingService = new();
+    private readonly Mock<IPublisher> _mockPublisher = new();
 
     private readonly SubmissionEventCreateCommandHandler _systemUnderTest;
 
@@ -23,7 +25,8 @@ public class SubmissionEventCreateCommandHandlerTests
             _mockCommandRepository.Object,
             _loggingService.Object,
             _mapper,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockPublisher.Object);
     }
 
     [TestMethod]

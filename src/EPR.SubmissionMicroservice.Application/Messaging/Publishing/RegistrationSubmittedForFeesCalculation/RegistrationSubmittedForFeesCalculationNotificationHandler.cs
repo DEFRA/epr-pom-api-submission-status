@@ -29,19 +29,12 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
                    ["SubmissionDate"] = notification.SubmissionDate,
                }))
         {
-            string messagePayload = JsonSerializer.Serialize(notification);
+            var messagePayload = JsonSerializer.Serialize(notification);
             var message = new ServiceBusMessage(messagePayload);
 
-            try
-            {
-                _logger.LogInformation("Publishing message to message bus...");
-                await _serviceBusSender.SendMessageAsync(message, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Failed to publish message");
-            }
-
+            _logger.LogInformation("Publishing message to message bus...");
+            await _serviceBusSender.SendMessageAsync(message, cancellationToken);
+            _logger.LogInformation("Message published");
         }
     }
 }
