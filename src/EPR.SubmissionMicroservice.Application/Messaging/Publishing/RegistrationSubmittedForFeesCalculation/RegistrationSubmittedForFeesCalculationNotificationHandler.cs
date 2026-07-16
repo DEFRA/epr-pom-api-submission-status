@@ -20,6 +20,12 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
     
     public async Task Handle(RegistrationSubmittedForFeesCalculationNotification notification, CancellationToken cancellationToken)
     {
+        if (notification.SubmissionPeriodId is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without SubmissionPeriodId (SubmissionId={notification.SubmissionId}).");
+        }
+
         using (_logger.AddScopedData(new Dictionary<string, object>
                {
                    ["SubmissionId"] = notification.SubmissionId,
