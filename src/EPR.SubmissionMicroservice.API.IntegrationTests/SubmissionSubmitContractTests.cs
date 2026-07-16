@@ -139,6 +139,7 @@ public class SubmissionSubmitContractTests : TestBase
             appReferenceNumber = "APP-SUBMIT",
             isResubmission = false,
             registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+            submissionPeriodId = 1,
         };
 
         var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
@@ -205,6 +206,7 @@ public class SubmissionSubmitContractTests : TestBase
             appReferenceNumber = "APP-SUBMIT",
             isResubmission = false,
             registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+            submissionPeriodId = 1,
         };
 
         var dateTime = DateTime.UtcNow;
