@@ -14,4 +14,6 @@ public class SubmissionPayload
     public bool? IsResubmission { get; set; }
 
     public string? RegistrationJourney { get; set; }
+
+    public int? SubmissionPeriodId { get; set; }
 }

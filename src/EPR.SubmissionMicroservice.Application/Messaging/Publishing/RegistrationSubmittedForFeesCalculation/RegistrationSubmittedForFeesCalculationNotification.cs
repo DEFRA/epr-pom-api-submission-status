@@ -6,5 +6,5 @@ public record RegistrationSubmittedForFeesCalculationNotification(
     Guid SubmissionId,
     string RegistrationBlobName,
     Guid? ComplianceSchemeId,
-    string SubmissionPeriod,
-    DateTime SubmissionDate) : INotification;
+    DateTime SubmissionDate,
+    int? SubmissionPeriodId = null) : INotification;

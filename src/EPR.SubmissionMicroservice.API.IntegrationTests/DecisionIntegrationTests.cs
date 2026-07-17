@@ -74,6 +74,7 @@ public class DecisionIntegrationTests : TestBase
             appReferenceNumber = "APP-DEC",
             isResubmission = false,
             registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
+            submissionPeriodId = 1,
         };
         var submitResponse = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
         submitResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
