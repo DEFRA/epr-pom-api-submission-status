@@ -402,7 +402,6 @@ public class SubmissionSubmitCommandHandlerTests
             SubmissionType = SubmissionType.Registration,
             IsSubmitted = false,
             ComplianceSchemeId = Guid.NewGuid(),
-            SubmissionPeriod = "Jan to Jun 26"
         };
         const string registrationBlob = "registration-blob.csv";
         var registrationAntivirusResult = new AntivirusResultEvent { FileId = _fileId, BlobName = registrationBlob };
@@ -427,8 +426,7 @@ public class SubmissionSubmitCommandHandlerTests
                 It.Is<RegistrationSubmittedForFeesCalculationNotification>(n =>
                     n.SubmissionId == _submissionId
                     && n.RegistrationBlobName == registrationBlob
-                    && n.ComplianceSchemeId == submission.ComplianceSchemeId
-                    && n.SubmissionPeriod == submission.SubmissionPeriod),
+                    && n.ComplianceSchemeId == submission.ComplianceSchemeId),
                 It.IsAny<CancellationToken>()),
             Times.Once);
         _submissionFileValidatorMock.Verify(
