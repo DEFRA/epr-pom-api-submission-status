@@ -29,6 +29,7 @@ public class ServiceBusTopicCreator : IServiceBusTopicCreator
             // the list of publisher classes can be injected into the constructor, and we can loop through them creating topics
             await EnsureTopicExists(_options.RegistrationSubmittedForFeesCalculationTopicName);
             await EnsureTopicExists(_options.RegistrationSubmittedForRegulatorApprovalTopicName);
+            await EnsureTopicExists(_options.RegulatorRegistrationDecisionTopicName);
         }
     }
 

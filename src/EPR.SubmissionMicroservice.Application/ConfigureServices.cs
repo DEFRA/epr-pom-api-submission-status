@@ -14,6 +14,7 @@ using EPR.SubmissionMicroservice.Application.Features.Queries.SubmissionsGet;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegulatorRegistrationDecision;
 using EPR.SubmissionMicroservice.Application.Options;
 using ErrorOr;
 using FluentValidation;
@@ -101,6 +102,14 @@ public static class ConfigureServices
                         .RegistrationSubmittedForRegulatorApprovalTopicName),
                     _ => throw new InvalidOperationException("Unable to create ServiceBusClient")
                 }).WithName(nameof(RegistrationSubmittedForRegulatorApprovalNotification));
+
+            builder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
+                provider.GetService(typeof(ServiceBusClient)) switch
+                {
+                    ServiceBusClient client => client.CreateSender(config
+                        .RegulatorRegistrationDecisionTopicName),
+                    _ => throw new InvalidOperationException("Unable to create ServiceBusClient")
+                }).WithName(nameof(RegulatorRegistrationDecisionNotification));
         });
 
         return services;

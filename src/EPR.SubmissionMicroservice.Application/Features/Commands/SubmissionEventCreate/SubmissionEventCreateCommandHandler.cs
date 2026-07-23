@@ -1,5 +1,6 @@
 ﻿using EPR.SubmissionMicroservice.Application.Logging;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegulatorRegistrationDecision;
 
 namespace EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
 
@@ -87,7 +88,30 @@ public class SubmissionEventCreateCommandHandler :
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(RegulatorRegistrationDecisionEventCreateCommand command, CancellationToken cancellationToken)
     {
-        return await AbstractHandle(command, cancellationToken);
+        var response = await AbstractHandle(command, cancellationToken);
+
+        if (!response.IsError && TryMapRegulatorDecision(command.Decision, out var eventName))
+        {
+            var decisionDate = command.DecisionDate ?? DateTime.UtcNow;
+            var notification = new RegulatorRegistrationDecisionNotification(command.SubmissionId, eventName, decisionDate);
+            await _publisher.Publish(notification, cancellationToken);
+        }
+
+        return response;
+    }
+
+    private static bool TryMapRegulatorDecision(RegulatorDecision decision, out string eventName)
+    {
+        eventName = decision switch
+        {
+            RegulatorDecision.Accepted => "AcceptedByRegulator",
+            RegulatorDecision.Rejected => "RejectedByRegulator",
+            RegulatorDecision.Queried => "QueriedByRegulator",
+            RegulatorDecision.Cancelled => "CancelledByRegulator",
+            _ => null!,
+        };
+
+        return eventName is not null;
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(AntivirusResultEventCreateCommand command, CancellationToken cancellationToken)
