@@ -178,6 +178,7 @@ public class TestBase
         // leaked by a prior test would otherwise be misattributed to the current one.
         await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
         await AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegulatorRegistrationDecisionServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 
     protected static Task<bool> HasRegistrationSubmittedForFeesCalculationMessageBeenPublished()
@@ -206,6 +207,7 @@ public class TestBase
         // purge is in preview, so unavailable
         await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
         await AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegulatorRegistrationDecisionServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 
     private static async Task<T> GetPublishedMessage<T>(ServiceBusReceiver receiver)

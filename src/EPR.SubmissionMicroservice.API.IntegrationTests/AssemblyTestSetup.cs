@@ -14,6 +14,7 @@ public static class AssemblyTestSetup
     private const string LoggingApiBaseUrl = "http://localhost";
     private const string RegistrationSubmittedForFeesCalculationSubscriptionName = "integration-tests-reg-submitted-for-fees";
     private const string RegistrationSubmittedForRegulatorApprovalSubscriptionName = "integration-tests-reg-submitted-for-approval";
+    private const string RegulatorRegistrationDecisionSubscriptionName = "integration-tests-reg-regulator-decision";
     private static CustomWebApplicationFactory? _factory;
     private static ServiceBusClient _serviceBusClient;
 
@@ -31,6 +32,7 @@ public static class AssemblyTestSetup
     
     public static ServiceBusReceiver RegistrationSubmittedForFeesCalculationServiceBusReceiver { get; private set; }
     public static ServiceBusReceiver RegistrationSubmittedForRegulatorApprovalServiceBusReceiver { get; private set; }
+    public static ServiceBusReceiver RegulatorRegistrationDecisionServiceBusReceiver { get; private set; }
 
     public static IServiceProvider SharedServices
     {
@@ -64,6 +66,7 @@ public static class AssemblyTestSetup
         
         await EnsureTopicExists(context, serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, RegistrationSubmittedForFeesCalculationSubscriptionName, serviceBusAdminClient);
         await EnsureTopicExists(context, serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName, RegistrationSubmittedForRegulatorApprovalSubscriptionName, serviceBusAdminClient);
+        await EnsureTopicExists(context, serviceBusConfig.RegulatorRegistrationDecisionTopicName, RegulatorRegistrationDecisionSubscriptionName, serviceBusAdminClient);
 
         _serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
 
@@ -79,6 +82,10 @@ public static class AssemblyTestSetup
         context.WriteLine($"Creating service bus receiver for topic {serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName} and subscription {RegistrationSubmittedForRegulatorApprovalSubscriptionName}");
         RegistrationSubmittedForRegulatorApprovalServiceBusReceiver = _serviceBusClient.CreateReceiver(
             serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName, RegistrationSubmittedForRegulatorApprovalSubscriptionName, serviceBusReceiveOptions);
+
+        context.WriteLine($"Creating service bus receiver for topic {serviceBusConfig.RegulatorRegistrationDecisionTopicName} and subscription {RegulatorRegistrationDecisionSubscriptionName}");
+        RegulatorRegistrationDecisionServiceBusReceiver = _serviceBusClient.CreateReceiver(
+            serviceBusConfig.RegulatorRegistrationDecisionTopicName, RegulatorRegistrationDecisionSubscriptionName, serviceBusReceiveOptions);
     }
 
     private static async Task EnsureTopicExists(TestContext context, string topicName, string subscriptionName,
@@ -111,8 +118,11 @@ public static class AssemblyTestSetup
             serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, RegistrationSubmittedForFeesCalculationSubscriptionName);
         await serviceBusAdminClient.DeleteSubscriptionAsync(
             serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName, RegistrationSubmittedForRegulatorApprovalSubscriptionName);
+        await serviceBusAdminClient.DeleteSubscriptionAsync(
+            serviceBusConfig.RegulatorRegistrationDecisionTopicName, RegulatorRegistrationDecisionSubscriptionName);
         await RegistrationSubmittedForFeesCalculationServiceBusReceiver.DisposeAsync();
         await RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.DisposeAsync();
+        await RegulatorRegistrationDecisionServiceBusReceiver.DisposeAsync();
         await _serviceBusClient.DisposeAsync();
 
         if (_factory != null)
