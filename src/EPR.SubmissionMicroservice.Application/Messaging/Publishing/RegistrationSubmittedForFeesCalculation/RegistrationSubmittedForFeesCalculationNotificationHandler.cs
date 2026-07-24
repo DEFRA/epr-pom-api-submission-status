@@ -26,6 +26,18 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
                 $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without SubmissionPeriodId (SubmissionId={notification.SubmissionId}).");
         }
 
+        if (string.IsNullOrWhiteSpace(notification.RegulatorNation))
+        {
+            throw new InvalidOperationException(
+                $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without RegulatorNation (SubmissionId={notification.SubmissionId}).");
+        }
+
+        if (string.IsNullOrWhiteSpace(notification.ApplicationReferenceNumber))
+        {
+            throw new InvalidOperationException(
+                $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without ApplicationReferenceNumber (SubmissionId={notification.SubmissionId}).");
+        }
+
         using (_logger.AddScopedData(new Dictionary<string, object>
                {
                    ["SubmissionId"] = notification.SubmissionId,
@@ -33,6 +45,8 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
                    ["ComplianceSchemeId"] = notification.ComplianceSchemeId,
                    ["SubmissionDate"] = notification.SubmissionDate,
                    ["SubmissionPeriodId"] = notification.SubmissionPeriodId,
+                   ["RegulatorNation"] = notification.RegulatorNation,
+                   ["ApplicationReferenceNumber"] = notification.ApplicationReferenceNumber,
                }))
         {
             var messagePayload = JsonSerializer.Serialize(notification);

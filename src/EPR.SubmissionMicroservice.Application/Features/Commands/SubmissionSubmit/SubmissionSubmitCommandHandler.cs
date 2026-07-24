@@ -90,10 +90,24 @@ public class SubmissionSubmitCommandHandler(
                 // publish submitted registration event to message bus
                 if (submission.SubmissionType == SubmissionType.Registration)
                 {
+                    if (string.IsNullOrWhiteSpace(command.RegulatorNation))
+                    {
+                        logger.LogError("RegulatorNation is required for Registration submission {submissionId}", submissionId);
+                        return Error.Validation(description: "RegulatorNation is required for Registration submissions.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(command.AppReferenceNumber))
+                    {
+                        logger.LogError("AppReferenceNumber is required for Registration submission {submissionId}", submissionId);
+                        return Error.Validation(description: "AppReferenceNumber is required for Registration submissions.");
+                    }
+
                     var message = new RegistrationSubmittedForFeesCalculationNotification(submissionId,
                         antivirusResult.BlobName,
                         submission.ComplianceSchemeId, submittedEvent.Created,
-                        command.SubmissionPeriodId);
+                        command.SubmissionPeriodId,
+                        command.RegulatorNation,
+                        command.AppReferenceNumber);
                     await publisher.Publish(message, cancellationToken);
                 }
 
