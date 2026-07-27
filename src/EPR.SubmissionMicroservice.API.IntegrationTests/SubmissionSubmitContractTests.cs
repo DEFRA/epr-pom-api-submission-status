@@ -140,6 +140,7 @@ public class SubmissionSubmitContractTests : TestBase
             isResubmission = false,
             registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
             submissionPeriodId = 1,
+            regulatorNation = "GB-ENG",
         };
 
         var response = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
@@ -208,6 +209,7 @@ public class SubmissionSubmitContractTests : TestBase
             isResubmission = false,
             registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
             submissionPeriodId = 1,
+            regulatorNation = "GB-ENG",
         };
 
         var dateTime = DateTime.UtcNow;
