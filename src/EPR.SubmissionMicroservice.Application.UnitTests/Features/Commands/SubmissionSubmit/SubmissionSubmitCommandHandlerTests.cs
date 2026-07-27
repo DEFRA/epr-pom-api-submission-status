@@ -296,7 +296,14 @@ public class SubmissionSubmitCommandHandlerTests
     public async Task Handle_WhenSubmissionTypeIsRegistration_AndIsValid_ReturnsSuccessfulResult()
     {
         // Arrange
-        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
+        var command = new SubmissionSubmitCommand
+        {
+            SubmissionId = _submissionId,
+            UserId = _userId,
+            FileId = _fileId,
+            RegulatorNation = "GB-ENG",
+            AppReferenceNumber = "PEPR00000123",
+        };
         var submission = new Submission { Id = _submissionId, SubmissionType = SubmissionType.Registration };
         var antivirusResultEvent = new AntivirusResultEvent { BlobName = "foo" };
 
@@ -395,7 +402,14 @@ public class SubmissionSubmitCommandHandlerTests
     public async Task Handle_PublishesNotificationWithRegistrationBlobName_WhenBrandFileWasUploadedMoreRecentlyThanRegistrationCsv()
     {
         // Arrange — submit carries the registration file id; the brand file uploaded after it must not leak into the message
-        var command = new SubmissionSubmitCommand { SubmissionId = _submissionId, UserId = _userId, FileId = _fileId };
+        var command = new SubmissionSubmitCommand
+        {
+            SubmissionId = _submissionId,
+            UserId = _userId,
+            FileId = _fileId,
+            RegulatorNation = "GB-ENG",
+            AppReferenceNumber = "PEPR00000123",
+        };
         var submission = new Submission
         {
             Id = _submissionId,
