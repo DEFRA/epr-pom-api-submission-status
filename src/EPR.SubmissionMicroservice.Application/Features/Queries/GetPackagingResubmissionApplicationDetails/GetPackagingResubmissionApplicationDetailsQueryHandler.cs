@@ -45,7 +45,6 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
     }
 
     private static GetPackagingResubmissionApplicationDetailsResponse packagingDataResubmissionResponse(
-        Submission? submission,
         DateTime? latestPackagingDetailsCreatedDatetime,
         bool isFileUploadedButNotSubmittedYet,
         bool isRegulatorDecisionAfterSubmission,
@@ -55,9 +54,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         if ((latestPackagingDetailsCreatedDatetime == null) ||
             (!isRegulatorDecisionAfterSubmission && isResubmissionDoneAfterSubmission))
         {
-            response = new GetPackagingResubmissionApplicationDetailsResponse();
-            response.SubmissionId = submission.Id;
-            response.IsSubmitted = submission.IsSubmitted ?? false;
+            // Report that no cycle is open without erasing the cycle's identity. Replacing the response
+            // here previously dropped ApplicationReferenceNumber and the declaration fields, which drove
+            // the frontend to raise a second reference number for a cycle that already existed.
             response.ApplicationStatus = ApplicationStatusType.NotStarted;
             return response;
         }
@@ -161,9 +160,11 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var isFileUploadedButNotSubmittedYet = latestPackagingDetailsCreatedDatetime > latestSubmittedEventCreatedDatetime;
         var isRegulatorDecisionAfterSubmission = latestPackagingDetailsCreatedDatetime > (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue);
 
-        // An open cycle has, by definition, no application-submitted event of its own, so a declaration
-        // carried over from a closed cycle must not be reported against it.
-        var isResubmissionDoneAfterSubmission = !isCycleOpen && resubmissionEvent?.Created > latestSubmittedEventCreatedDatetime;
+        // Cycle membership, not event recency, decides whether a declaration belongs to this cycle. An open
+        // cycle has by definition no application-submitted event of its own, so a declaration carried over
+        // from a closed cycle must not be reported against it; conversely a closed cycle was closed by a
+        // declaration, so that declaration is always the one to report regardless of submit ordering.
+        var isResubmissionDoneAfterSubmission = !isCycleOpen;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
 
@@ -200,7 +201,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             return response;
         }
 
-        return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response);
+        return packagingDataResubmissionResponse(latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response);
     }
 
     private static PackagingResubmissionReferenceNumberCreatedEvent? GetOpenCycleReferenceNumberEvent(
