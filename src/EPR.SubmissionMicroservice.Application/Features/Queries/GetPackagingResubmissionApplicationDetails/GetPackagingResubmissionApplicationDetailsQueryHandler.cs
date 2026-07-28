@@ -114,14 +114,15 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var packagingFeeViewEvent = submissionEvents.OfType<PackagingResubmissionFeeViewCreatedEvent>()
             .MaxBy(d => d.Created);
 
-        var packagingResubmissionReferenceNumberCreatedEvent = submissionEvents.OfType<PackagingResubmissionReferenceNumberCreatedEvent>()
-            .MaxBy(d => d.Created);
-
-        var packagingApplicationSubmittedEvents = submissionEvents.OfType<PackagingResubmissionApplicationSubmittedCreatedEvent>()
-            .Where(s => (bool)s.IsResubmitted)
+        var packagingResubmissionReferenceNumberCreatedEvents = submissionEvents.OfType<PackagingResubmissionReferenceNumberCreatedEvent>()
+            .OrderBy(d => d.Created)
             .ToList();
 
-        if (packagingResubmissionReferenceNumberCreatedEvent is null)
+        var packagingApplicationSubmittedEvents = submissionEvents.OfType<PackagingResubmissionApplicationSubmittedCreatedEvent>()
+            .Where(s => s.IsResubmitted == true)
+            .ToList();
+
+        if (packagingResubmissionReferenceNumberCreatedEvents.Count == 0)
         {
             return new GetPackagingResubmissionApplicationDetailsResponse()
             {
@@ -130,13 +131,25 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             };
         }
 
-        if (latestPackagingDetailsAntivirusCheckEvent.Created < packagingResubmissionReferenceNumberCreatedEvent.Created)
+        // The cycle is identified by the earliest reference-number event that has not been closed by a
+        // later application-submitted event. Keying on cycle membership rather than event recency means a
+        // duplicate reference number raised mid-cycle does not start a new cycle, and an upload that never
+        // produced a valid file cannot resolve an open cycle as not-started.
+        var openCycleReferenceNumberEvent = GetOpenCycleReferenceNumberEvent(packagingResubmissionReferenceNumberCreatedEvents, packagingApplicationSubmittedEvents);
+        var isCycleOpen = openCycleReferenceNumberEvent is not null;
+        var packagingResubmissionReferenceNumberCreatedEvent = openCycleReferenceNumberEvent ?? packagingResubmissionReferenceNumberCreatedEvents[^1];
+
+        if (latestPackagingDetailsAntivirusCheckEvent is null ||
+            latestPackagingDetailsAntivirusCheckEvent.Created < packagingResubmissionReferenceNumberCreatedEvent.Created)
         {
+            // Nothing has been uploaded since this cycle's reference number was created, so none of the
+            // previous cycle's file, fee or declaration state belongs to it.
             return new GetPackagingResubmissionApplicationDetailsResponse()
             {
                 SubmissionId = submission.Id,
                 IsSubmitted = submission?.IsSubmitted ?? false,
-                ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber
+                ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
+                ApplicationStatus = isCycleOpen ? ApplicationStatusType.SubmittedToRegulator : ApplicationStatusType.NotStarted
             };
         }
 
@@ -147,7 +160,10 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
 
         var isFileUploadedButNotSubmittedYet = latestPackagingDetailsCreatedDatetime > latestSubmittedEventCreatedDatetime;
         var isRegulatorDecisionAfterSubmission = latestPackagingDetailsCreatedDatetime > (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue);
-        var isResubmissionDoneAfterSubmission = resubmissionEvent?.Created > latestSubmittedEventCreatedDatetime;
+
+        // An open cycle has, by definition, no application-submitted event of its own, so a declaration
+        // carried over from a closed cycle must not be reported against it.
+        var isResubmissionDoneAfterSubmission = !isCycleOpen && resubmissionEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
 
@@ -172,7 +188,33 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
 
+        if (isCycleOpen)
+        {
+            // While the cycle is open the user still has a route back into the journey, so the status
+            // always reflects work in progress. Upload validity and recency only choose which value
+            // within the open set is returned, never whether the cycle counts as started.
+            response.ApplicationStatus = isFileUploadedButNotSubmittedYet
+                ? ApplicationStatusType.FileUploaded
+                : ApplicationStatusType.SubmittedToRegulator;
+
+            return response;
+        }
+
         return packagingDataResubmissionResponse(submission, latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response);
+    }
+
+    private static PackagingResubmissionReferenceNumberCreatedEvent? GetOpenCycleReferenceNumberEvent(
+        List<PackagingResubmissionReferenceNumberCreatedEvent> referenceNumberCreatedEvents,
+        List<PackagingResubmissionApplicationSubmittedCreatedEvent> applicationSubmittedEvents)
+    {
+        var latestApplicationSubmitted = applicationSubmittedEvents.Count > 0
+            ? applicationSubmittedEvents.Max(x => x.Created)
+            : (DateTime?)null;
+
+        // referenceNumberCreatedEvents is ordered ascending, so the first match is the earliest cycle
+        // that no application-submitted event has closed.
+        return referenceNumberCreatedEvents
+            .Find(x => latestApplicationSubmitted is null || x.Created > latestApplicationSubmitted);
     }
 
     private async Task<bool> IsValidationPass(List<AbstractSubmissionEvent> submissionEvents, AntivirusCheckEvent? latestPackagingDetailsAntivirusCheckEvent, List<CheckSplitterValidationEvent> checkSplitterValidationEvents, List<ProducerValidationEvent> producerValidationEvents, CancellationToken cancellationToken)
