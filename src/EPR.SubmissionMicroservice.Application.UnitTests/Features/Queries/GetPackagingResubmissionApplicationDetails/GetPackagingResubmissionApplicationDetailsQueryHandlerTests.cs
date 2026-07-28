@@ -6,6 +6,7 @@ using EPR.SubmissionMicroservice.Data.Entities.ValidationEventError;
 using EPR.SubmissionMicroservice.Data.Entities.ValidationEventWarning;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
+using static EPR.SubmissionMicroservice.Application.Features.Queries.Common.GetPackagingResubmissionApplicationDetailsResponse;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Queries.GetPackagingResubmissionApplicationDetails;
 
@@ -393,8 +394,10 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ApplicationStatus.ToString().Should().Be("FileUploaded");
     }
 
+    // SUB-332: previously asserted NotStarted. The reference-number event is not closed by any
+    // application-submitted event, so the cycle is open and the status must reflect that.
     [TestMethod]
-    public async Task Handle_ShouldReturnAcceptedApplicationStatusType_WhenRegulatorPackagingDecisionEventisAccepted()
+    public async Task Handle_ShouldReturnOpenCycle_WhenRegulatorPackagingDecisionEventisAcceptedAndUploadIsIncomplete()
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -452,11 +455,13 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().SubmissionId.Should().Be(submission.Id);
-        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("Test");
     }
 
+    // SUB-332: previously asserted NotStarted. See the accepted-decision test above.
     [TestMethod]
-    public async Task Handle_ShouldReturnApprovedByRegulator_WhenRegulatorPackagingDecisionEventisApproved()
+    public async Task Handle_ShouldReturnOpenCycle_WhenRegulatorPackagingDecisionEventisApprovedAndUploadIsIncomplete()
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -513,11 +518,14 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().SubmissionId.Should().Be(submission.Id);
-        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("Test");
     }
 
+    // SUB-332: previously asserted NotStarted. This is the incident's starting state - the regulator
+    // rejected the submission and the user has entered the resubmission journey.
     [TestMethod]
-    public async Task Handle_ShouldReturnNotStarted_WhenRegulatorPackagingDecision_EventisRejectedByRegulator()
+    public async Task Handle_ShouldReturnOpenCycle_WhenRegulatorPackagingDecision_EventisRejectedByRegulator()
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -575,7 +583,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().SubmissionId.Should().Be(submission.Id);
-        result.Value.First().ApplicationStatus.ToString().Should().Be("NotStarted");
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("Test");
     }
 
     [TestMethod]
@@ -1647,5 +1656,563 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ApplicationStatus.ToString().Should().Be("FileUploaded");
         result.Value.First().ResubmissionFeePaymentMethod!.Should().Be("PayByPhone");
         result.Value.First().ResubmissionFeePaymentMethod!.Should().NotBe("Offline");
+    }
+
+    // SUB-332: the cycle is identified by the earliest open PackagingResubmissionReferenceNumberCreated
+    // event, so upload validity and recency must not be able to resolve an open cycle as NotStarted.
+    [TestMethod]
+    public async Task Handle_ShouldReturnOpenCycle_WhenLaterUploadFailsValidationAfterAValidFileWasSubmitted()
+    {
+        // Arrange - the SUB-332 incident: regulator rejects, reference number created, file A
+        // validates and is submitted, then file B is uploaded but its validation never completes.
+        var submissionId = Guid.NewGuid();
+        var fileA = Guid.NewGuid();
+        var fileB = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new RegulatorPoMDecisionEvent
+            {
+                SubmissionId = submissionId,
+                Decision = RegulatorDecision.Rejected,
+                IsResubmissionRequired = true,
+                Created = now.AddMinutes(-60)
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S01",
+                Created = now.AddMinutes(-50)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileA,
+                Created = now.AddMinutes(-40)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                BlobName = "blob-a",
+                Created = now.AddMinutes(-39)
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                DataCount = 1,
+                IsValid = true,
+                Created = now.AddMinutes(-38)
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                IsValid = true,
+                Created = now.AddMinutes(-37)
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                SubmittedBy = "Test User",
+                Created = now.AddMinutes(-30)
+            },
+
+            // File B: uploaded and scanned, but the Redis timeout meant the check splitter never
+            // ran, so no CheckSplitterValidationEvent or ProducerValidationEvent exists for it.
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileB,
+                Created = now.AddMinutes(-28)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileB,
+                BlobName = "blob-b",
+                Created = now.AddMinutes(-27)
+            }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR12345S01");
+        result.Value.First().LastSubmittedFile!.FileId.Should().Be(fileA);
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnOpenCycle_WhenNothingHasBeenUploadedSinceTheReferenceNumberWasCreated()
+    {
+        // Arrange - the user has entered the resubmission journey but not yet uploaded a file.
+        var submissionId = Guid.NewGuid();
+        var fileA = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileA,
+                Created = now.AddMinutes(-60)
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                Created = now.AddMinutes(-55)
+            },
+            new RegulatorPoMDecisionEvent
+            {
+                SubmissionId = submissionId,
+                Decision = RegulatorDecision.Rejected,
+                IsResubmissionRequired = true,
+                Created = now.AddMinutes(-50)
+            },
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S01",
+                Created = now.AddMinutes(-40)
+            }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR12345S01");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnEarliestOpenReferenceNumber_WhenDuplicateReferenceNumberEventsExistInOneCycle()
+    {
+        // Arrange - the frontend created a second reference number mid-cycle because the first
+        // response came back with an empty ApplicationReferenceNumber. The suffix is derived from
+        // a submission-history count, so the two values are not identical.
+        var submissionId = Guid.NewGuid();
+        var fileA = Guid.NewGuid();
+        var fileB = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S01",
+                Created = now.AddMinutes(-50)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileA,
+                Created = now.AddMinutes(-40)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                BlobName = "blob-a",
+                Created = now.AddMinutes(-39)
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                DataCount = 1,
+                IsValid = true,
+                Created = now.AddMinutes(-38)
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                IsValid = true,
+                Created = now.AddMinutes(-37)
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                Created = now.AddMinutes(-30)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileB,
+                Created = now.AddMinutes(-28)
+            },
+
+            // Duplicate raised after the empty ApplicationReferenceNumber was returned.
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S02",
+                Created = now.AddMinutes(-20)
+            }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR12345S01");
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldCloseCycle_WhenApplicationSubmittedEventFiresAfterTheReferenceNumber()
+    {
+        // Arrange - same shape as the open-cycle test, but the user reached the declaration step.
+        var submissionId = Guid.NewGuid();
+        var fileA = Guid.NewGuid();
+        var now = DateTime.Now;
+        var submissionDate = now.AddMinutes(-10);
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S01",
+                Created = now.AddMinutes(-50)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileA,
+                Created = now.AddMinutes(-40)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                BlobName = "blob-a",
+                Created = now.AddMinutes(-39)
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                DataCount = 1,
+                IsValid = true,
+                Created = now.AddMinutes(-38)
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                IsValid = true,
+                Created = now.AddMinutes(-37)
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                Created = now.AddMinutes(-30)
+            },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent
+            {
+                SubmissionId = submissionId,
+                IsResubmitted = true,
+                SubmissionDate = submissionDate,
+                Comments = "Declared",
+                Created = submissionDate
+            }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().Be(submissionDate);
+        result.Value.First().ResubmissionApplicationSubmittedComment.Should().Be("Declared");
+        result.Value.First().IsResubmitted.Should().BeTrue();
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldOpenANewCycle_WhenAReferenceNumberIsCreatedAfterAPreviousApplicationSubmitted()
+    {
+        // Arrange - a completed cycle, then the regulator rejects again and a new cycle opens.
+        // The closed cycle's declaration must not be reported against the new open one.
+        var submissionId = Guid.NewGuid();
+        var fileA = Guid.NewGuid();
+        var fileB = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S01",
+                Created = now.AddMinutes(-90)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileA,
+                Created = now.AddMinutes(-85)
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                Created = now.AddMinutes(-80)
+            },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent
+            {
+                SubmissionId = submissionId,
+                IsResubmitted = true,
+                SubmissionDate = now.AddMinutes(-75),
+                Comments = "First declaration",
+                Created = now.AddMinutes(-75)
+            },
+            new RegulatorPoMDecisionEvent
+            {
+                SubmissionId = submissionId,
+                Decision = RegulatorDecision.Rejected,
+                IsResubmissionRequired = true,
+                Created = now.AddMinutes(-60)
+            },
+
+            // Second cycle opens here.
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR12345S02",
+                Created = now.AddMinutes(-50)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileB,
+                Created = now.AddMinutes(-40)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileB,
+                BlobName = "blob-b",
+                Created = now.AddMinutes(-39)
+            }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR12345S02");
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
+        result.Value.First().ResubmissionApplicationSubmittedComment.Should().BeNull();
+        result.Value.First().IsResubmitted.Should().BeNull();
+    }
+
+    [TestMethod]
+    public async Task Handle_ShouldReturnOpenCycle_WhenLaterUploadFailsValidation_ForComplianceSchemePath()
+    {
+        // Arrange - the same incident against a compliance scheme submission.
+        var submissionId = Guid.NewGuid();
+        var complianceSchemeId = Guid.NewGuid();
+        var fileA = Guid.NewGuid();
+        var fileB = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" },
+            ComplianceSchemeId = complianceSchemeId
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent
+            {
+                SubmissionId = submissionId,
+                PackagingResubmissionReferenceNumber = "PEPR54321S01",
+                Created = now.AddMinutes(-50)
+            },
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileA,
+                Created = now.AddMinutes(-40)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                BlobName = "blob-a",
+                Created = now.AddMinutes(-39)
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                DataCount = 1,
+                IsValid = true,
+                Created = now.AddMinutes(-38)
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-a",
+                IsValid = true,
+                Created = now.AddMinutes(-37)
+            },
+            new SubmittedEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileA,
+                Created = now.AddMinutes(-30)
+            },
+
+            // Upload B produced a check splitter event promising 3 rows, but only 1 producer
+            // validation event was written before validation stalled.
+            new AntivirusCheckEvent
+            {
+                SubmissionId = submissionId,
+                FileType = FileType.Pom,
+                FileId = fileB,
+                Created = now.AddMinutes(-28)
+            },
+            new AntivirusResultEvent
+            {
+                SubmissionId = submissionId,
+                FileId = fileB,
+                BlobName = "blob-b",
+                Created = now.AddMinutes(-27)
+            },
+            new CheckSplitterValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-b",
+                DataCount = 3,
+                IsValid = true,
+                Created = now.AddMinutes(-26)
+            },
+            new ProducerValidationEvent
+            {
+                SubmissionId = submissionId,
+                BlobName = "blob-b",
+                IsValid = true,
+                Created = now.AddMinutes(-25)
+            }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Value.First().ApplicationStatus.Should().NotBe(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationStatus.ToString().Should().Be("SubmittedToRegulator");
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR54321S01");
+    }
+
+    private static Submission BuildSubmission(Guid submissionId, GetPackagingResubmissionApplicationDetailsQuery query, Guid? complianceSchemeId) =>
+        new()
+        {
+            Id = submissionId,
+            ComplianceSchemeId = complianceSchemeId,
+            OrganisationId = query.OrganisationId,
+            SubmissionType = SubmissionType.Producer,
+            SubmissionPeriod = query.SubmissionPeriods.First(),
+            Created = DateTime.Now,
+            IsSubmitted = true,
+            AppReferenceNumber = "TestRef"
+        };
+
+    private void SetupMocks(Submission submission, List<AbstractSubmissionEvent> events)
+    {
+        _submissionQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<Submission, bool>>>()))
+            .Returns(new[] { submission }.BuildMock());
+
+        _submissionEventQueryRepositoryMock.Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
+
+        _validationErrorQueryRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationError, bool>>>()))
+            .Returns(new List<AbstractValidationError>().BuildMock);
+
+        _validationWarningRepositoryMock
+            .Setup(repo => repo.GetAll(It.IsAny<Expression<Func<AbstractValidationWarning, bool>>>()))
+            .Returns(new List<AbstractValidationWarning>().BuildMock);
     }
 }
