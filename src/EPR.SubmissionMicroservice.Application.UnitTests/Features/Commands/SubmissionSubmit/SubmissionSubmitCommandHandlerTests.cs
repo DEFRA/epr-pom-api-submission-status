@@ -447,4 +447,91 @@ public class SubmissionSubmitCommandHandlerTests
             x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [TestMethod]
+    public async Task Handle_WhenNotifyPaymentServiceFalse_DoesNotPublishFeesCalculationNotification_ButStillRecordsSubmission()
+    {
+        // Arrange — the frontend flags this Registration submit as one whose submission id has no
+        // payment-service snapshot (legacy Synapse-only), so the service-bus publish must be suppressed
+        // while the submitted-event and submission update still happen.
+        var command = new SubmissionSubmitCommand
+        {
+            SubmissionId = _submissionId,
+            UserId = _userId,
+            FileId = _fileId,
+            RegulatorNation = "GB-ENG",
+            AppReferenceNumber = "PEPR00000123",
+            NotifyPaymentService = false,
+        };
+        var submission = new Submission
+        {
+            Id = _submissionId,
+            SubmissionType = SubmissionType.Registration,
+            IsSubmitted = false,
+        };
+        var antivirusResultEvent = new AntivirusResultEvent { BlobName = "registration-blob.csv" };
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submission);
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _submissionFileValidatorMock
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(antivirusResultEvent);
+
+        // Act
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        _publisherMock.Verify(
+            p => p.Publish(It.IsAny<RegistrationSubmittedForFeesCalculationNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _submissionCommandRepositoryMock.Verify(x => x.UpdateSubmission(It.Is<Submission>(s => s.IsSubmitted.Value)), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.AddSubmitEventAsync(It.Is<SubmittedEvent>(s => s.SubmissionId == _submissionId)), Times.Once);
+        _submissionCommandRepositoryMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [TestMethod]
+    public async Task Handle_WhenNotifyPaymentServiceTrue_PublishesFeesCalculationNotification()
+    {
+        // Arrange
+        var command = new SubmissionSubmitCommand
+        {
+            SubmissionId = _submissionId,
+            UserId = _userId,
+            FileId = _fileId,
+            RegulatorNation = "GB-ENG",
+            AppReferenceNumber = "PEPR00000123",
+            NotifyPaymentService = true,
+        };
+        var submission = new Submission
+        {
+            Id = _submissionId,
+            SubmissionType = SubmissionType.Registration,
+            IsSubmitted = false,
+        };
+        var antivirusResultEvent = new AntivirusResultEvent { BlobName = "registration-blob.csv" };
+
+        _submissionQueryRepositoryMock
+            .Setup(x => x.GetSubmissionAsync(_submissionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submission);
+        _submissionFileValidatorMock
+            .Setup(x => x.IsFileIdForValidFileAsync(submission, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _submissionFileValidatorMock
+            .Setup(x => x.GetAntivirusResultByFileIdAsync(_submissionId, _fileId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(antivirusResultEvent);
+
+        // Act
+        var result = await _testSubmissionSubmitCommandHandler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        _publisherMock.Verify(
+            p => p.Publish(It.IsAny<RegistrationSubmittedForFeesCalculationNotification>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
 }

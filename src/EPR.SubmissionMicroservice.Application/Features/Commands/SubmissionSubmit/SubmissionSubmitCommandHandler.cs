@@ -32,7 +32,8 @@ public class SubmissionSubmitCommandHandler(
                    ["UserId"] = command.UserId,
                    ["SubmittedBy"] = command.SubmittedBy,
                    ["AppReferenceNumber"] = command.AppReferenceNumber,
-                   ["IsResubmission"] = command.IsResubmission
+                   ["IsResubmission"] = command.IsResubmission,
+                   ["NotifyPaymentService"] = command.NotifyPaymentService
                }))
         {
             var submissionId = command.SubmissionId;
@@ -88,7 +89,7 @@ public class SubmissionSubmitCommandHandler(
                 }
 
                 // publish submitted registration event to message bus
-                if (submission.SubmissionType == SubmissionType.Registration)
+                if (submission.SubmissionType == SubmissionType.Registration && command.NotifyPaymentService)
                 {
                     if (string.IsNullOrWhiteSpace(command.RegulatorNation))
                     {
