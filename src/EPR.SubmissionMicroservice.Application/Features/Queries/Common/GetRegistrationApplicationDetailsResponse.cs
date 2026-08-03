@@ -50,6 +50,11 @@ public class GetRegistrationApplicationDetailsResponse
 
     public string? RegistrationJourney { get; set; }
 
+    // Blob name of the latest company-details file that reached the antivirus check (the file the current
+    // fee snapshot in the payment-service DB should correspond to). Used by the frontend to cross-check
+    // fee responses so it doesn't display fees derived from a previous, stale snapshot.
+    public string? LastUploadedFileBlobName { get; set; }
+
     public class LastSubmittedFileDetails
     {
         public Guid? FileId { get; set; }

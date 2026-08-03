@@ -52,6 +52,12 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             .Where(x => x.FileType == FileType.CompanyDetails)
             .MaxBy(x => x.Created);
 
+        var latestCompanyDetailsAntivirusResultBlobName = latestCompanyDetailsAntivirusCheckEvent is null
+            ? null
+            : submissionEvents.OfType<AntivirusResultEvent>()
+                .Where(x => x.FileId == latestCompanyDetailsAntivirusCheckEvent.FileId)
+                .MaxBy(x => x.Created)?.BlobName;
+
         var submittedRegistrationSetId = latestCompanyDetailsAntivirusCheckEvent?.RegistrationSetId;
 
         var validationPass = ValidateFiles(latestCompanyDetailsAntivirusCheckEvent, submissionEvents, submittedRegistrationSetId);
@@ -89,6 +95,7 @@ public class GetRegistrationApplicationDetailsQueryHandler(
             LatestSubmittedEventCreatedDatetime = latestSubmittedEventCreatedDatetime,
             FirstApplicationSubmittedEventCreatedDatetime = firstApplicationSubmittedEvent?.Created.Date,
             RegistrationJourney = submission.RegistrationJourney,
+            LastUploadedFileBlobName = latestCompanyDetailsAntivirusResultBlobName,
         };
 
         SetApplicationStatus(response, isLatestSubmittedEventAfterFileUpload, latestCompanyDetailsCreatedDatetime, regulatorRegistrationDecisionEvent);
