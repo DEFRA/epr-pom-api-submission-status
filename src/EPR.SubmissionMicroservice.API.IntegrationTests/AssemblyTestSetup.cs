@@ -31,7 +31,11 @@ public static class AssemblyTestSetup
         return client;
     }
 
-    public static ServiceBusReceiver ServiceBusReceiver { get; private set; }
+    public static ServiceBusReceiver RegistrationSubmittedForFeesCalculationServiceBusReceiver { get; private set; }
+
+    public static ServiceBusReceiver RegistrationSubmittedForRegulatorApprovalServiceBusReceiver { get; private set; }
+
+    public static ServiceBusReceiver RegulatorRegistrationDecisionServiceBusReceiver { get; private set; }
 
     public static IServiceProvider SharedServices
     {
@@ -62,51 +66,6 @@ public static class AssemblyTestSetup
         // subscribe to service bus
         var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
         var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
-        context.WriteLine($"Creating service bus subscription for topic {serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName} and subscription {IntegrationTestsSubscriptionName}...");
-
-        var topicExistsResult = await WithEmulatorWarmUpRetryAsync(
-            context,
-            "Checking whether the topic exists",
-            () => serviceBusAdminClient.TopicExistsAsync(serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName));
-
-        context.WriteLine("Topic {0} found: {1}", serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, topicExistsResult.Value);
-
-        if (!topicExistsResult.Value)
-        {
-            context.WriteLine("Creating topic {0}...",
-                serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName);
-            await WithEmulatorWarmUpRetryAsync(
-                context,
-                "Creating the topic",
-                () => serviceBusAdminClient.CreateTopicAsync(serviceBusConfig
-                    .RegistrationSubmittedForFeesCalculationTopicName));
-        }
-
-        // A previous run whose cleanup did not complete can leave the subscription behind, which
-        // would make CreateSubscriptionAsync fail with MessagingEntityAlreadyExists.
-        var subscriptionExistsResult = await WithEmulatorWarmUpRetryAsync(
-            context,
-            "Checking whether the subscription exists",
-            () => serviceBusAdminClient.SubscriptionExistsAsync(
-                serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName));
-
-        if (subscriptionExistsResult.Value)
-        {
-            context.WriteLine("Deleting stale subscription {0}...", IntegrationTestsSubscriptionName);
-            await WithEmulatorWarmUpRetryAsync(
-                context,
-                "Deleting the stale subscription",
-                () => serviceBusAdminClient.DeleteSubscriptionAsync(
-                    serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName));
-        }
-
-        context.WriteLine("Creating subscription {0}...",
-            IntegrationTestsSubscriptionName);
-        await WithEmulatorWarmUpRetryAsync(
-            context,
-            "Creating the subscription",
-            () => serviceBusAdminClient.CreateSubscriptionAsync(
-                serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName));
 
         _serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
 
@@ -115,9 +74,73 @@ public static class AssemblyTestSetup
             ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete
         };
 
-        context.WriteLine($"Creating service bus receiver for topic {serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName} and subscription {IntegrationTestsSubscriptionName}");
-        ServiceBusReceiver = _serviceBusClient.CreateReceiver(
-            serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName, serviceBusReceiveOptions);
+        RegistrationSubmittedForFeesCalculationServiceBusReceiver = await SetupTopicSubscriptionAndReceiverAsync(
+            context,
+            serviceBusAdminClient,
+            serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName,
+            serviceBusReceiveOptions);
+
+        RegistrationSubmittedForRegulatorApprovalServiceBusReceiver = await SetupTopicSubscriptionAndReceiverAsync(
+            context,
+            serviceBusAdminClient,
+            serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName,
+            serviceBusReceiveOptions);
+
+        RegulatorRegistrationDecisionServiceBusReceiver = await SetupTopicSubscriptionAndReceiverAsync(
+            context,
+            serviceBusAdminClient,
+            serviceBusConfig.RegulatorRegistrationDecisionTopicName,
+            serviceBusReceiveOptions);
+    }
+
+    private static async Task<ServiceBusReceiver> SetupTopicSubscriptionAndReceiverAsync(
+        TestContext context,
+        ServiceBusAdministrationClient serviceBusAdminClient,
+        string topicName,
+        ServiceBusReceiverOptions serviceBusReceiveOptions)
+    {
+        context.WriteLine($"Creating service bus subscription for topic {topicName} and subscription {IntegrationTestsSubscriptionName}...");
+
+        var topicExistsResult = await WithEmulatorWarmUpRetryAsync(
+            context,
+            "Checking whether the topic exists",
+            () => serviceBusAdminClient.TopicExistsAsync(topicName));
+
+        context.WriteLine("Topic {0} found: {1}", topicName, topicExistsResult.Value);
+
+        if (!topicExistsResult.Value)
+        {
+            context.WriteLine("Creating topic {0}...", topicName);
+            await WithEmulatorWarmUpRetryAsync(
+                context,
+                "Creating the topic",
+                () => serviceBusAdminClient.CreateTopicAsync(topicName));
+        }
+
+        // A previous run whose cleanup did not complete can leave the subscription behind, which
+        // would make CreateSubscriptionAsync fail with MessagingEntityAlreadyExists.
+        var subscriptionExistsResult = await WithEmulatorWarmUpRetryAsync(
+            context,
+            "Checking whether the subscription exists",
+            () => serviceBusAdminClient.SubscriptionExistsAsync(topicName, IntegrationTestsSubscriptionName));
+
+        if (subscriptionExistsResult.Value)
+        {
+            context.WriteLine("Deleting stale subscription {0} on topic {1}...", IntegrationTestsSubscriptionName, topicName);
+            await WithEmulatorWarmUpRetryAsync(
+                context,
+                "Deleting the stale subscription",
+                () => serviceBusAdminClient.DeleteSubscriptionAsync(topicName, IntegrationTestsSubscriptionName));
+        }
+
+        context.WriteLine("Creating subscription {0} on topic {1}...", IntegrationTestsSubscriptionName, topicName);
+        await WithEmulatorWarmUpRetryAsync(
+            context,
+            "Creating the subscription",
+            () => serviceBusAdminClient.CreateSubscriptionAsync(topicName, IntegrationTestsSubscriptionName));
+
+        context.WriteLine($"Creating service bus receiver for topic {topicName} and subscription {IntegrationTestsSubscriptionName}");
+        return _serviceBusClient.CreateReceiver(topicName, IntegrationTestsSubscriptionName, serviceBusReceiveOptions);
     }
 
     [AssemblyCleanup]
@@ -125,19 +148,28 @@ public static class AssemblyTestSetup
     {
         var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
         var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
-        await WithEmulatorWarmUpRetryAsync(
-            context: null,
-            "Deleting the subscription",
-            () => serviceBusAdminClient.DeleteSubscriptionAsync(
-                serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName, IntegrationTestsSubscriptionName));
 
-        await ServiceBusReceiver.DisposeAsync();
+        await DeleteSubscriptionIfExistsAsync(serviceBusAdminClient, serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName);
+        await DeleteSubscriptionIfExistsAsync(serviceBusAdminClient, serviceBusConfig.RegistrationSubmittedForRegulatorApprovalTopicName);
+        await DeleteSubscriptionIfExistsAsync(serviceBusAdminClient, serviceBusConfig.RegulatorRegistrationDecisionTopicName);
+
+        await RegistrationSubmittedForFeesCalculationServiceBusReceiver.DisposeAsync();
+        await RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.DisposeAsync();
+        await RegulatorRegistrationDecisionServiceBusReceiver.DisposeAsync();
         await _serviceBusClient.DisposeAsync();
 
         if (_factory != null)
         {
             await _factory.DisposeAsync();
         }
+    }
+
+    private static async Task DeleteSubscriptionIfExistsAsync(ServiceBusAdministrationClient serviceBusAdminClient, string topicName)
+    {
+        await WithEmulatorWarmUpRetryAsync(
+            context: null,
+            $"Deleting the subscription on {topicName}",
+            () => serviceBusAdminClient.DeleteSubscriptionAsync(topicName, IntegrationTestsSubscriptionName));
     }
 
     private static void ConfigureEmulatorDefaults()
