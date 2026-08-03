@@ -131,9 +131,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         }
 
         // The cycle is identified by the earliest reference-number event that has not been closed by a
-        // later application-submitted event. Keying on cycle membership rather than event recency means a
-        // duplicate reference number raised mid-cycle does not start a new cycle, and an upload that never
-        // produced a valid file cannot resolve an open cycle as not-started.
+        // later application-submitted event, so a duplicate reference number raised mid-cycle does not start
+        // a new cycle. The cycle's own reference number is reported on every path below, including the ones
+        // that report no progress, because it is what identifies the cycle to the frontend.
         var openCycleReferenceNumberEvent = GetOpenCycleReferenceNumberEvent(packagingResubmissionReferenceNumberCreatedEvents, packagingApplicationSubmittedEvents);
         var isCycleOpen = openCycleReferenceNumberEvent is not null;
         var packagingResubmissionReferenceNumberCreatedEvent = openCycleReferenceNumberEvent ?? packagingResubmissionReferenceNumberCreatedEvents[^1];
@@ -142,13 +142,15 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             latestPackagingDetailsAntivirusCheckEvent.Created < packagingResubmissionReferenceNumberCreatedEvent.Created)
         {
             // Nothing has been uploaded since this cycle's reference number was created, so none of the
-            // previous cycle's file, fee or declaration state belongs to it.
+            // previous cycle's file, fee or declaration state belongs to it. The status stays NotStarted -
+            // this cycle's upload step genuinely has not been started - while the reference number is still
+            // reported, which is what tells the frontend the cycle exists and keeps the journey reachable.
             return new GetPackagingResubmissionApplicationDetailsResponse()
             {
                 SubmissionId = submission.Id,
                 IsSubmitted = submission?.IsSubmitted ?? false,
                 ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
-                ApplicationStatus = isCycleOpen ? ApplicationStatusType.SubmittedToRegulator : ApplicationStatusType.NotStarted
+                ApplicationStatus = ApplicationStatusType.NotStarted
             };
         }
 
@@ -160,11 +162,15 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var isFileUploadedButNotSubmittedYet = latestPackagingDetailsCreatedDatetime > latestSubmittedEventCreatedDatetime;
         var isRegulatorDecisionAfterSubmission = latestPackagingDetailsCreatedDatetime > (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue);
 
-        // Cycle membership, not event recency, decides whether a declaration belongs to this cycle. An open
-        // cycle has by definition no application-submitted event of its own, so a declaration carried over
-        // from a closed cycle must not be reported against it; conversely a closed cycle was closed by a
-        // declaration, so that declaration is always the one to report regardless of submit ordering.
-        var isResubmissionDoneAfterSubmission = !isCycleOpen;
+        // A declaration closes the cycle it belongs to, so it may only be reported while nothing has started
+        // a later one. Two things start a later cycle: a reference number raised after the declaration (an
+        // open cycle), and a file submitted after it. The submit check is what stops a declaration being
+        // reported for the rest of the submission's life - a reference number is only ever raised once per
+        // submission, so cycle membership alone would mark every later cycle's declaration step complete
+        // before the user had declared anything.
+        var isDeclarationSupersededByLaterSubmit = resubmissionEvent is not null &&
+                                                   latestSubmittedEventCreatedDatetime > resubmissionEvent.Created;
+        var isResubmissionDoneAfterSubmission = !isCycleOpen && !isDeclarationSupersededByLaterSubmit;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
 
@@ -189,18 +195,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
 
-        if (isCycleOpen)
-        {
-            // While the cycle is open the user still has a route back into the journey, so the status
-            // always reflects work in progress. Upload validity and recency only choose which value
-            // within the open set is returned, never whether the cycle counts as started.
-            response.ApplicationStatus = isFileUploadedButNotSubmittedYet
-                ? ApplicationStatusType.FileUploaded
-                : ApplicationStatusType.SubmittedToRegulator;
-
-            return response;
-        }
-
+        // The status reports how far this cycle's upload has actually got, whether or not the cycle is open:
+        // an upload that never produced a valid file has to leave the upload step startable, or the user has
+        // no way to replace it. Keeping the cycle reachable is the reference number's job, not the status's.
         return packagingDataResubmissionResponse(latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response);
     }
 
