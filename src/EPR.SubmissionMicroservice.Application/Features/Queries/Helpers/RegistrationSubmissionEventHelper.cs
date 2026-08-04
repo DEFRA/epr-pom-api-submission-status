@@ -198,7 +198,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
             response.LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = latestCompanyDetailsAntivirusCheckEvent.FileId,
-                CompanyDetailsBlobName = latestCompanyDetailsAntivirusResultEvent.BlobName,
+                CompanyDetailsBlobName = latestCompanyDetailsAntivirusResultEvent!.BlobName,
                 CompanyDetailsFileName = response.CompanyDetailsFileName,
                 CompanyDetailsUploadDatetime = response.CompanyDetailsUploadedDate.Value,
                 CompanyDetailsUploadedBy = response.CompanyDetailsUploadedBy.Value,
