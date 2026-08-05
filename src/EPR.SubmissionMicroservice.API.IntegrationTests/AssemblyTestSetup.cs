@@ -67,7 +67,8 @@ public static class AssemblyTestSetup
         var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
         var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
 
-        _serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
+        var topicExistsResult =
+            await serviceBusAdminClient.TopicExistsAsync(serviceBusConfig.RegistrationSubmittedForFeesCalculationTopicName);
 
         var serviceBusReceiveOptions = new ServiceBusReceiverOptions
         {
