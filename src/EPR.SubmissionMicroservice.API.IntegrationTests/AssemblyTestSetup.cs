@@ -65,6 +65,7 @@ public static class AssemblyTestSetup
 
         // subscribe to service bus
         var serviceBusAdminClient = SharedServices.GetRequiredService<ServiceBusAdministrationClient>();
+        _serviceBusClient = SharedServices.GetRequiredService<ServiceBusClient>();
         var serviceBusConfig = SharedServices.GetRequiredService<IOptions<ServiceBusOptions>>().Value;
 
         var topicExistsResult =
