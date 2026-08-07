@@ -1,15 +1,10 @@
 ﻿FROM defradigital/dotnetcore-development:dotnet10.0 AS build-env
 USER root
 
-# Expose the app on a defined port, configurable via a build argument
-ARG PORT=3000
-ENV ASPNETCORE_URLS=http://*:${PORT}
-EXPOSE ${PORT}
-
-# Copy everything
-COPY EPR.SubmissionMicroservice.API/. ./EPR.SubmissionMicroservice.API/.
-COPY EPR.SubmissionMicroservice.Application/. ./EPR.SubmissionMicroservice.Application/.
-COPY EPR.SubmissionMicroservice.Data/. ./EPR.SubmissionMicroservice.Data/.
+# Copy only the files restore needs, so the restore layer survives source changes
+COPY EPR.SubmissionMicroservice.API/EPR.SubmissionMicroservice.API.csproj ./EPR.SubmissionMicroservice.API/
+COPY EPR.SubmissionMicroservice.Application/EPR.SubmissionMicroservice.Application.csproj ./EPR.SubmissionMicroservice.Application/
+COPY EPR.SubmissionMicroservice.Data/EPR.SubmissionMicroservice.Data.csproj ./EPR.SubmissionMicroservice.Data/
 COPY stylecop.ruleset ./
 COPY NuGet.Config ./
 COPY Directory.Build.props ./
@@ -21,9 +16,14 @@ RUN sed -i "s|</configuration>|<packageSourceCredentials><epr-packaging-common><
 # Restore as distinct layers
 RUN dotnet restore "EPR.SubmissionMicroservice.API/EPR.SubmissionMicroservice.API.csproj" --configfile "NuGet.Config"
 
+# Copy the remaining source
+COPY EPR.SubmissionMicroservice.API/. ./EPR.SubmissionMicroservice.API/.
+COPY EPR.SubmissionMicroservice.Application/. ./EPR.SubmissionMicroservice.Application/.
+COPY EPR.SubmissionMicroservice.Data/. ./EPR.SubmissionMicroservice.Data/.
+
 # Build and publish a release
 WORKDIR /home/dotnet/EPR.SubmissionMicroservice.API
-RUN dotnet publish -c Release -o out
+RUN dotnet publish -c Release --no-restore -o out
 
 # Build runtime image
 FROM defradigital/dotnetcore:dotnet10.0
