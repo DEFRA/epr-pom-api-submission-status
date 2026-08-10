@@ -163,14 +163,15 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var isRegulatorDecisionAfterSubmission = latestPackagingDetailsCreatedDatetime > (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue);
 
         // A declaration closes the cycle it belongs to, so it may only be reported while nothing has started
-        // a later one. Two things start a later cycle: a reference number raised after the declaration (an
-        // open cycle), and a file submitted after it. The submit check is what stops a declaration being
-        // reported for the rest of the submission's life - a reference number is only ever raised once per
-        // submission, so cycle membership alone would mark every later cycle's declaration step complete
-        // before the user had declared anything.
-        var isDeclarationSupersededByLaterSubmit = resubmissionEvent is not null &&
-                                                   latestSubmittedEventCreatedDatetime > resubmissionEvent.Created;
-        var isResubmissionDoneAfterSubmission = !isCycleOpen && !isDeclarationSupersededByLaterSubmit;
+        // a later one. Three things start a later cycle: a reference number raised after the declaration (an
+        // open cycle), a file submitted after it, and a regulator decision after it. Without the regulator
+        // check the declaration would stick between the regulator's response and the user's next submit,
+        // marking the declaration step complete on the intervening visit that starts the next cycle.
+        var isDeclarationSupersededByLaterCycleEvent =
+            resubmissionEvent is not null &&
+            (latestSubmittedEventCreatedDatetime > resubmissionEvent.Created
+             || (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue) > resubmissionEvent.Created);
+        var isResubmissionDoneAfterSubmission = !isCycleOpen && !isDeclarationSupersededByLaterCycleEvent;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
 
