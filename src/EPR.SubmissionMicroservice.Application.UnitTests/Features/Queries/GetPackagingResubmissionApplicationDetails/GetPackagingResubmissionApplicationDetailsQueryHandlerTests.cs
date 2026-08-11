@@ -2543,15 +2543,13 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
     // decision. The status must stay NotStarted so the closed cycle's upload and fee do not resolve as
     // completed against a file the user may need to replace.
     //
-    // What closes the cycle is that the regulator ruled at all, not how they ruled, so every decision type
-    // behaves the same. Accepted and Approved matter as much as Rejected: that page is where the user is
-    // told no resubmission is needed, and skipping it drops them into a task list implying the opposite.
+    // Accepted and Approved matter as much as Rejected: that page is where the user is told no resubmission
+    // is needed, and skipping it drops them into a task list implying the opposite. The sibling test below
+    // covers the decisions that page cannot speak to.
     [TestMethod]
     [DataRow(RegulatorDecision.Rejected)]
     [DataRow(RegulatorDecision.Accepted)]
     [DataRow(RegulatorDecision.Approved)]
-    [DataRow(RegulatorDecision.Cancelled)]
-    [DataRow(RegulatorDecision.Queried)]
     public async Task Handle_ShouldNotReportDeclarationButKeepTheCycleNotStarted_WhenTheRegulatorHasRuledOnTheDeclaredCycle(RegulatorDecision decision)
     {
         // Arrange
@@ -2602,6 +2600,68 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
         result.Value.First().ResubmissionApplicationSubmittedComment.Should().BeNull();
         result.Value.First().IsResubmitted.Should().BeNull();
+    }
+
+    // SUB-345: the same fixture as above with a decision UploadNewFileToSubmit has no wording for. Suppressing
+    // the declaration would send the user to that page, where Cancelled, Queried and None all fall through
+    // every decision branch to a bare "you already submitted a file" and the regulator's comment is never
+    // rendered - a worse stop than not stopping at all. So these keep reporting the declaration, which leaves
+    // ResubmissionApplicationSubmitted true and routes the frontend straight to the task list, unchanged from
+    // the behaviour before this fix.
+    [TestMethod]
+    [DataRow(RegulatorDecision.Cancelled)]
+    [DataRow(RegulatorDecision.Queried)]
+    [DataRow(RegulatorDecision.None)]
+    public async Task Handle_ShouldStillReportDeclaration_WhenTheDecisionIsOneTheInterstitialCannotExplain(RegulatorDecision decision)
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var originalFile = Guid.NewGuid();
+        var ruledOnFile = Guid.NewGuid();
+        var now = DateTime.Now;
+        var submissionDate = now.AddMinutes(-135);
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            // The original submission, accepted by the regulator.
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = originalFile, Created = now.AddMinutes(-200) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = originalFile, Created = now.AddMinutes(-190) },
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Accepted, Created = now.AddMinutes(-180) },
+
+            // The first resubmission, declared and paid for: the only reference number this submission gets.
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = submissionId, PackagingResubmissionReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-170) },
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = ruledOnFile, Created = now.AddMinutes(-160) },
+            new AntivirusResultEvent { SubmissionId = submissionId, FileId = ruledOnFile, BlobName = "blob-ruled-on", Created = now.AddMinutes(-159) },
+            new CheckSplitterValidationEvent { SubmissionId = submissionId, BlobName = "blob-ruled-on", DataCount = 1, IsValid = true, Created = now.AddMinutes(-158) },
+            new ProducerValidationEvent { SubmissionId = submissionId, BlobName = "blob-ruled-on", IsValid = true, Created = now.AddMinutes(-157) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = ruledOnFile, Created = now.AddMinutes(-150) },
+            new PackagingResubmissionFeeViewCreatedEvent { SubmissionId = submissionId, IsPackagingResubmissionFeeViewed = true, Created = now.AddMinutes(-145) },
+            new PackagingDataResubmissionFeePaymentEvent { SubmissionId = submissionId, PaymentMethod = "PayByPhone", ReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-140) },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = submissionId, IsResubmitted = true, SubmissionDate = submissionDate, Comments = "First resubmission", Created = submissionDate },
+
+            // A decision the frontend has no page to show. The user has done nothing since.
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = decision, Created = now.AddMinutes(-120) }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR33333S01");
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().Be(submissionDate);
+        result.Value.First().ResubmissionApplicationSubmittedComment.Should().Be("First resubmission");
+        result.Value.First().IsResubmitted.Should().BeTrue();
     }
 
     // SUB-345: the counterpart - a declaration the regulator has not yet ruled on is the frontend's
