@@ -171,6 +171,23 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var isDeclarationSupersededByLaterSubmit = resubmissionEvent is not null &&
                                                    latestSubmittedEventCreatedDatetime > resubmissionEvent.Created;
         var isResubmissionDoneAfterSubmission = !isCycleOpen && !isDeclarationSupersededByLaterSubmit;
+
+        // SUB-345: a declaration the regulator has ruled on belongs to a closed cycle, so it must stop being
+        // reported at the decision rather than at the next submit. Neither check above closes this window.
+        // isCycleOpen cannot: a reference number is raised at most once per submission, and the frontend
+        // will not raise a second one while this response still carries the first - which it must, so that
+        // the cycle keeps its identity. isDeclarationSupersededByLaterSubmit cannot either, because the
+        // rejected file was submitted before the declaration that closed its cycle. Left reported, the
+        // frontend reads ResubmissionApplicationSubmitted as "declared, awaiting the regulator" and routes
+        // past the page that shows the decision - the only place the regulator's comments are shown.
+        //
+        // This is deliberately kept out of isResubmissionDoneAfterSubmission, which also decides the status
+        // below. Both stay true here so that the status branch keeps reporting NotStarted: the rejected
+        // file's upload and fee belong to the closed cycle, and resolving them as completed would leave the
+        // user with the upload step done and no way to replace the file the regulator rejected.
+        var isDeclarationSupersededByRegulatorDecision = resubmissionEvent is not null &&
+                                                         regulatorPackagingDecisionEvent?.Created > resubmissionEvent.Created;
+        var shouldReportDeclaration = isResubmissionDoneAfterSubmission && !isDeclarationSupersededByRegulatorDecision;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
 
@@ -188,9 +205,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
                     SubmittedByName = submittedEvent?.SubmittedBy
                 }
                 : null,
-            ResubmissionApplicationSubmittedDate = isResubmissionDoneAfterSubmission ? resubmissionEvent?.SubmissionDate : null,
-            ResubmissionApplicationSubmittedComment = isResubmissionDoneAfterSubmission ? resubmissionEvent?.Comments : null,
-            IsResubmitted = isResubmissionDoneAfterSubmission ? resubmissionEvent?.IsResubmitted : null,
+            ResubmissionApplicationSubmittedDate = shouldReportDeclaration ? resubmissionEvent?.SubmissionDate : null,
+            ResubmissionApplicationSubmittedComment = shouldReportDeclaration ? resubmissionEvent?.Comments : null,
+            IsResubmitted = shouldReportDeclaration ? resubmissionEvent?.IsResubmitted : null,
             IsResubmissionFeeViewed = isPackagingFeeViewEventAfterSubmission ? packagingFeeViewEvent?.IsPackagingResubmissionFeeViewed : null,
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };

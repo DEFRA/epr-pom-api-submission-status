@@ -2535,6 +2535,117 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().IsResubmitted.Should().BeNull();
     }
 
+    // SUB-345: the same flow as the fixture above, stopped at the rejection. This is the window the two
+    // existing supersession checks both miss - no reference number has been raised since the declaration
+    // (the frontend will not raise one while this response carries the first), and the rejected file was
+    // submitted before the declaration that closed its cycle. The declaration must not be reported here:
+    // the frontend reads it as "declared, awaiting the regulator" and routes past the page showing the
+    // decision. The status must stay NotStarted so the closed cycle's upload and fee do not resolve as
+    // completed against a file the regulator rejected.
+    [TestMethod]
+    public async Task Handle_ShouldNotReportDeclarationButKeepTheCycleNotStarted_WhenTheRegulatorHasRejectedTheDeclaredCycle()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var originalFile = Guid.NewGuid();
+        var rejectedFile = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            // The original submission, accepted by the regulator.
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = originalFile, Created = now.AddMinutes(-200) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = originalFile, Created = now.AddMinutes(-190) },
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Accepted, Created = now.AddMinutes(-180) },
+
+            // The first resubmission, declared and paid for: the only reference number this submission gets.
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = submissionId, PackagingResubmissionReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-170) },
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = rejectedFile, Created = now.AddMinutes(-160) },
+            new AntivirusResultEvent { SubmissionId = submissionId, FileId = rejectedFile, BlobName = "blob-rejected", Created = now.AddMinutes(-159) },
+            new CheckSplitterValidationEvent { SubmissionId = submissionId, BlobName = "blob-rejected", DataCount = 1, IsValid = true, Created = now.AddMinutes(-158) },
+            new ProducerValidationEvent { SubmissionId = submissionId, BlobName = "blob-rejected", IsValid = true, Created = now.AddMinutes(-157) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = rejectedFile, Created = now.AddMinutes(-150) },
+            new PackagingResubmissionFeeViewCreatedEvent { SubmissionId = submissionId, IsPackagingResubmissionFeeViewed = true, Created = now.AddMinutes(-145) },
+            new PackagingDataResubmissionFeePaymentEvent { SubmissionId = submissionId, PaymentMethod = "PayByPhone", ReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-140) },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = submissionId, IsResubmitted = true, SubmissionDate = now.AddMinutes(-135), Comments = "First resubmission", Created = now.AddMinutes(-135) },
+
+            // The regulator rejects and requires a resubmission. The user has done nothing since.
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Rejected, IsResubmissionRequired = true, Created = now.AddMinutes(-120) }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().ApplicationStatus.Should().Be(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR33333S01");
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
+        result.Value.First().ResubmissionApplicationSubmittedComment.Should().BeNull();
+        result.Value.First().IsResubmitted.Should().BeNull();
+    }
+
+    // SUB-345: the counterpart - a declaration the regulator has not yet ruled on is the frontend's
+    // "declared, awaiting the regulator" state and must still be reported. Only a decision that lands after
+    // the declaration supersedes it; the earlier decision that prompted this cycle does not.
+    [TestMethod]
+    public async Task Handle_ShouldStillReportDeclaration_WhenTheOnlyRegulatorDecisionPredatesIt()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var originalFile = Guid.NewGuid();
+        var declaredFile = Guid.NewGuid();
+        var now = DateTime.Now;
+        var submissionDate = now.AddMinutes(-135);
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = originalFile, Created = now.AddMinutes(-200) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = originalFile, Created = now.AddMinutes(-190) },
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Rejected, IsResubmissionRequired = true, Created = now.AddMinutes(-180) },
+
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = submissionId, PackagingResubmissionReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-170) },
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = declaredFile, Created = now.AddMinutes(-160) },
+            new AntivirusResultEvent { SubmissionId = submissionId, FileId = declaredFile, BlobName = "blob-declared", Created = now.AddMinutes(-159) },
+            new CheckSplitterValidationEvent { SubmissionId = submissionId, BlobName = "blob-declared", DataCount = 1, IsValid = true, Created = now.AddMinutes(-158) },
+            new ProducerValidationEvent { SubmissionId = submissionId, BlobName = "blob-declared", IsValid = true, Created = now.AddMinutes(-157) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = declaredFile, Created = now.AddMinutes(-150) },
+            new PackagingDataResubmissionFeePaymentEvent { SubmissionId = submissionId, PaymentMethod = "PayByPhone", ReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-140) },
+
+            // Declared, and the regulator has not ruled on it yet.
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = submissionId, IsResubmitted = true, SubmissionDate = submissionDate, Comments = "Awaiting the regulator", Created = submissionDate }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().Be(submissionDate);
+        result.Value.First().ResubmissionApplicationSubmittedComment.Should().Be("Awaiting the regulator");
+        result.Value.First().IsResubmitted.Should().BeTrue();
+    }
+
     private static Submission BuildSubmission(Guid submissionId, GetPackagingResubmissionApplicationDetailsQuery query, Guid? complianceSchemeId) =>
         new()
         {
