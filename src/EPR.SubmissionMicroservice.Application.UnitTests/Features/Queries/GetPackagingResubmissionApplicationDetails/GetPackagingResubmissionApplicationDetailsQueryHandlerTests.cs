@@ -2535,15 +2535,24 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().IsResubmitted.Should().BeNull();
     }
 
-    // SUB-345: the same flow as the fixture above, stopped at the rejection. This is the window the two
-    // existing supersession checks both miss - no reference number has been raised since the declaration
-    // (the frontend will not raise one while this response carries the first), and the rejected file was
-    // submitted before the declaration that closed its cycle. The declaration must not be reported here:
-    // the frontend reads it as "declared, awaiting the regulator" and routes past the page showing the
+    // SUB-345: the same flow as the fixture above, stopped at the regulator's decision. This is the window
+    // the two existing supersession checks both miss - no reference number has been raised since the
+    // declaration (the frontend will not raise one while this response carries the first), and the ruled-on
+    // file was submitted before the declaration that closed its cycle. The declaration must not be reported
+    // here: the frontend reads it as "declared, awaiting the regulator" and routes past the page showing the
     // decision. The status must stay NotStarted so the closed cycle's upload and fee do not resolve as
-    // completed against a file the regulator rejected.
+    // completed against a file the user may need to replace.
+    //
+    // What closes the cycle is that the regulator ruled at all, not how they ruled, so every decision type
+    // behaves the same. Accepted and Approved matter as much as Rejected: that page is where the user is
+    // told no resubmission is needed, and skipping it drops them into a task list implying the opposite.
     [TestMethod]
-    public async Task Handle_ShouldNotReportDeclarationButKeepTheCycleNotStarted_WhenTheRegulatorHasRejectedTheDeclaredCycle()
+    [DataRow(RegulatorDecision.Rejected)]
+    [DataRow(RegulatorDecision.Accepted)]
+    [DataRow(RegulatorDecision.Approved)]
+    [DataRow(RegulatorDecision.Cancelled)]
+    [DataRow(RegulatorDecision.Queried)]
+    public async Task Handle_ShouldNotReportDeclarationButKeepTheCycleNotStarted_WhenTheRegulatorHasRuledOnTheDeclaredCycle(RegulatorDecision decision)
     {
         // Arrange
         var submissionId = Guid.NewGuid();
@@ -2577,8 +2586,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
             new PackagingDataResubmissionFeePaymentEvent { SubmissionId = submissionId, PaymentMethod = "PayByPhone", ReferenceNumber = "PEPR33333S01", Created = now.AddMinutes(-140) },
             new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = submissionId, IsResubmitted = true, SubmissionDate = now.AddMinutes(-135), Comments = "First resubmission", Created = now.AddMinutes(-135) },
 
-            // The regulator rejects and requires a resubmission. The user has done nothing since.
-            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Rejected, IsResubmissionRequired = true, Created = now.AddMinutes(-120) }
+            // The regulator rules on the declared cycle. The user has done nothing since.
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = decision, IsResubmissionRequired = decision == RegulatorDecision.Rejected, Created = now.AddMinutes(-120) }
         };
 
         SetupMocks(submission, events);
