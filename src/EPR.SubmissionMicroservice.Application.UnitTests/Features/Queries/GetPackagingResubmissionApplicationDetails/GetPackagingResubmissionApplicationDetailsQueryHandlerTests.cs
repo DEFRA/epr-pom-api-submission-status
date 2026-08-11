@@ -2600,6 +2600,13 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
         result.Value.First().ResubmissionApplicationSubmittedComment.Should().BeNull();
         result.Value.First().IsResubmitted.Should().BeNull();
+
+        // The fee view and payment belong to the cycle the decision closed, so they age out with the
+        // declaration. Left reported alongside a suppressed declaration, the frontend read them as "fee
+        // viewed, not yet declared" and the sub-landing tile told the user to submit to the regulator while
+        // the task list showed every step unstarted.
+        result.Value.First().IsResubmissionFeeViewed.Should().BeNull();
+        result.Value.First().ResubmissionFeePaymentMethod.Should().BeNull();
     }
 
     // SUB-345: the same fixture as above with a decision UploadNewFileToSubmit has no wording for. Suppressing
@@ -2662,6 +2669,12 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().Be(submissionDate);
         result.Value.First().ResubmissionApplicationSubmittedComment.Should().Be("First resubmission");
         result.Value.First().IsResubmitted.Should().BeTrue();
+
+        // The fee events belong to the same cycle as the declaration, so a decision that does not close the
+        // cycle must not age them out either. Reporting all three together is what keeps the task list showing
+        // this cycle as declared and paid for.
+        result.Value.First().IsResubmissionFeeViewed.Should().BeTrue();
+        result.Value.First().ResubmissionFeePaymentMethod.Should().Be("PayByPhone");
     }
 
     // SUB-345: the counterpart - a declaration the regulator has not yet ruled on is the frontend's

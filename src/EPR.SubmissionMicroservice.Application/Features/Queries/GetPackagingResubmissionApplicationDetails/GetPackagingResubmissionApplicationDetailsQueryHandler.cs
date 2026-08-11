@@ -191,21 +191,38 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // below. Both stay true here so that the status branch keeps reporting NotStarted: the ruled-on
         // file's upload and fee belong to the closed cycle, and resolving them as completed would leave the
         // user with the upload step done and no way to replace the file the regulator rejected.
+        var cycleClosingDecisionEvent = regulatorPackagingDecisionEvent?.Decision is RegulatorDecision.Accepted
+                                            or RegulatorDecision.Approved
+                                            or RegulatorDecision.Rejected
+            ? regulatorPackagingDecisionEvent
+            : null;
+
         var isDeclarationSupersededByRegulatorDecision = resubmissionEvent is not null &&
-                                                         regulatorPackagingDecisionEvent?.Created > resubmissionEvent.Created &&
-                                                         regulatorPackagingDecisionEvent.Decision is RegulatorDecision.Accepted
-                                                             or RegulatorDecision.Approved
-                                                             or RegulatorDecision.Rejected;
+                                                         cycleClosingDecisionEvent?.Created > resubmissionEvent.Created;
         var shouldReportDeclaration = isResubmissionDoneAfterSubmission && !isDeclarationSupersededByRegulatorDecision;
-        var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
-        var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
+
+        // SUB-345: the fee view and the fee payment belong to whichever cycle was open when they happened, so
+        // a decision that closes a cycle has to age them out along with the declaration. Their only floor was
+        // the submit, and for a ruled-on cycle the submit predates the declaration that closed it, so both
+        // survived the decision and were reported against the untouched cycle that follows. The frontend read
+        // that as "fee viewed, not yet declared" and told the user on the sub-landing tile to submit to the
+        // regulator, while the task list - which keys off ApplicationStatus - correctly showed nothing started.
+        //
+        // The floor is the later of the two, not the decision alone: once a newer file is submitted, that
+        // submit starts the cycle the fee events have to belong to.
+        var currentCycleFloor = cycleClosingDecisionEvent is not null && cycleClosingDecisionEvent.Created > latestSubmittedEventCreatedDatetime
+            ? cycleClosingDecisionEvent.Created
+            : latestSubmittedEventCreatedDatetime;
+
+        var isPackagingFeeViewEventInCurrentCycle = packagingFeeViewEvent?.Created > currentCycleFloor;
+        var isPackagingFeePaymentEventInCurrentCycle = packagingFeePaymentEvent?.Created > currentCycleFloor;
 
         var response = new GetPackagingResubmissionApplicationDetailsResponse
         {
             SubmissionId = submission.Id,
             IsSubmitted = submission.IsSubmitted ?? false,
             ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
-            ResubmissionFeePaymentMethod = isPackagingFeePaymentEventAfterSubmission ? packagingFeePaymentEvent?.PaymentMethod : null,
+            ResubmissionFeePaymentMethod = isPackagingFeePaymentEventInCurrentCycle ? packagingFeePaymentEvent?.PaymentMethod : null,
             LastSubmittedFile = !isFileUploadedButNotSubmittedYet
                 ? new LastSubmittedFileDetails
                 {
@@ -217,7 +234,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             ResubmissionApplicationSubmittedDate = shouldReportDeclaration ? resubmissionEvent?.SubmissionDate : null,
             ResubmissionApplicationSubmittedComment = shouldReportDeclaration ? resubmissionEvent?.Comments : null,
             IsResubmitted = shouldReportDeclaration ? resubmissionEvent?.IsResubmitted : null,
-            IsResubmissionFeeViewed = isPackagingFeeViewEventAfterSubmission ? packagingFeeViewEvent?.IsPackagingResubmissionFeeViewed : null,
+            IsResubmissionFeeViewed = isPackagingFeeViewEventInCurrentCycle ? packagingFeeViewEvent?.IsPackagingResubmissionFeeViewed : null,
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
 
