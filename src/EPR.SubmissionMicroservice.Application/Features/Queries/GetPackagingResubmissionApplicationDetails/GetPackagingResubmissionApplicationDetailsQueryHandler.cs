@@ -177,16 +177,25 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // isCycleOpen cannot: a reference number is raised at most once per submission, and the frontend
         // will not raise a second one while this response still carries the first - which it must, so that
         // the cycle keeps its identity. isDeclarationSupersededByLaterSubmit cannot either, because the
-        // rejected file was submitted before the declaration that closed its cycle. Left reported, the
+        // ruled-on file was submitted before the declaration that closed its cycle. Left reported, the
         // frontend reads ResubmissionApplicationSubmitted as "declared, awaiting the regulator" and routes
         // past the page that shows the decision - the only place the regulator's comments are shown.
         //
+        // Only the three outcomes that page can speak to count as a ruling. Cancelled, Queried and None
+        // supersede nothing, so their declaration keeps being reported and the frontend keeps routing them
+        // straight to the task list, as it did before this change. UploadNewFileToSubmit has no wording for
+        // them: they fall through every decision branch to a bare "you already submitted a file", with the
+        // regulator's comment never rendered, which is worse than not stopping there at all.
+        //
         // This is deliberately kept out of isResubmissionDoneAfterSubmission, which also decides the status
-        // below. Both stay true here so that the status branch keeps reporting NotStarted: the rejected
+        // below. Both stay true here so that the status branch keeps reporting NotStarted: the ruled-on
         // file's upload and fee belong to the closed cycle, and resolving them as completed would leave the
         // user with the upload step done and no way to replace the file the regulator rejected.
         var isDeclarationSupersededByRegulatorDecision = resubmissionEvent is not null &&
-                                                         regulatorPackagingDecisionEvent?.Created > resubmissionEvent.Created;
+                                                         regulatorPackagingDecisionEvent?.Created > resubmissionEvent.Created &&
+                                                         regulatorPackagingDecisionEvent.Decision is RegulatorDecision.Accepted
+                                                             or RegulatorDecision.Approved
+                                                             or RegulatorDecision.Rejected;
         var shouldReportDeclaration = isResubmissionDoneAfterSubmission && !isDeclarationSupersededByRegulatorDecision;
         var isPackagingFeeViewEventAfterSubmission = packagingFeeViewEvent?.Created > latestSubmittedEventCreatedDatetime;
         var isPackagingFeePaymentEventAfterSubmission = packagingFeePaymentEvent?.Created > latestSubmittedEventCreatedDatetime;
