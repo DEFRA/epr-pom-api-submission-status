@@ -221,6 +221,11 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         {
             SubmissionId = submission.Id,
             IsSubmitted = submission.IsSubmitted ?? false,
+            LastCompletedResubmission = BuildLastCompletedResubmission(
+                submissionEvents,
+                packagingApplicationSubmittedEvents,
+                packagingResubmissionReferenceNumberCreatedEvents,
+                cycleClosingDecisionEvent),
             ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
             ResubmissionFeePaymentMethod = isPackagingFeePaymentEventInCurrentCycle ? packagingFeePaymentEvent?.PaymentMethod : null,
             LastSubmittedFile = !isFileUploadedButNotSubmittedYet
@@ -242,6 +247,91 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // an upload that never produced a valid file has to leave the upload step startable, or the user has
         // no way to replace it. Keeping the cycle reachable is the reference number's job, not the status's.
         return packagingDataResubmissionResponse(latestPackagingDetailsCreatedDatetime, isFileUploadedButNotSubmittedYet, isRegulatorDecisionAfterSubmission, isResubmissionDoneAfterSubmission, response);
+    }
+
+    /// <summary>
+    /// SUB-345: describes the most recent cycle a regulator decision has closed, or null if there is none.
+    /// </summary>
+    /// <remarks>
+    /// The declaration, the fee view, the fee payment and the status all stop reporting a cycle at the
+    /// decision that closed it, because none of that state belongs to whatever the user does next. Nothing
+    /// then distinguishes a resubmission that completed from one that was never started, which is what left
+    /// the sub-landing tile offering to begin a resubmission the regulator had already accepted. Built from
+    /// the same events as the fields above, so this reports the closed cycle rather than reviving it.
+    /// </remarks>
+    private static CompletedResubmissionDetails? BuildLastCompletedResubmission(
+        List<AbstractSubmissionEvent> submissionEvents,
+        List<PackagingResubmissionApplicationSubmittedCreatedEvent> applicationSubmittedEvents,
+        List<PackagingResubmissionReferenceNumberCreatedEvent> referenceNumberCreatedEvents,
+        RegulatorPoMDecisionEvent? cycleClosingDecisionEvent)
+    {
+        if (cycleClosingDecisionEvent is null)
+        {
+            return null;
+        }
+
+        // SUB-345: the declaration the decision ruled on is the most recent one it post-dates. Taking the latest
+        // declaration outright would drop the completed cycle as soon as a later one was awaiting a decision
+        // of its own.
+        var ruledOnDeclaration = applicationSubmittedEvents
+            .Where(x => x.Created < cycleClosingDecisionEvent.Created)
+            .MaxBy(x => x.Created);
+
+        if (ruledOnDeclaration is null)
+        {
+            return null;
+        }
+
+        // SUB-345: the closed cycle's own reference number, not whichever one is current. The declaration closed
+        // the cycle, so the number identifying it is the last one raised before that.
+        var cycleReferenceNumberEvent = referenceNumberCreatedEvents
+            .Where(x => x.Created < ruledOnDeclaration.Created)
+            .MaxBy(x => x.Created);
+
+        var cycleStart = cycleReferenceNumberEvent?.Created ?? DateTime.MinValue;
+
+        // SUB-345: the fee view and payment belonging to that cycle are the last of each between the cycle
+        // starting and the decision closing it - the journey has no route to either after the declaration.
+        var feeViewEvent = submissionEvents.OfType<PackagingResubmissionFeeViewCreatedEvent>()
+            .Where(x => x.Created > cycleStart && x.Created < cycleClosingDecisionEvent.Created)
+            .MaxBy(x => x.Created);
+
+        var feePaymentEvent = submissionEvents.OfType<PackagingDataResubmissionFeePaymentEvent>()
+            .Where(x => x.PaymentMethod != "Offline" && x.Created > cycleStart && x.Created < cycleClosingDecisionEvent.Created)
+            .MaxBy(x => x.Created);
+
+        // SUB-345: the decision names the file it ruled on, which is the file the user needs to see - not
+        // whichever file happens to be the latest by the time they look.
+        var ruledOnSubmittedEvent = submissionEvents.OfType<SubmittedEvent>()
+            .Where(x => x.FileId == cycleClosingDecisionEvent.FileId)
+            .MaxBy(x => x.Created);
+
+        var ruledOnFileName = submissionEvents.OfType<AntivirusCheckEvent>()
+            .Where(x => x.FileType == FileType.Pom && x.FileId == cycleClosingDecisionEvent.FileId)
+            .MaxBy(x => x.Created)?.FileName;
+
+        return new CompletedResubmissionDetails
+        {
+            ApplicationReferenceNumber = cycleReferenceNumberEvent?.PackagingResubmissionReferenceNumber,
+            ResubmissionReferenceNumber = cycleClosingDecisionEvent.RegistrationReferenceNumber,
+            DeclarationDate = ruledOnDeclaration.SubmissionDate,
+            DeclarationComment = ruledOnDeclaration.Comments,
+            DeclaredByName = ruledOnDeclaration.SubmittedBy,
+            IsResubmissionFeeViewed = feeViewEvent?.IsPackagingResubmissionFeeViewed,
+            ResubmissionFeePaymentMethod = feePaymentEvent?.PaymentMethod,
+            Decision = cycleClosingDecisionEvent.Decision.ToString(),
+            RegulatorComments = cycleClosingDecisionEvent.Comments,
+            DecisionDate = cycleClosingDecisionEvent.Created,
+            FileName = ruledOnFileName,
+            SubmittedFile = ruledOnSubmittedEvent is null
+                ? null
+                : new LastSubmittedFileDetails
+                {
+                    FileId = ruledOnSubmittedEvent.FileId,
+                    SubmittedByName = ruledOnSubmittedEvent.SubmittedBy,
+                    SubmittedDateTime = ruledOnSubmittedEvent.Created
+                }
+        };
     }
 
     private static PackagingResubmissionReferenceNumberCreatedEvent? GetOpenCycleReferenceNumberEvent(
