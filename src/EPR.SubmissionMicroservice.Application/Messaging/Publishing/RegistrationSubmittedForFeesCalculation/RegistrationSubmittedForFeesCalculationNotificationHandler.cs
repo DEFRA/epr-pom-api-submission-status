@@ -26,6 +26,18 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
                 $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without SubmissionPeriodId (SubmissionId={notification.SubmissionId}).");
         }
 
+        if (string.IsNullOrWhiteSpace(notification.RegulatorNation))
+        {
+            throw new InvalidOperationException(
+                $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without RegulatorNation (SubmissionId={notification.SubmissionId}).");
+        }
+
+        if (string.IsNullOrWhiteSpace(notification.ApplicationReferenceNumber))
+        {
+            throw new InvalidOperationException(
+                $"Cannot publish {nameof(RegistrationSubmittedForFeesCalculationNotification)} without ApplicationReferenceNumber (SubmissionId={notification.SubmissionId}).");
+        }
+
         using (_logger.AddScopedData(new Dictionary<string, object>
                {
                    ["SubmissionId"] = notification.SubmissionId,
@@ -33,21 +45,16 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandler : INotif
                    ["ComplianceSchemeId"] = notification.ComplianceSchemeId,
                    ["SubmissionDate"] = notification.SubmissionDate,
                    ["SubmissionPeriodId"] = notification.SubmissionPeriodId,
+                   ["RegulatorNation"] = notification.RegulatorNation,
+                   ["ApplicationReferenceNumber"] = notification.ApplicationReferenceNumber,
                }))
         {
-            string messagePayload = JsonSerializer.Serialize(notification);
+            var messagePayload = JsonSerializer.Serialize(notification);
             var message = new ServiceBusMessage(messagePayload);
 
-            try
-            {
-                _logger.LogInformation("Publishing message to message bus...");
-                await _serviceBusSender.SendMessageAsync(message, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Failed to publish message");
-            }
-
+            _logger.LogInformation("Publishing message to message bus...");
+            await _serviceBusSender.SendMessageAsync(message, cancellationToken);
+            _logger.LogInformation("Message published");
         }
     }
 }

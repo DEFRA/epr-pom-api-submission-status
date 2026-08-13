@@ -356,6 +356,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = companyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = companyDetailsBlobName,
                 CompanyDetailsFileName = companyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = companyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = companyDetailsAntivirusCheckEvent.Created,
@@ -625,6 +626,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = companyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = companyDetailsBlobName,
                 CompanyDetailsFileName = companyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = companyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = companyDetailsAntivirusCheckEvent.Created,
@@ -1305,6 +1307,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = companyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = companyDetailsBlobName,
                 CompanyDetailsFileName = companyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = companyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = companyDetailsAntivirusCheckEvent.Created,
@@ -1382,6 +1385,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = antivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = blobName,
                 CompanyDetailsFileName = antivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = antivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = antivirusCheckEvent.Created,
@@ -1560,6 +1564,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = uploadOneCompanyDetailsBlobName,
                 CompanyDetailsFileName = uploadOneCompanyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = uploadOneCompanyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = uploadOneCompanyDetailsAntivirusCheckEvent.Created,
@@ -1774,6 +1779,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = uploadOneCompanyDetailsBlobName,
                 CompanyDetailsFileName = uploadOneCompanyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = uploadOneCompanyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = uploadOneCompanyDetailsAntivirusCheckEvent.Created,
@@ -1959,6 +1965,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadTwoCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = uploadTwoCompanyDetailsBlobName,
                 CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = uploadTwoCompanyDetailsAntivirusCheckEvent.Created,
@@ -2122,6 +2129,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadOneCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = uploadOneCompanyDetailsBlobName,
                 CompanyDetailsFileName = uploadOneCompanyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = uploadOneCompanyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = uploadOneCompanyDetailsAntivirusCheckEvent.Created,
@@ -2311,6 +2319,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadTwoCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = uploadTwoCompanyDetailsBlobName,
                 CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = uploadTwoCompanyDetailsAntivirusCheckEvent.Created,
@@ -2493,6 +2502,7 @@ public class RegistrationSubmissionEventHelperTests
             LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = uploadTwoCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = uploadTwoCompanyDetailsBlobName,
                 CompanyDetailsFileName = uploadTwoCompanyDetailsAntivirusCheckEvent.FileName,
                 CompanyDetailsUploadedBy = uploadTwoCompanyDetailsAntivirusCheckEvent.UserId,
                 CompanyDetailsUploadDatetime = uploadTwoCompanyDetailsAntivirusCheckEvent.Created,

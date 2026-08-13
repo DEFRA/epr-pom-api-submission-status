@@ -1,4 +1,8 @@
-﻿namespace EPR.SubmissionMicroservice.API.IntegrationTests;
+﻿using Azure.Messaging.ServiceBus;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForFeesCalculation;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
+
+namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -167,28 +171,48 @@ public class TestBase
         HttpClient.DefaultRequestHeaders.Add(headerName, value);
     }
 
-    protected static async Task DrainServiceBusReceiverAsync()
+    // this is a bit slow, so only call from tests that test the service bus
+    public async Task DrainServiceBusReceiverAsync()
     {
         // Establish a clean baseline before a "did this test publish?" assertion: any messages
         // leaked by a prior test would otherwise be misattributed to the current one.
-        await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegulatorRegistrationDecisionServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
     }
 
-    protected static async Task<bool> HasMessageBeenPublished<T>()
+    protected static Task<bool> HasRegistrationSubmittedForFeesCalculationMessageBeenPublished()
     {
-        // Peek (not Receive) so a message racing in from another test isn't consumed away from it.
-        var message = await AssemblyTestSetup.ServiceBusReceiver.PeekMessageAsync();
-
-        if (message == null) return false;
-
-        var typedMessage = message.Body.ToObjectFromJson<T>();
-
-        return typedMessage != null;
+        return HasMessageBeenPublished<RegistrationSubmittedForFeesCalculationNotification>(AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver);
     }
 
-    protected static async Task<T> GetPublishedMessage<T>()
+    protected static Task<bool> HasRegistrationSubmittedForRegulatorApprovalMessageBeenPublished()
     {
-        var message = await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
+        return HasMessageBeenPublished<RegistrationSubmittedForRegulatorApprovalNotification>(AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver);
+    }
+
+    protected static Task<RegistrationSubmittedForFeesCalculationNotification> GetRegistrationSubmittedForFeesCalculationPublishedMessage()
+    {
+        return GetPublishedMessage<RegistrationSubmittedForFeesCalculationNotification>(AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver);
+    }
+    
+    protected static Task<RegistrationSubmittedForRegulatorApprovalNotification> GetRegistrationSubmittedForRegulatorApprovalPublishedMessage()
+    {
+        return GetPublishedMessage<RegistrationSubmittedForRegulatorApprovalNotification>(AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver);
+    }
+    
+    [TestCleanup]
+    public async Task TestCleanup()
+    {
+        // purge is in preview, so unavailable
+        await AssemblyTestSetup.RegistrationSubmittedForFeesCalculationServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegistrationSubmittedForRegulatorApprovalServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        await AssemblyTestSetup.RegulatorRegistrationDecisionServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+    }
+
+    private static async Task<T> GetPublishedMessage<T>(ServiceBusReceiver receiver)
+    {
+        var message = await receiver.ReceiveMessageAsync(TimeSpan.FromSeconds(1));
         Assert.IsNotNull(message, "message should not be null");
         Assert.IsNotNull(message.Body, "body should not be null");
         var typedMessage = message.Body.ToObjectFromJson<T>();
@@ -196,10 +220,15 @@ public class TestBase
         return typedMessage;
     }
 
-    [TestCleanup]
-    public async Task TestCleanup()
+    private static async Task<bool> HasMessageBeenPublished<T>(ServiceBusReceiver receiver)
     {
-        // purge is in preview, so unavailable
-        await AssemblyTestSetup.ServiceBusReceiver.ReceiveMessagesAsync(100, TimeSpan.FromSeconds(1));
+        // Peek (not Receive) so a message racing in from another test isn't consumed away from it.
+        var message = await receiver.PeekMessageAsync();
+
+        if (message == null) return false;
+
+        var typedMessage = message.Body.ToObjectFromJson<T>();
+
+        return typedMessage != null;
     }
 }

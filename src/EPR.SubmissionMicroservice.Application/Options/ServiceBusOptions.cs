@@ -6,4 +6,6 @@ public record ServiceBusOptions
     public string ConnectionString { get; init; }
     public string AdminConnectionString { get; init; }
     public string RegistrationSubmittedForFeesCalculationTopicName { get; init; }
+    public string RegistrationSubmittedForRegulatorApprovalTopicName { get; init; }
+    public string RegulatorRegistrationDecisionTopicName { get; init; }
 }
