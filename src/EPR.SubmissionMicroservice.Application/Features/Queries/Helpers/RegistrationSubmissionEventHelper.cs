@@ -198,6 +198,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
             response.LastUploadedValidFiles = new UploadedRegistrationFilesInformation
             {
                 CompanyDetailsFileId = latestCompanyDetailsAntivirusCheckEvent.FileId,
+                CompanyDetailsBlobName = latestCompanyDetailsAntivirusResultEvent!.BlobName,
                 CompanyDetailsFileName = response.CompanyDetailsFileName,
                 CompanyDetailsUploadDatetime = response.CompanyDetailsUploadedDate.Value,
                 CompanyDetailsUploadedBy = response.CompanyDetailsUploadedBy.Value,
@@ -302,6 +303,7 @@ public class RegistrationSubmissionEventHelper : IRegistrationSubmissionEventHel
                 response.LastUploadedValidFiles = new UploadedRegistrationFilesInformation
                 {
                     CompanyDetailsFileId = companyDetailsEvent.FileId,
+                    CompanyDetailsBlobName = antivirusResultEvent.BlobName,
                     CompanyDetailsFileName = companyDetailsEvent.FileName,
                     CompanyDetailsUploadDatetime = companyDetailsEvent.Created,
                     CompanyDetailsUploadedBy = companyDetailsEvent.UserId,

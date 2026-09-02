@@ -13,7 +13,9 @@ public class ServiceBusTopicCreatorTests
     private Mock<ServiceBusAdministrationClient> _adminClientMock;
     private Mock<IOptions<ServiceBusOptions>> _serviceBusOptionsMock;
     private ServiceBusOptions _serviceBusOptions;
-    private const string TopicName = "test-topic";
+    private const string FeesTopicName = "test-topic1";
+    private const string ApprovalTopicName = "test-topic2";
+    private const string DecisionTopicName = "test-topic3";
 
     [TestInitialize]
     public void TestInitialize()
@@ -22,8 +24,11 @@ public class ServiceBusTopicCreatorTests
         _adminClientMock = new Mock<ServiceBusAdministrationClient>();
         _serviceBusOptions = new ServiceBusOptions
         {
-            RegistrationSubmittedForFeesCalculationTopicName = TopicName
+            RegistrationSubmittedForFeesCalculationTopicName = FeesTopicName,
+            RegistrationSubmittedForRegulatorApprovalTopicName = ApprovalTopicName,
+            RegulatorRegistrationDecisionTopicName = DecisionTopicName
         };
+           
         _serviceBusOptionsMock = new Mock<IOptions<ServiceBusOptions>>();
         _serviceBusOptionsMock.Setup(x => x.Value).Returns(_serviceBusOptions);
 
@@ -34,7 +39,7 @@ public class ServiceBusTopicCreatorTests
     }
 
     [TestMethod]
-    public async Task ConfigureTopics_WhenTopicExists_ShouldNotCreateTopic()
+    public async Task ConfigureTopics_WhenTopicsExists_ShouldNotCreateTopic()
     {
         // Arrange
         var topicExistsResult = new Mock<Azure.Response<bool>>();
@@ -42,7 +47,7 @@ public class ServiceBusTopicCreatorTests
         topicExistsResult.Setup(x => x.HasValue).Returns(true);
         
         _adminClientMock
-            .Setup(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.TopicExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(topicExistsResult.Object);
 
         // Act
@@ -50,31 +55,45 @@ public class ServiceBusTopicCreatorTests
 
         // Assert
         _adminClientMock.Verify(x => x.CreateTopicAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        _adminClientMock.Verify(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()), Times.Once);
+        _adminClientMock.Verify(x => x.TopicExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
     [TestMethod]
     public async Task ConfigureTopics_WhenTopicDoesNotExist_ShouldCreateTopic()
     {
         // Arrange
-        var topicExistsResult = new Mock<Azure.Response<bool>>();
-        topicExistsResult.Setup(x => x.Value).Returns(false);
-        topicExistsResult.Setup(x => x.HasValue).Returns(true);
-        
+        var feesTopicExistsResult = new Mock<Azure.Response<bool>>();
+        feesTopicExistsResult.Setup(x => x.Value).Returns(false);
+        feesTopicExistsResult.Setup(x => x.HasValue).Returns(true);
+        var approvalTopicExistsResult = new Mock<Azure.Response<bool>>();
+        approvalTopicExistsResult.Setup(x => x.Value).Returns(true);
+        approvalTopicExistsResult.Setup(x => x.HasValue).Returns(true);
+        var decisionTopicExistsResult = new Mock<Azure.Response<bool>>();
+        decisionTopicExistsResult.Setup(x => x.Value).Returns(true);
+        decisionTopicExistsResult.Setup(x => x.HasValue).Returns(true);
+
         _adminClientMock
-            .Setup(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(topicExistsResult.Object);
+            .Setup(x => x.TopicExistsAsync(FeesTopicName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(feesTopicExistsResult.Object);
+        _adminClientMock
+            .Setup(x => x.TopicExistsAsync(ApprovalTopicName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(approvalTopicExistsResult.Object);
+        _adminClientMock
+            .Setup(x => x.TopicExistsAsync(DecisionTopicName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(decisionTopicExistsResult.Object);
 
         var createTopicResult = new Mock<Azure.Response<TopicProperties>>();
         _adminClientMock
-            .Setup(x => x.CreateTopicAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.CreateTopicAsync(FeesTopicName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(createTopicResult.Object);
 
         // Act
         await _systemUnderTest.ConfigureTopics();
 
         // Assert
-        _adminClientMock.Verify(x => x.CreateTopicAsync(TopicName, It.IsAny<CancellationToken>()), Times.Once);
+        _adminClientMock.Verify(x => x.CreateTopicAsync(FeesTopicName, It.IsAny<CancellationToken>()), Times.Once);
+        _adminClientMock.Verify(x => x.CreateTopicAsync(ApprovalTopicName, It.IsAny<CancellationToken>()), Times.Never);
+        _adminClientMock.Verify(x => x.CreateTopicAsync(DecisionTopicName, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
@@ -85,7 +104,7 @@ public class ServiceBusTopicCreatorTests
         var topicExistsResult = new Mock<Azure.Response<bool>>();
         topicExistsResult.Setup(x => x.HasValue).Returns(false);
         _adminClientMock
-            .Setup(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.TopicExistsAsync(FeesTopicName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(topicExistsResult.Object);
 
         // Act
@@ -103,7 +122,7 @@ public class ServiceBusTopicCreatorTests
         topicExistsResult.Setup(x => x.HasValue).Returns(true);
         
         _adminClientMock
-            .Setup(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.TopicExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(topicExistsResult.Object);
 
         // Act
@@ -117,7 +136,7 @@ public class ServiceBusTopicCreatorTests
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("found")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Exactly(3));
     }
 
     [TestMethod]
@@ -129,12 +148,12 @@ public class ServiceBusTopicCreatorTests
         topicExistsResult.Setup(x => x.HasValue).Returns(true);
         
         _adminClientMock
-            .Setup(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.TopicExistsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(topicExistsResult.Object);
 
         var createTopicResult = new Mock<Azure.Response<TopicProperties>>();
         _adminClientMock
-            .Setup(x => x.CreateTopicAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.CreateTopicAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(createTopicResult.Object);
 
         // Act
@@ -148,7 +167,7 @@ public class ServiceBusTopicCreatorTests
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Creating topic")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Exactly(3));
 
         _loggerMock.Verify(
             x => x.Log(
@@ -157,7 +176,7 @@ public class ServiceBusTopicCreatorTests
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("successfully created")),
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
+            Times.Exactly(3));
     }
 
     [TestMethod]
@@ -169,7 +188,13 @@ public class ServiceBusTopicCreatorTests
         topicExistsResult.Setup(x => x.HasValue).Returns(true);
         
         _adminClientMock
-            .Setup(x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()))
+            .Setup(x => x.TopicExistsAsync(FeesTopicName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(topicExistsResult.Object);
+        _adminClientMock
+            .Setup(x => x.TopicExistsAsync(ApprovalTopicName, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(topicExistsResult.Object);
+        _adminClientMock
+            .Setup(x => x.TopicExistsAsync(DecisionTopicName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(topicExistsResult.Object);
 
         // Act
@@ -177,7 +202,13 @@ public class ServiceBusTopicCreatorTests
 
         // Assert
         _adminClientMock.Verify(
-            x => x.TopicExistsAsync(TopicName, It.IsAny<CancellationToken>()),
+            x => x.TopicExistsAsync(FeesTopicName, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _adminClientMock.Verify(
+            x => x.TopicExistsAsync(ApprovalTopicName, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _adminClientMock.Verify(
+            x => x.TopicExistsAsync(DecisionTopicName, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

@@ -18,4 +18,8 @@ public class SubmissionSubmitCommand : IRequest<ErrorOr<Unit>>
     public bool? IsResubmission { get; set; }
 
     public int? SubmissionPeriodId { get; set; }
+
+    public string? RegulatorNation { get; set; }
+
+    public bool NotifyPaymentService { get; set; } = true;
 }

@@ -33,7 +33,9 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandlerTests
             RegistrationBlobName: "blob",
             ComplianceSchemeId: null,
             SubmissionDate: DateTime.UtcNow,
-            SubmissionPeriodId: null);
+            SubmissionPeriodId: null,
+            RegulatorNation: "GB-ENG",
+            ApplicationReferenceNumber: "PEPR2601234");
 
         var handler = new RegistrationSubmittedForFeesCalculationNotificationHandler(_loggerMock.Object, _senderFactoryMock.Object);
 
@@ -55,7 +57,9 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandlerTests
             RegistrationBlobName: "blob",
             ComplianceSchemeId: Guid.NewGuid(),
             SubmissionDate: DateTime.UtcNow,
-            SubmissionPeriodId: 1);
+            SubmissionPeriodId: 1,
+            RegulatorNation: "GB-ENG",
+            ApplicationReferenceNumber: "PEPR2601234");
 
         var handler = new RegistrationSubmittedForFeesCalculationNotificationHandler(_loggerMock.Object, _senderFactoryMock.Object);
 
@@ -64,5 +68,53 @@ public class RegistrationSubmittedForFeesCalculationNotificationHandlerTests
         _senderMock.Verify(
             s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [TestMethod]
+    public async Task Handle_WhenRegulatorNationIsMissing_ThrowsAndDoesNotPublish()
+    {
+        var notification = new RegistrationSubmittedForFeesCalculationNotification(
+            SubmissionId: Guid.NewGuid(),
+            RegistrationBlobName: "blob",
+            ComplianceSchemeId: null,
+            SubmissionDate: DateTime.UtcNow,
+            SubmissionPeriodId: 1,
+            RegulatorNation: string.Empty,
+            ApplicationReferenceNumber: "PEPR2601234");
+
+        var handler = new RegistrationSubmittedForFeesCalculationNotificationHandler(_loggerMock.Object, _senderFactoryMock.Object);
+
+        Func<Task> act = () => handler.Handle(notification, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*RegulatorNation*");
+
+        _senderMock.Verify(
+            s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [TestMethod]
+    public async Task Handle_WhenApplicationReferenceNumberIsMissing_ThrowsAndDoesNotPublish()
+    {
+        var notification = new RegistrationSubmittedForFeesCalculationNotification(
+            SubmissionId: Guid.NewGuid(),
+            RegistrationBlobName: "blob",
+            ComplianceSchemeId: null,
+            SubmissionDate: DateTime.UtcNow,
+            SubmissionPeriodId: 1,
+            RegulatorNation: "GB-ENG",
+            ApplicationReferenceNumber: string.Empty);
+
+        var handler = new RegistrationSubmittedForFeesCalculationNotificationHandler(_loggerMock.Object, _senderFactoryMock.Object);
+
+        Func<Task> act = () => handler.Handle(notification, CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*ApplicationReferenceNumber*");
+
+        _senderMock.Verify(
+            s => s.SendMessageAsync(It.IsAny<ServiceBusMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

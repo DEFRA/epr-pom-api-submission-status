@@ -75,6 +75,7 @@ public class DecisionIntegrationTests : TestBase
             isResubmission = false,
             registrationJourney = RegistrationJourney.CsoLargeProducer.ToString(),
             submissionPeriodId = 1,
+            regulatorNation = "GB-ENG",
         };
         var submitResponse = await HttpClient.PostAsJsonAsync($"/v1/submissions/{submissionId}/submit", submitPayload);
         submitResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);

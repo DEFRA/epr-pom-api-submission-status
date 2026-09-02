@@ -1,4 +1,6 @@
-﻿namespace EPR.SubmissionMicroservice.API.IntegrationTests;
+﻿using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegistrationSubmittedForRegulatorApproval;
+
+namespace EPR.SubmissionMicroservice.API.IntegrationTests;
 
 using System.Net;
 using System.Net.Http.Json;
@@ -13,6 +15,7 @@ public class SubmissionEventTests : TestBase
 {
     private const string SubmissionEventsBasePath = "/v1/submissions/{0}/events";
     private const string SubmissionsBasePath = "/v1/submissions";
+
     private const string RegulatorRegistrationDecisionBasePath =
         $"{SubmissionsBasePath}/events/get-regulator-registration-decision";
 
@@ -22,7 +25,8 @@ public class SubmissionEventTests : TestBase
     [DataRow(SubmissionType.Producer, EventType.ProducerValidation)]
     [DataRow(SubmissionType.Registration, EventType.AntivirusCheck)]
     [DataRow(SubmissionType.Registration, EventType.Registration)]
-    public async Task CreateEvent_ReturnsCreated_WhenSubmissionExists(SubmissionType submissionType, EventType eventType)
+    public async Task CreateEvent_ReturnsCreated_WhenSubmissionExists(SubmissionType submissionType,
+        EventType eventType)
     {
         var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(submissionType);
         await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
@@ -40,7 +44,9 @@ public class SubmissionEventTests : TestBase
         var createEventResponse = await CreateEventAsync(submissionId, EventType.ProducerValidation);
         createEventResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var queryResponse = await HttpClient.GetAsync($"/v1/submissions/events/events-by-type/{submissionId}?LastSyncTime=2000-01-01T00:00:00Z");
+        var queryResponse =
+            await HttpClient.GetAsync(
+                $"/v1/submissions/events/events-by-type/{submissionId}?LastSyncTime=2000-01-01T00:00:00Z");
         queryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await ReadJsonAsync(queryResponse);
         AssertJsonObjectHasKeys(body, "submittedEvents", "regulatorDecisionEvents", "antivirusCheckEvents");
@@ -124,10 +130,40 @@ public class SubmissionEventTests : TestBase
     [DataRow("2024-01-01T00:00:00Z")]
     [DataRow("2024-01-01T00:00:00+01:00")]
     [DataRow("2024-03-31T00:59:59+00:00")]
-    public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsOk_ForTimezoneBoundaryFormats(string lastSyncTime)
+    public async Task GetRegulatorRegistrationDecisionSubmissionEvents_ReturnsOk_ForTimezoneBoundaryFormats(
+        string lastSyncTime)
     {
         var path = $"{RegulatorRegistrationDecisionBasePath}?LastSyncTime={Uri.EscapeDataString(lastSyncTime)}";
         var response = await HttpClient.GetAsync(path);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [TestMethod]
+    public async Task CreateEvent_PublishesToServiceBus_WhenSubmissionExists()
+    {
+        await DrainServiceBusReceiverAsync();
+        var submissionRequest = TestRequests.Submission.ValidSubmissionCreateRequest(SubmissionType.Producer);
+        await HttpClient.PostAsJsonAsync(SubmissionsBasePath, submissionRequest);
+        var response = await CreateEventAsync(submissionRequest.Id, EventType.RegistrationApplicationSubmitted);
+
+        response.Should().HaveStatusCode(HttpStatusCode.Created);
+
+        var message = await GetRegistrationSubmittedForRegulatorApprovalPublishedMessage();
+        
+        message.SubmissionId.Should().Be(submissionRequest.Id);
+        message.ApplicationReferenceNumber.Should().Be(TestRequests.ApplicationReferenceNumber);
+        message.SubmissionDate.Should().Be(TestRequests.RegistrationApplicationSubmittedDate);
+    }
+    
+    [TestMethod]
+    public async Task CreateEvent_DoesNotPublishToServiceBus_WhenSubmissionDoesNotExists()
+    {
+        await DrainServiceBusReceiverAsync();
+        var response = await CreateEventAsync(Guid.NewGuid(), EventType.RegistrationApplicationSubmitted);
+
+        response.Should().HaveStatusCode(System.Net.HttpStatusCode.BadRequest);
+
+        var isPublished = await HasRegistrationSubmittedForRegulatorApprovalMessageBeenPublished();
+        isPublished.Should().BeFalse();
     }
 }

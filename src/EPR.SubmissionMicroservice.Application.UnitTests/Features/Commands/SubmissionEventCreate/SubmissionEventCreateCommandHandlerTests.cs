@@ -1,9 +1,11 @@
 ﻿using EPR.Common.Logging.Models;
 using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
+using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegulatorRegistrationDecision;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
+using MediatR;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
 
@@ -14,6 +16,7 @@ public class SubmissionEventCreateCommandHandlerTests
     private readonly IMapper _mapper = AutoMapperHelpers.GetMapper();
     private readonly Mock<ILogger<SubmissionEventCreateCommandHandler>> _mockLogger = new();
     private readonly Mock<ILoggingService> _loggingService = new();
+    private readonly Mock<IPublisher> _mockPublisher = new();
 
     private readonly SubmissionEventCreateCommandHandler _systemUnderTest;
 
@@ -23,7 +26,8 @@ public class SubmissionEventCreateCommandHandlerTests
             _mockCommandRepository.Object,
             _loggingService.Object,
             _mapper,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockPublisher.Object);
     }
 
     [TestMethod]
@@ -207,6 +211,103 @@ public class SubmissionEventCreateCommandHandlerTests
         // Assert
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    [DataTestMethod]
+    [DataRow(RegulatorDecision.Accepted, "AcceptedByRegulator")]
+    [DataRow(RegulatorDecision.Rejected, "RejectedByRegulator")]
+    [DataRow(RegulatorDecision.Queried, "QueriedByRegulator")]
+    [DataRow(RegulatorDecision.Cancelled, "CancelledByRegulator")]
+    public async Task RegulatorRegistrationDecisionHandle_GivenSuccessAndPublishableDecision_ShouldPublishNotificationWithMappedEventName(
+        RegulatorDecision decision, string expectedEventName)
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.Decision = decision;
+        command.DecisionDate = new DateTime(2026, 7, 22, 10, 0, 0, DateTimeKind.Utc);
+
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(true);
+
+        RegulatorRegistrationDecisionNotification? captured = null;
+        _mockPublisher
+            .Setup(p => p.Publish(It.IsAny<RegulatorRegistrationDecisionNotification>(), It.IsAny<CancellationToken>()))
+            .Callback<RegulatorRegistrationDecisionNotification, CancellationToken>((n, _) => captured = n)
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeFalse();
+        captured.Should().NotBeNull();
+        captured!.SubmissionId.Should().Be(command.SubmissionId);
+        captured.EventName.Should().Be(expectedEventName);
+        captured.DecisionDate.Should().Be(command.DecisionDate.Value);
+        _mockPublisher.Verify(
+            p => p.Publish(It.IsAny<RegulatorRegistrationDecisionNotification>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [TestMethod]
+    public async Task RegulatorRegistrationDecisionHandle_GivenNoDecisionDate_ShouldFallBackToUtcNow()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.Decision = RegulatorDecision.Accepted;
+        command.DecisionDate = null;
+
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(true);
+
+        RegulatorRegistrationDecisionNotification? captured = null;
+        _mockPublisher
+            .Setup(p => p.Publish(It.IsAny<RegulatorRegistrationDecisionNotification>(), It.IsAny<CancellationToken>()))
+            .Callback<RegulatorRegistrationDecisionNotification, CancellationToken>((n, _) => captured = n)
+            .Returns(Task.CompletedTask);
+
+        var before = DateTime.UtcNow;
+        await _systemUnderTest.Handle(command, CancellationToken.None);
+        var after = DateTime.UtcNow;
+
+        captured.Should().NotBeNull();
+        captured!.DecisionDate.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+    }
+
+    [DataTestMethod]
+    [DataRow(RegulatorDecision.None)]
+    [DataRow(RegulatorDecision.Approved)]
+    public async Task RegulatorRegistrationDecisionHandle_GivenNonPublishableDecision_ShouldNotPublishNotification(RegulatorDecision decision)
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.Decision = decision;
+
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(true);
+
+        // Act
+        await _systemUnderTest.Handle(command, CancellationToken.None);
+
+        // Assert
+        _mockPublisher.Verify(
+            p => p.Publish(It.IsAny<RegulatorRegistrationDecisionNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [TestMethod]
+    public async Task RegulatorRegistrationDecisionHandle_GivenRepositoryError_ShouldNotPublishNotification()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidRegulatorRegistrationDecisionEventCreateCommand();
+        command.Decision = RegulatorDecision.Accepted;
+
+        _mockCommandRepository.Setup(x => x.SaveChangesAsync(default)).ReturnsAsync(false);
+
+        // Act
+        await _systemUnderTest.Handle(command, CancellationToken.None);
+
+        // Assert
+        _mockPublisher.Verify(
+            p => p.Publish(It.IsAny<RegulatorRegistrationDecisionNotification>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [TestMethod]
