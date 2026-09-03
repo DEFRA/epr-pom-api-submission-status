@@ -53,6 +53,23 @@ public class GetPackagingResubmissionApplicationDetailsResponse
     /// </remarks>
     public CompletedResubmissionDetails? LastCompletedResubmission { get; set; }
 
+    /// <summary>
+    /// SUB-345: true when the cycle every field above describes has been closed by a regulator decision and
+    /// nothing has opened a later one - the point at which a further resubmission needs a reference number of
+    /// its own.
+    /// </summary>
+    /// <remarks>
+    /// ApplicationReferenceNumber is reported on every path so the cycle keeps its identity, which leaves the
+    /// frontend unable to tell "the number of the cycle to work on" from "the number of the cycle just
+    /// finished", and so raising exactly one number per submission for the life of the submission. This says
+    /// which of the two it is being handed.
+    /// <para>
+    /// False for a declaration the regulator has not ruled on yet: that cycle is still the user's current one
+    /// while the Synapse sync completes, and replacing its number there is what SUB-332 stopped.
+    /// </para>
+    /// </remarks>
+    public bool IsResubmissionCycleClosed { get; set; }
+
     public class LastSubmittedFileDetails
     {
         public Guid? FileId { get; set; }
