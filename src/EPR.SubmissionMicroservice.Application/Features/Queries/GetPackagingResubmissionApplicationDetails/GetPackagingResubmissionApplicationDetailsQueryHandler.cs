@@ -138,6 +138,34 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var isCycleOpen = openCycleReferenceNumberEvent is not null;
         var packagingResubmissionReferenceNumberCreatedEvent = openCycleReferenceNumberEvent ?? packagingResubmissionReferenceNumberCreatedEvents[^1];
 
+        // SUB-345: the regulator decisions that close the cycle they ruled on. Only the three outcomes the
+        // interstitial can speak to count as a ruling. Cancelled, Queried and None supersede nothing, so a
+        // cycle they land on stays live on both sides of the API, as it did before this change.
+        // UploadNewFileToSubmit has no wording for them: they fall through every decision branch to a bare
+        // "you already submitted a file", with the regulator's comment never rendered, which is worse than
+        // treating the cycle as finished.
+        var cycleClosingDecisionEvent = regulatorPackagingDecisionEvent?.Decision is RegulatorDecision.Accepted
+                                            or RegulatorDecision.Approved
+                                            or RegulatorDecision.Rejected
+            ? regulatorPackagingDecisionEvent
+            : null;
+
+        var resubmissionEvent = packagingApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
+
+        var isDeclarationSupersededByRegulatorDecision = resubmissionEvent is not null &&
+                                                         cycleClosingDecisionEvent?.Created > resubmissionEvent.Created;
+
+        // SUB-345: the cycle described below is finished and nothing has opened a later one, so the next
+        // resubmission needs a reference number of its own. The frontend cannot work this out for itself:
+        // ApplicationReferenceNumber is reported on every path so the cycle keeps its identity, which means an
+        // empty one only ever means the very first cycle, and every resubmission after it went unnumbered.
+        //
+        // isCycleOpen alone would be wrong. It falls to false the moment a declaration lands, but that cycle
+        // is still the user's current one while it awaits the regulator and the Synapse sync completes;
+        // renumbering there is what SUB-332 stopped. It is the ruling that ends the user's interest in a
+        // cycle, so it is the ruling that releases the number.
+        var isResubmissionCycleClosed = !isCycleOpen && isDeclarationSupersededByRegulatorDecision;
+
         if (latestPackagingDetailsAntivirusCheckEvent is null ||
             latestPackagingDetailsAntivirusCheckEvent.Created < packagingResubmissionReferenceNumberCreatedEvent.Created)
         {
@@ -150,14 +178,14 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
                 SubmissionId = submission.Id,
                 IsSubmitted = submission?.IsSubmitted ?? false,
                 ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
-                ApplicationStatus = ApplicationStatusType.NotStarted
+                ApplicationStatus = ApplicationStatusType.NotStarted,
+                IsResubmissionCycleClosed = isResubmissionCycleClosed
             };
         }
 
         var validationPass = await IsValidationPass(submissionEvents, latestPackagingDetailsAntivirusCheckEvent, checkSplitterValidationEvents, producerValidationEvents, cancellationToken);
         var latestPackagingDetailsCreatedDatetime = validationPass ? latestPackagingDetailsAntivirusCheckEvent?.Created : null;
         var latestSubmittedEventCreatedDatetime = submittedEvent?.Created;
-        var resubmissionEvent = packagingApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
 
         var isFileUploadedButNotSubmittedYet = latestPackagingDetailsCreatedDatetime > latestSubmittedEventCreatedDatetime;
         var isRegulatorDecisionAfterSubmission = latestPackagingDetailsCreatedDatetime > (regulatorPackagingDecisionEvent?.Created ?? DateTime.MinValue);
@@ -165,40 +193,26 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // A declaration closes the cycle it belongs to, so it may only be reported while nothing has started
         // a later one. Two things start a later cycle: a reference number raised after the declaration (an
         // open cycle), and a file submitted after it. The submit check is what stops a declaration being
-        // reported for the rest of the submission's life - a reference number is only ever raised once per
-        // submission, so cycle membership alone would mark every later cycle's declaration step complete
-        // before the user had declared anything.
+        // reported for the rest of the submission's life - the next reference number is not raised until the
+        // regulator rules, so between a declaration and that ruling cycle membership alone would mark the
+        // following cycle's declaration step complete before the user had declared anything.
         var isDeclarationSupersededByLaterSubmit = resubmissionEvent is not null &&
                                                    latestSubmittedEventCreatedDatetime > resubmissionEvent.Created;
         var isResubmissionDoneAfterSubmission = !isCycleOpen && !isDeclarationSupersededByLaterSubmit;
 
         // SUB-345: a declaration the regulator has ruled on belongs to a closed cycle, so it must stop being
         // reported at the decision rather than at the next submit. Neither check above closes this window.
-        // isCycleOpen cannot: a reference number is raised at most once per submission, and the frontend
-        // will not raise a second one while this response still carries the first - which it must, so that
-        // the cycle keeps its identity. isDeclarationSupersededByLaterSubmit cannot either, because the
-        // ruled-on file was submitted before the declaration that closed its cycle. Left reported, the
-        // frontend reads ResubmissionApplicationSubmitted as "declared, awaiting the regulator" and routes
-        // past the page that shows the decision - the only place the regulator's comments are shown.
-        //
-        // Only the three outcomes that page can speak to count as a ruling. Cancelled, Queried and None
-        // supersede nothing, so their declaration keeps being reported and the frontend keeps routing them
-        // straight to the task list, as it did before this change. UploadNewFileToSubmit has no wording for
-        // them: they fall through every decision branch to a bare "you already submitted a file", with the
-        // regulator's comment never rendered, which is worse than not stopping there at all.
+        // isCycleOpen cannot: the ruled-on cycle's reference number is still the latest one raised, because
+        // the frontend only raises the next one once this response reports the cycle closed, which it cannot
+        // do before this point. isDeclarationSupersededByLaterSubmit cannot either, because the ruled-on file
+        // was submitted before the declaration that closed its cycle. Left reported, the frontend reads
+        // ResubmissionApplicationSubmitted as "declared, awaiting the regulator" and routes past the page that
+        // shows the decision - the only place the regulator's comments are shown.
         //
         // This is deliberately kept out of isResubmissionDoneAfterSubmission, which also decides the status
         // below. Both stay true here so that the status branch keeps reporting NotStarted: the ruled-on
         // file's upload and fee belong to the closed cycle, and resolving them as completed would leave the
         // user with the upload step done and no way to replace the file the regulator rejected.
-        var cycleClosingDecisionEvent = regulatorPackagingDecisionEvent?.Decision is RegulatorDecision.Accepted
-                                            or RegulatorDecision.Approved
-                                            or RegulatorDecision.Rejected
-            ? regulatorPackagingDecisionEvent
-            : null;
-
-        var isDeclarationSupersededByRegulatorDecision = resubmissionEvent is not null &&
-                                                         cycleClosingDecisionEvent?.Created > resubmissionEvent.Created;
         var shouldReportDeclaration = isResubmissionDoneAfterSubmission && !isDeclarationSupersededByRegulatorDecision;
 
         // SUB-345: the fee view and the fee payment belong to whichever cycle was open when they happened, so
@@ -221,6 +235,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         {
             SubmissionId = submission.Id,
             IsSubmitted = submission.IsSubmitted ?? false,
+            IsResubmissionCycleClosed = isResubmissionCycleClosed,
             LastCompletedResubmission = BuildLastCompletedResubmission(
                 submissionEvents,
                 packagingApplicationSubmittedEvents,
