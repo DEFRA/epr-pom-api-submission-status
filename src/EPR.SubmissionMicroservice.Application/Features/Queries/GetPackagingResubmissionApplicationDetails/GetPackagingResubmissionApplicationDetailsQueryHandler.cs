@@ -159,10 +159,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // resubmission needs a reference number of its own. The frontend cannot work this out for itself:
         // ApplicationReferenceNumber is reported on every path so the cycle keeps its identity, which means an
         // empty one only ever means the very first cycle, and every resubmission after it went unnumbered.
-        //
         // isCycleOpen alone would be wrong. It falls to false the moment a declaration lands, but that cycle
-        // is still the user's current one while it awaits the regulator and the Synapse sync completes;
-        // renumbering there is what SUB-332 stopped. It is the ruling that ends the user's interest in a
+        // is still the user's current one while it awaits the regulator and the Synapse sync completes.
+        // Renumbering there is what SUB-332 stopped. It is the ruling that ends the user's interest in a
         // cycle, so it is the ruling that releases the number.
         var isResubmissionCycleClosed = !isCycleOpen && isDeclarationSupersededByRegulatorDecision;
 
