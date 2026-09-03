@@ -1818,6 +1818,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Value.First().ApplicationStatus.Should().Be(ApplicationStatusType.NotStarted);
         result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR12345S01");
+
+        // SUB-345: an unused reference number is an open cycle, so this path must not release another one.
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
     }
 
     [TestMethod]
@@ -2078,6 +2081,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
         result.Value.First().ResubmissionApplicationSubmittedComment.Should().BeNull();
         result.Value.First().IsResubmitted.Should().BeNull();
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
     }
 
     [TestMethod]
@@ -2787,6 +2791,10 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
         result.Value.First().ResubmissionFeePaymentMethod.Should().BeNull();
 
+        // Assert - and the frontend is told the reported reference number belongs to a finished cycle, which
+        // is what lets the next resubmission raise one of its own (SUB-345)
+        result.Value.First().IsResubmissionCycleClosed.Should().BeTrue();
+
         // Assert - and the cycle the decision closed is described in full
         var completed = result.Value.First().LastCompletedResubmission;
         completed.Should().NotBeNull();
@@ -2852,6 +2860,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Should().NotBeNull();
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().Be(declarationDate);
         result.Value.First().LastCompletedResubmission.Should().BeNull();
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
     }
 
     // SUB-345: a declaration still awaiting its decision is a live cycle, not a completed one. The earlier
@@ -2898,6 +2907,10 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Value.First().LastCompletedResubmission.Should().BeNull();
+
+        // SUB-345: renumbering here is what SUB-332 stopped - the cycle is declared but still the user's own
+        // until the regulator rules on it.
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
     }
 
     // SUB-345: starting another resubmission does not undo the one before it - the current-cycle fields follow
@@ -2954,6 +2967,10 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
         result.Value.First().ResubmissionFeePaymentMethod.Should().BeNull();
 
+        // SUB-345: the ruling released one reference number and it has been raised, so this must not ask for
+        // another - otherwise every task-list render would raise one.
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
+
         // Assert - the accepted cycle is still described, under its own reference number
         var completed = result.Value.First().LastCompletedResubmission;
         completed.Should().NotBeNull();
@@ -2963,6 +2980,43 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         completed.Decision.Should().Be(RegulatorDecision.Accepted.ToString());
         completed.FileName.Should().Be("accepted.csv");
         completed.SubmittedFile!.FileId.Should().Be(ruledOnFile);
+    }
+
+    // SUB-345: the very first resubmission has no reference number to release, so the flag stays false and the
+    // frontend raises one off the back of the empty ApplicationReferenceNumber instead. Reporting true here
+    // would be harmless but untrue, and it is the only path that cannot distinguish the two.
+    [TestMethod]
+    public async Task Handle_ShouldNotReportTheCycleClosed_WhenNoReferenceNumberHasEverBeenRaised()
+    {
+        // Arrange - an original submission the regulator has accepted, and no resubmission journey started.
+        var submissionId = Guid.NewGuid();
+        var originalFile = Guid.NewGuid();
+        var now = DateTime.Now;
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = originalFile, Created = now.AddMinutes(-200) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = originalFile, Created = now.AddMinutes(-190) },
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Accepted, FileId = originalFile, Created = now.AddMinutes(-180) }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.First().ApplicationReferenceNumber.Should().BeEmpty();
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
     }
 
     private static Submission BuildSubmission(Guid submissionId, GetPackagingResubmissionApplicationDetailsQuery query, Guid? complianceSchemeId) =>
