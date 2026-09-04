@@ -86,6 +86,8 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             return default;
         }
 
+        var isSubmitted = submission.IsSubmitted ?? false;
+
         var submissionEvents = await submissionEventQueryRepository
             .GetAll(x => x.SubmissionId == submission.Id)
             .ToListAsync(cancellationToken);
@@ -126,7 +128,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             return new GetPackagingResubmissionApplicationDetailsResponse()
             {
                 SubmissionId = submission.Id,
-                IsSubmitted = submission?.IsSubmitted ?? false,
+                IsSubmitted = isSubmitted,
             };
         }
 
@@ -138,17 +140,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var isCycleOpen = openCycleReferenceNumberEvent is not null;
         var packagingResubmissionReferenceNumberCreatedEvent = openCycleReferenceNumberEvent ?? packagingResubmissionReferenceNumberCreatedEvents[^1];
 
-        // SUB-345: the regulator decisions that close the cycle they ruled on. Only the three outcomes the
-        // interstitial can speak to count as a ruling. Cancelled, Queried and None supersede nothing, so a
-        // cycle they land on stays live on both sides of the API, as it did before this change.
-        // UploadNewFileToSubmit has no wording for them: they fall through every decision branch to a bare
-        // "you already submitted a file", with the regulator's comment never rendered, which is worse than
-        // treating the cycle as finished.
-        var cycleClosingDecisionEvent = regulatorPackagingDecisionEvent?.Decision is RegulatorDecision.Accepted
-                                            or RegulatorDecision.Approved
-                                            or RegulatorDecision.Rejected
-            ? regulatorPackagingDecisionEvent
-            : null;
+        var cycleClosingDecisionEvent = GetCycleClosingDecisionEvent(regulatorPackagingDecisionEvent);
 
         var resubmissionEvent = packagingApplicationSubmittedEvents.MaxBy(x => x.SubmissionDate);
 
@@ -175,7 +167,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             return new GetPackagingResubmissionApplicationDetailsResponse()
             {
                 SubmissionId = submission.Id,
-                IsSubmitted = submission?.IsSubmitted ?? false,
+                IsSubmitted = isSubmitted,
                 ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
                 ApplicationStatus = ApplicationStatusType.NotStarted,
                 IsResubmissionCycleClosed = isResubmissionCycleClosed
@@ -212,20 +204,11 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // below. Both stay true here so that the status branch keeps reporting NotStarted: the ruled-on
         // file's upload and fee belong to the closed cycle, and resolving them as completed would leave the
         // user with the upload step done and no way to replace the file the regulator rejected.
-        var shouldReportDeclaration = isResubmissionDoneAfterSubmission && !isDeclarationSupersededByRegulatorDecision;
+        var reportedDeclaration = isResubmissionDoneAfterSubmission && !isDeclarationSupersededByRegulatorDecision
+            ? resubmissionEvent
+            : null;
 
-        // SUB-345: the fee view and the fee payment belong to whichever cycle was open when they happened, so
-        // a decision that closes a cycle has to age them out along with the declaration. Their only floor was
-        // the submit, and for a ruled-on cycle the submit predates the declaration that closed it, so both
-        // survived the decision and were reported against the untouched cycle that follows. The frontend read
-        // that as "fee viewed, not yet declared" and told the user on the sub-landing tile to submit to the
-        // regulator, while the task list - which keys off ApplicationStatus - correctly showed nothing started.
-        //
-        // The floor is the later of the two, not the decision alone: once a newer file is submitted, that
-        // submit starts the cycle the fee events have to belong to.
-        var currentCycleFloor = cycleClosingDecisionEvent is not null && cycleClosingDecisionEvent.Created > latestSubmittedEventCreatedDatetime
-            ? cycleClosingDecisionEvent.Created
-            : latestSubmittedEventCreatedDatetime;
+        var currentCycleFloor = GetCurrentCycleFloor(cycleClosingDecisionEvent, latestSubmittedEventCreatedDatetime);
 
         var isPackagingFeeViewEventInCurrentCycle = packagingFeeViewEvent?.Created > currentCycleFloor;
         var isPackagingFeePaymentEventInCurrentCycle = packagingFeePaymentEvent?.Created > currentCycleFloor;
@@ -233,7 +216,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         var response = new GetPackagingResubmissionApplicationDetailsResponse
         {
             SubmissionId = submission.Id,
-            IsSubmitted = submission.IsSubmitted ?? false,
+            IsSubmitted = isSubmitted,
             IsResubmissionCycleClosed = isResubmissionCycleClosed,
             LastCompletedResubmission = BuildLastCompletedResubmission(
                 submissionEvents,
@@ -250,9 +233,9 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
                     SubmittedByName = submittedEvent?.SubmittedBy
                 }
                 : null,
-            ResubmissionApplicationSubmittedDate = shouldReportDeclaration ? resubmissionEvent?.SubmissionDate : null,
-            ResubmissionApplicationSubmittedComment = shouldReportDeclaration ? resubmissionEvent?.Comments : null,
-            IsResubmitted = shouldReportDeclaration ? resubmissionEvent?.IsResubmitted : null,
+            ResubmissionApplicationSubmittedDate = reportedDeclaration?.SubmissionDate,
+            ResubmissionApplicationSubmittedComment = reportedDeclaration?.Comments,
+            IsResubmitted = reportedDeclaration?.IsResubmitted,
             IsResubmissionFeeViewed = isPackagingFeeViewEventInCurrentCycle ? packagingFeeViewEvent?.IsPackagingResubmissionFeeViewed : null,
             ResubmissionReferenceNumber = isRegulatorDecisionAfterSubmission ? regulatorPackagingDecisionEvent?.RegistrationReferenceNumber : null,
         };
@@ -346,6 +329,50 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
                     SubmittedDateTime = ruledOnSubmittedEvent.Created
                 }
         };
+    }
+
+    /// <summary>
+    /// SUB-345: the regulator decision that closes the cycle it ruled on, or null when the latest decision
+    /// closes nothing.
+    /// </summary>
+    /// <remarks>
+    /// Only the three outcomes the interstitial can speak to count as a ruling. Cancelled, Queried and None
+    /// supersede nothing, so a cycle they land on stays live on both sides of the API, as it did before this
+    /// change. UploadNewFileToSubmit has no wording for them: they fall through every decision branch to a
+    /// bare "you already submitted a file", with the regulator's comment never rendered, which is worse than
+    /// treating the cycle as finished.
+    /// </remarks>
+    private static RegulatorPoMDecisionEvent? GetCycleClosingDecisionEvent(RegulatorPoMDecisionEvent? latestDecisionEvent)
+    {
+        return latestDecisionEvent?.Decision is RegulatorDecision.Accepted
+                                            or RegulatorDecision.Approved
+                                            or RegulatorDecision.Rejected
+            ? latestDecisionEvent
+            : null;
+    }
+
+    /// <summary>
+    /// SUB-345: the point after which the fee view and the fee payment belong to the cycle being reported.
+    /// </summary>
+    /// <remarks>
+    /// Both belong to whichever cycle was open when they happened, so a decision that closes a cycle has to
+    /// age them out along with the declaration. Their only floor was the submit, and for a ruled-on cycle the
+    /// submit predates the declaration that closed it, so both survived the decision and were reported
+    /// against the untouched cycle that follows. The frontend read that as "fee viewed, not yet declared" and
+    /// told the user on the sub-landing tile to submit to the regulator, while the task list - which keys off
+    /// ApplicationStatus - correctly showed nothing started.
+    /// <para>
+    /// The floor is the later of the two, not the decision alone: once a newer file is submitted, that submit
+    /// starts the cycle the fee events have to belong to.
+    /// </para>
+    /// </remarks>
+    private static DateTime? GetCurrentCycleFloor(
+        RegulatorPoMDecisionEvent? cycleClosingDecisionEvent,
+        DateTime? latestSubmittedEventCreatedDatetime)
+    {
+        return cycleClosingDecisionEvent is not null && cycleClosingDecisionEvent.Created > latestSubmittedEventCreatedDatetime
+            ? cycleClosingDecisionEvent.Created
+            : latestSubmittedEventCreatedDatetime;
     }
 
     private static PackagingResubmissionReferenceNumberCreatedEvent? GetOpenCycleReferenceNumberEvent(
