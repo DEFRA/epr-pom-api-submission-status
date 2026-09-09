@@ -157,6 +157,12 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
         // cycle, so it is the ruling that releases the number.
         var isResubmissionCycleClosed = !isCycleOpen && isDeclarationSupersededByRegulatorDecision;
 
+        var lastCompletedResubmission = BuildLastCompletedResubmission(
+            submissionEvents,
+            packagingApplicationSubmittedEvents,
+            packagingResubmissionReferenceNumberCreatedEvents,
+            cycleClosingDecisionEvent);
+
         if (latestPackagingDetailsAntivirusCheckEvent is null ||
             latestPackagingDetailsAntivirusCheckEvent.Created < packagingResubmissionReferenceNumberCreatedEvent.Created)
         {
@@ -164,13 +170,21 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             // previous cycle's file, fee or declaration state belongs to it. The status stays NotStarted -
             // this cycle's upload step genuinely has not been started - while the reference number is still
             // reported, which is what tells the frontend the cycle exists and keeps the journey reachable.
+            //
+            // SUB-345: the completed cycle is reported here as well as on the full path below, because this is
+            // the ordinary state for a resubmission the regulator has just ruled on: the ruling releases the
+            // next reference number, and from the moment that number is raised nothing has been uploaded since
+            // it. Omitted, the only thing telling a finished resubmission from one never started disappears on
+            // the very next request, and the sub-landing tile drops from offering the completed resubmission to
+            // offering the submission underneath it.
             return new GetPackagingResubmissionApplicationDetailsResponse()
             {
                 SubmissionId = submission.Id,
                 IsSubmitted = isSubmitted,
                 ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
                 ApplicationStatus = ApplicationStatusType.NotStarted,
-                IsResubmissionCycleClosed = isResubmissionCycleClosed
+                IsResubmissionCycleClosed = isResubmissionCycleClosed,
+                LastCompletedResubmission = lastCompletedResubmission
             };
         }
 
@@ -218,11 +232,7 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandler(
             SubmissionId = submission.Id,
             IsSubmitted = isSubmitted,
             IsResubmissionCycleClosed = isResubmissionCycleClosed,
-            LastCompletedResubmission = BuildLastCompletedResubmission(
-                submissionEvents,
-                packagingApplicationSubmittedEvents,
-                packagingResubmissionReferenceNumberCreatedEvents,
-                cycleClosingDecisionEvent),
+            LastCompletedResubmission = lastCompletedResubmission,
             ApplicationReferenceNumber = packagingResubmissionReferenceNumberCreatedEvent.PackagingResubmissionReferenceNumber,
             ResubmissionFeePaymentMethod = isPackagingFeePaymentEventInCurrentCycle ? packagingFeePaymentEvent?.PaymentMethod : null,
             LastSubmittedFile = !isFileUploadedButNotSubmittedYet
