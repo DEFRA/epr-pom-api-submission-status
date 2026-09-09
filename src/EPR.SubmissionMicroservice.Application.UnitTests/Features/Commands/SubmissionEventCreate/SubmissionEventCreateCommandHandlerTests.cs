@@ -2,9 +2,11 @@
 using EPR.Common.Logging.Services;
 using EPR.SubmissionMicroservice.Application.Features.Commands.SubmissionEventCreate;
 using EPR.SubmissionMicroservice.Application.Messaging.Publishing.RegulatorRegistrationDecision;
+using EPR.SubmissionMicroservice.Data.Entities.AntivirusEvents;
 using EPR.SubmissionMicroservice.Data.Entities.SubmissionEvent;
 using EPR.SubmissionMicroservice.Data.Enums;
 using EPR.SubmissionMicroservice.Data.Repositories.Commands.Interfaces;
+using EPR.SubmissionMicroservice.Data.Repositories.Queries.Interfaces;
 using MediatR;
 
 namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.SubmissionEventCreate;
@@ -13,6 +15,7 @@ namespace EPR.SubmissionMicroservice.Application.UnitTests.Features.Commands.Sub
 public class SubmissionEventCreateCommandHandlerTests
 {
     private readonly Mock<ICommandRepository<AbstractSubmissionEvent>> _mockCommandRepository = new();
+    private readonly Mock<IQueryRepository<AbstractSubmissionEvent>> _mockEventQueryRepository = new();
     private readonly IMapper _mapper = AutoMapperHelpers.GetMapper();
     private readonly Mock<ILogger<SubmissionEventCreateCommandHandler>> _mockLogger = new();
     private readonly Mock<ILoggingService> _loggingService = new();
@@ -22,8 +25,11 @@ public class SubmissionEventCreateCommandHandlerTests
 
     public SubmissionEventCreateCommandHandlerTests()
     {
+        SetupEvents(new List<AbstractSubmissionEvent>());
+
         _systemUnderTest = new SubmissionEventCreateCommandHandler(
             _mockCommandRepository.Object,
+            _mockEventQueryRepository.Object,
             _loggingService.Object,
             _mapper,
             _mockLogger.Object,
@@ -824,5 +830,184 @@ public class SubmissionEventCreateCommandHandlerTests
         // Assert
         result.IsError.Should().BeTrue();
         result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
+
+    // SUB-345: a cycle that ran without a reference number, because until this ticket only the first
+    // resubmission was ever numbered. Dated from this request the number would post-date the cycle's own
+    // upload, and the query handler would report the whole cycle as having nothing uploaded into it.
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_ShouldDateTheEventFromTheCycleStart_WhenTheCycleAlreadyHasWorkInIt()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+        var now = DateTime.Now;
+        var firstUploadInCycle = now.AddMinutes(-200);
+
+        SetupEvents(new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-300) },
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = now.AddMinutes(-290) },
+            new SubmittedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-280) },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = command.SubmissionId, IsResubmitted = true, Created = now.AddMinutes(-260) },
+            new RegulatorPoMDecisionEvent { SubmissionId = command.SubmissionId, Decision = RegulatorDecision.Rejected, Created = now.AddMinutes(-250) },
+
+            // The unnumbered cycle the user took as far as a submitted file.
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = firstUploadInCycle },
+            new SubmittedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-190) }
+        });
+
+        // Act
+        var storedEvent = await HandleAndCaptureStoredEvent(command);
+
+        // Assert - a minute ahead of the cycle's first upload, so that upload belongs to this cycle
+        storedEvent.Created.Should().Be(firstUploadInCycle.AddMinutes(-1));
+    }
+
+    // SUB-345: the ordinary flow - the number is raised as the cycle opens, before anything is uploaded into
+    // it, so the request's own time is the truthful date and nothing is moved.
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_ShouldLeaveTheEventUndated_WhenNothingHasBeenUploadedSinceTheRuling()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+        var now = DateTime.Now;
+
+        SetupEvents(new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-300) },
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = now.AddMinutes(-290) },
+            new SubmittedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-280) },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = command.SubmissionId, IsResubmitted = true, Created = now.AddMinutes(-260) },
+            new RegulatorPoMDecisionEvent { SubmissionId = command.SubmissionId, Decision = RegulatorDecision.Accepted, Created = now.AddMinutes(-250) }
+        });
+
+        // Act
+        var storedEvent = await HandleAndCaptureStoredEvent(command);
+
+        // Assert - left at its default for SubmissionContext to stamp with the request time
+        storedEvent.Created.Should().Be(default);
+    }
+
+    // SUB-345: the cycle has a number already, so this one is a duplicate raised mid-cycle. Backdating it
+    // would make it the earliest number the cycle holds, which is the one the query handler reports.
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_ShouldLeaveTheEventUndated_WhenTheCycleAlreadyHasItsOwnReferenceNumber()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+        var now = DateTime.Now;
+
+        SetupEvents(new List<AbstractSubmissionEvent>
+        {
+            new RegulatorPoMDecisionEvent { SubmissionId = command.SubmissionId, Decision = RegulatorDecision.Rejected, Created = now.AddMinutes(-250) },
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-240) },
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = now.AddMinutes(-200) }
+        });
+
+        // Act
+        var storedEvent = await HandleAndCaptureStoredEvent(command);
+
+        // Assert
+        storedEvent.Created.Should().Be(default);
+    }
+
+    // SUB-345: no ruling means no earlier cycle to have closed, so this is the submission's first cycle and
+    // the number is what opens it. Backdating it past the original submission would hand this cycle the
+    // original file and mark its upload step done before the user had replaced anything.
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_ShouldLeaveTheEventUndated_WhenThereIsNoRegulatorRuling()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+        var now = DateTime.Now;
+
+        SetupEvents(new List<AbstractSubmissionEvent>
+        {
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = now.AddMinutes(-290) },
+            new SubmittedEvent { SubmissionId = command.SubmissionId, Created = now.AddMinutes(-280) }
+        });
+
+        // Act
+        var storedEvent = await HandleAndCaptureStoredEvent(command);
+
+        // Assert
+        storedEvent.Created.Should().Be(default);
+    }
+
+    // SUB-345: only the three outcomes that close a cycle open the next one, matching GetCycleClosingDecisionEvent
+    // in the query handler. A decision that supersedes nothing leaves the cycle it landed on live.
+    [DataTestMethod]
+    [DataRow(RegulatorDecision.Cancelled)]
+    [DataRow(RegulatorDecision.Queried)]
+    [DataRow(RegulatorDecision.None)]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_ShouldLeaveTheEventUndated_WhenTheDecisionClosesNoCycle(RegulatorDecision decision)
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+        var now = DateTime.Now;
+
+        SetupEvents(new List<AbstractSubmissionEvent>
+        {
+            new RegulatorPoMDecisionEvent { SubmissionId = command.SubmissionId, Decision = decision, Created = now.AddMinutes(-250) },
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = now.AddMinutes(-200) }
+        });
+
+        // Act
+        var storedEvent = await HandleAndCaptureStoredEvent(command);
+
+        // Assert
+        storedEvent.Created.Should().Be(default);
+    }
+
+    // SUB-345: the backdated event still has to sit inside the cycle it belongs to. An upload less than a
+    // minute after the ruling would otherwise push the number back into the cycle the ruling closed.
+    [TestMethod]
+    public async Task PackagingResubmissionReferenceNumberCreateHandle_ShouldNotDateTheEventBeforeTheRulingThatOpenedTheCycle()
+    {
+        // Arrange
+        var command = TestCommands.SubmissionEvent.ValidPackagingResubmissionReferenceNumberCreatedCommand();
+        var now = DateTime.Now;
+        var ruling = now.AddMinutes(-250);
+
+        SetupEvents(new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = command.SubmissionId, IsResubmitted = true, Created = now.AddMinutes(-260) },
+            new RegulatorPoMDecisionEvent { SubmissionId = command.SubmissionId, Decision = RegulatorDecision.Rejected, Created = ruling },
+            new AntivirusCheckEvent { SubmissionId = command.SubmissionId, FileType = FileType.Pom, Created = ruling.AddSeconds(30) }
+        });
+
+        // Act
+        var storedEvent = await HandleAndCaptureStoredEvent(command);
+
+        // Assert
+        storedEvent.Created.Should().Be(ruling);
+    }
+
+    private async Task<AbstractSubmissionEvent> HandleAndCaptureStoredEvent(PackagingResubmissionReferenceNumberCreateCommand command)
+    {
+        AbstractSubmissionEvent storedEvent = null;
+
+        _mockCommandRepository
+            .Setup(x => x.AddAsync(It.IsAny<AbstractSubmissionEvent>()))
+            .Callback<AbstractSubmissionEvent>(x => storedEvent = x)
+            .Returns(Task.CompletedTask);
+
+        _mockCommandRepository
+            .Setup(x => x.SaveChangesAsync(default))
+            .ReturnsAsync(true);
+
+        var result = await _systemUnderTest.Handle(command, CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        storedEvent.Should().NotBeNull();
+
+        return storedEvent;
+    }
+
+    private void SetupEvents(List<AbstractSubmissionEvent> events)
+    {
+        _mockEventQueryRepository
+            .Setup(x => x.GetAll(It.IsAny<Expression<Func<AbstractSubmissionEvent, bool>>>()))
+            .Returns<Expression<Func<AbstractSubmissionEvent, bool>>>(expr => events.Where(expr.Compile()).BuildMock());
     }
 }
