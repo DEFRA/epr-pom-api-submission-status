@@ -9,11 +9,14 @@ using AutoMapper;
 using Common.Logging.Constants;
 using Common.Logging.Models;
 using Common.Logging.Services;
+using Data.Entities.AntivirusEvents;
 using Data.Entities.SubmissionEvent;
 using Data.Enums;
 using Data.Repositories.Commands.Interfaces;
+using Data.Repositories.Queries.Interfaces;
 using ErrorOr;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 public class SubmissionEventCreateCommandHandler :
@@ -37,6 +40,7 @@ public class SubmissionEventCreateCommandHandler :
     IRequestHandler<PackagingResubmissionApplicationSubmittedCreateCommand, ErrorOr<SubmissionEventCreateResponse>>
 {
     private readonly ICommandRepository<AbstractSubmissionEvent> _commandRepository;
+    private readonly IQueryRepository<AbstractSubmissionEvent> _eventQueryRepository;
     private readonly ILoggingService _loggingService;
     private readonly IMapper _mapper;
     private readonly ILogger<SubmissionEventCreateCommandHandler> _logger;
@@ -44,12 +48,14 @@ public class SubmissionEventCreateCommandHandler :
 
     public SubmissionEventCreateCommandHandler(
         ICommandRepository<AbstractSubmissionEvent> commandRepository,
+        IQueryRepository<AbstractSubmissionEvent> eventQueryRepository,
         ILoggingService loggingService,
         IMapper mapper,
         ILogger<SubmissionEventCreateCommandHandler> logger,
         IPublisher publisher)
     {
         _commandRepository = commandRepository;
+        _eventQueryRepository = eventQueryRepository;
         _loggingService = loggingService;
         _mapper = mapper;
         _logger = logger;
@@ -58,7 +64,9 @@ public class SubmissionEventCreateCommandHandler :
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingResubmissionReferenceNumberCreateCommand command, CancellationToken cancellationToken)
     {
-        return await AbstractHandle(command, cancellationToken);
+        var cycleStart = await GetStartOfCycleAwaitingItsReferenceNumber(command.SubmissionId, cancellationToken);
+
+        return await AbstractHandle(command, cancellationToken, cycleStart);
     }
 
     public async Task<ErrorOr<SubmissionEventCreateResponse>> Handle(PackagingResubmissionFeeViewCreateCommand command, CancellationToken cancellationToken)
@@ -194,9 +202,76 @@ public class SubmissionEventCreateCommandHandler :
         return await AbstractHandle(command, cancellationToken);
     }
 
+    /// <summary>
+    /// SUB-345: the moment a resubmission cycle opened, for a cycle whose reference number is only being
+    /// raised now - after the work it covers - or null when the number is not late and belongs to this
+    /// request's own time.
+    /// </summary>
+    /// <remarks>
+    /// GetPackagingResubmissionApplicationDetails decides whether an upload belongs to a cycle by comparing it
+    /// against that cycle's reference number: an upload predating the number belongs to the cycle before it, so
+    /// a cycle with no upload after its number reports as having nothing uploaded into it. Numbering normally
+    /// precedes a cycle's first upload, so that holds. Until this ticket, though, only the first resubmission
+    /// was ever numbered, which leaves cycles that ran as far as a submitted file and a paid fee with no number
+    /// at all. Numbered at the moment they are finally noticed, every event they contain predates the number
+    /// and the whole cycle reports as unstarted, leaving the user outside a resubmission they had all but
+    /// finished.
+    /// <para>
+    /// The ruling that closed the previous cycle is what opened this one, so the number is dated a minute ahead
+    /// of the cycle's first upload and never earlier than that ruling. Nothing is invented: the date is taken
+    /// from events the cycle already holds, and it only moves for a cycle left unnumbered, which the journey
+    /// can no longer produce.
+    /// </para>
+    /// </remarks>
+    private async Task<DateTime?> GetStartOfCycleAwaitingItsReferenceNumber(Guid submissionId, CancellationToken cancellationToken)
+    {
+        var submissionEvents = await _eventQueryRepository
+            .GetAll(x => x.SubmissionId == submissionId)
+            .ToListAsync(cancellationToken);
+
+        var cycleOpeningDecisionEvent = submissionEvents.OfType<RegulatorPoMDecisionEvent>()
+            .Where(x => x.Decision is RegulatorDecision.Accepted or RegulatorDecision.Approved or RegulatorDecision.Rejected)
+            .MaxBy(x => x.Created);
+
+        // No ruling means there is no earlier cycle to have been closed: this is the submission's first cycle,
+        // and the number being raised is what opens it.
+        if (cycleOpeningDecisionEvent is null)
+        {
+            return null;
+        }
+
+        // A cycle already holding a number of its own is not what this covers. Backdating a duplicate would
+        // make it the earliest number the cycle has, and that is the one the query handler reports.
+        var isCycleAlreadyNumbered = submissionEvents.OfType<PackagingResubmissionReferenceNumberCreatedEvent>()
+            .Any(x => x.Created > cycleOpeningDecisionEvent.Created);
+
+        if (isCycleAlreadyNumbered)
+        {
+            return null;
+        }
+
+        var firstUploadInCycle = submissionEvents.OfType<AntivirusCheckEvent>()
+            .Where(x => x.FileType == FileType.Pom && x.Created > cycleOpeningDecisionEvent.Created)
+            .MinBy(x => x.Created);
+
+        // Nothing has been uploaded since the ruling, so the number is being raised as the cycle opens rather
+        // than late, and the request's own time is the truthful date for it.
+        if (firstUploadInCycle is null)
+        {
+            return null;
+        }
+
+        var oneMinuteBeforeTheFirstUpload = firstUploadInCycle.Created.AddMinutes(-1);
+
+        return oneMinuteBeforeTheFirstUpload > cycleOpeningDecisionEvent.Created
+            ? oneMinuteBeforeTheFirstUpload
+            : cycleOpeningDecisionEvent.Created;
+    }
+
     private async Task<ErrorOr<SubmissionEventCreateResponse>> AbstractHandle(
         AbstractSubmissionEventCreateCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        DateTime? created = null)
     {
         using (_logger.BeginScope("Creating submission event"))
         using (_logger.AddScopedData(new Dictionary<string, object>
@@ -209,6 +284,17 @@ public class SubmissionEventCreateCommandHandler :
                }))
         {
             var submissionEvent = _mapper.Map<AbstractSubmissionEvent>(command);
+
+            if (created.HasValue)
+            {
+                // SUB-345: SubmissionContext stamps the request time over anything left at its default, so an
+                // event dated from the cycle it belongs to has to carry that date in before it is saved.
+                submissionEvent.Created = created.Value;
+
+                _logger.LogInformation(
+                    "Dating submission event from the start of the cycle it belongs to, {Created}, rather than from this request",
+                    created.Value);
+            }
 
             _logger.LogInformation("Storing submission event");
             await _commandRepository.AddAsync(submissionEvent);
