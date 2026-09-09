@@ -3019,6 +3019,70 @@ public class GetPackagingResubmissionApplicationDetailsQueryHandlerTests
         result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
     }
 
+    // SUB-345: the state a resubmission sits in from the moment the regulator's ruling releases the next
+    // reference number - that number exists, and nothing has been uploaded since it. The new cycle correctly
+    // reports as unstarted, since the accepted file and fee belong to the cycle before it, but the completed
+    // cycle has to be reported alongside it. Without it nothing tells a finished resubmission from one never
+    // begun, and the sub-landing tile stops offering the resubmission the regulator accepted.
+    [TestMethod]
+    public async Task Handle_ShouldStillReportTheClosedCycle_WhenTheNewCycleHasNothingUploadedYet()
+    {
+        // Arrange
+        var submissionId = Guid.NewGuid();
+        var ruledOnFile = Guid.NewGuid();
+        var now = DateTime.Now;
+        var declarationDate = now.AddMinutes(-135);
+
+        var query = new GetPackagingResubmissionApplicationDetailsQuery
+        {
+            OrganisationId = Guid.NewGuid(),
+            SubmissionPeriods = new List<string> { "January - June 2024 - TEST" }
+        };
+
+        var submission = BuildSubmission(submissionId, query, complianceSchemeId: null);
+
+        var events = new List<AbstractSubmissionEvent>
+        {
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = submissionId, PackagingResubmissionReferenceNumber = "PEPR55555S01", Created = now.AddMinutes(-170) },
+            new AntivirusCheckEvent { SubmissionId = submissionId, FileType = FileType.Pom, FileId = ruledOnFile, FileName = "accepted.csv", Created = now.AddMinutes(-160) },
+            new AntivirusResultEvent { SubmissionId = submissionId, FileId = ruledOnFile, BlobName = "blob-accepted", Created = now.AddMinutes(-159) },
+            new CheckSplitterValidationEvent { SubmissionId = submissionId, BlobName = "blob-accepted", DataCount = 1, IsValid = true, Created = now.AddMinutes(-158) },
+            new ProducerValidationEvent { SubmissionId = submissionId, BlobName = "blob-accepted", IsValid = true, Created = now.AddMinutes(-157) },
+            new SubmittedEvent { SubmissionId = submissionId, FileId = ruledOnFile, Created = now.AddMinutes(-150) },
+            new PackagingResubmissionFeeViewCreatedEvent { SubmissionId = submissionId, IsPackagingResubmissionFeeViewed = true, Created = now.AddMinutes(-145) },
+            new PackagingDataResubmissionFeePaymentEvent { SubmissionId = submissionId, PaymentMethod = "PayByPhone", ReferenceNumber = "PEPR55555S01", Created = now.AddMinutes(-140) },
+            new PackagingResubmissionApplicationSubmittedCreatedEvent { SubmissionId = submissionId, IsResubmitted = true, SubmissionDate = declarationDate, Comments = "First resubmission", Created = declarationDate },
+            new RegulatorPoMDecisionEvent { SubmissionId = submissionId, Decision = RegulatorDecision.Accepted, FileId = ruledOnFile, Created = now.AddMinutes(-120) },
+
+            // The next cycle's number, raised off the back of the ruling. Nothing has been uploaded since, so
+            // the write path leaves it at the time it was raised rather than dating it from a cycle's work.
+            new PackagingResubmissionReferenceNumberCreatedEvent { SubmissionId = submissionId, PackagingResubmissionReferenceNumber = "PEPR55555S02", Created = now.AddMinutes(-110) }
+        };
+
+        SetupMocks(submission, events);
+
+        // Act
+        var result = await _handler.Handle(query, CancellationToken.None);
+
+        // Assert - the accepted file and fee stay with the cycle they belong to
+        result.Should().NotBeNull();
+        result.Value.First().ApplicationStatus.Should().Be(ApplicationStatusType.NotStarted);
+        result.Value.First().ApplicationReferenceNumber.Should().Be("PEPR55555S02");
+        result.Value.First().ResubmissionApplicationSubmittedDate.Should().BeNull();
+        result.Value.First().ResubmissionFeePaymentMethod.Should().BeNull();
+        result.Value.First().IsResubmissionCycleClosed.Should().BeFalse();
+
+        // Assert - while the completed resubmission remains reported, under its own reference number
+        var completed = result.Value.First().LastCompletedResubmission;
+        completed.Should().NotBeNull();
+        completed!.ApplicationReferenceNumber.Should().Be("PEPR55555S01");
+        completed.DeclarationDate.Should().Be(declarationDate);
+        completed.ResubmissionFeePaymentMethod.Should().Be("PayByPhone");
+        completed.Decision.Should().Be(RegulatorDecision.Accepted.ToString());
+        completed.FileName.Should().Be("accepted.csv");
+        completed.SubmittedFile!.FileId.Should().Be(ruledOnFile);
+    }
+
     private static Submission BuildSubmission(Guid submissionId, GetPackagingResubmissionApplicationDetailsQuery query, Guid? complianceSchemeId) =>
         new()
         {
