@@ -45,7 +45,12 @@ public class SubmissionContext : EprCommonContext
 
         foreach (var entry in ChangeTracker.Entries<EntityWithId>())
         {
-            if (entry is { State: EntityState.Added, Entity: ICreated created })
+            // SUB-345: stamp the request time only where nothing has been set deliberately. No create command
+            // carries a Created of its own, so this remains the request time for every event the API is asked
+            // to store; the single exception is a packaging resubmission reference number raised for a cycle
+            // that was already under way, which is dated from the cycle it belongs to rather than from the
+            // request that finally created it. See SubmissionEventCreateCommandHandler.
+            if (entry is { State: EntityState.Added, Entity: ICreated created } && created.Created == default)
             {
                 created.Created = _requestTimeService.UtcRequest;
             }
