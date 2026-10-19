@@ -1,6 +1,6 @@
 services:
   cosmos-emulator:
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-EN20260907pre
     container_name: submission-cosmos-emulator
     ports:
       - "8081:8081"
