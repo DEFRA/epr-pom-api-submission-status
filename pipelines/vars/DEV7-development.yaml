@@ -1,6 +1,12 @@
 variables:
-  azureSubscription: 'AZD-RWD-DEV7'
-  docker.imageName: 'submissionstatus'
-  acr.azureContainerRegistryName: 'devrwdinfac1401'
-  acr.repositoryName: 'submissionstatusrepository'
-  serviceName: 'devrwdwebwa7408'
+- group: ServiceConnections
+- name: azureSubscription
+  value: $(ServiceConnectionDEV7)
+- name: docker.imageName
+  value: 'submissionstatus'
+- name: acr.azureContainerRegistryName
+  value: 'devrwdinfac1401'
+- name: acr.repositoryName
+  value: 'submissionstatusrepository'
+- name: serviceName
+  value: 'devrwdwebwa7408'
